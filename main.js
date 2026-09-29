@@ -31,6 +31,7 @@ function account(a) {
     lastUsed: Math.max(m.lastUsed || 0, (a.timestamp || 0) * 1000),
     tags: m.tags, note: m.note, pinned: m.pinned, launch: m.launch,
     linked: store.isLinked(a.sid),
+    hasCredentials: store.hasCredentials(a.sid),
     pub: c.pub || null, pubAt: c.pubAt || 0,
     stats: c.stats || null, statsAt: c.statsAt || 0,
   };
@@ -223,6 +224,7 @@ function forget(sid) {
     if (login && reg.autoLoginUser.toLowerCase() === login.toLowerCase()) await steam.regSet('AutoLoginUser', 'REG_SZ', '');
     store.forget(sid);
     store.removeToken(sid);
+    store.removeCredentials(sid);
     const restarted = st.running && st.activeSid && st.activeSid !== sid;
     if (restarted) steam.start(loc.exe, store.settings().steamArgs);
     return { restarted, wasCurrent: st.activeSid === sid };
@@ -242,7 +244,7 @@ async function refreshStats(sid) {
     } catch (e) {
       warnings.push({ type: 'error', title: 'Public profile unavailable', msg: e.message });
     }
-    const token = store.getToken(sid);
+    let token = store.getToken(sid);
     if (!token && store.isLinked(sid)) {
       // Token exists but can't be decrypted (e.g. Windows profile changed).
       store.removeToken(sid);
@@ -252,7 +254,17 @@ async function refreshStats(sid) {
       progress(1);
       try {
         const prev = store.cache(sid).stats;
-        const res = await fetchLinked(sid, token, s => progress(Math.min(3, s + 1)), t => store.setToken(sid, t));
+        let res;
+        try {
+          res = await fetchLinked(sid, token, s => progress(Math.min(3, s + 1)), t => store.setToken(sid, t));
+        } catch (e) {
+          // Token expired but we have stored credentials → mint a fresh one silently and retry once.
+          if (e.code === 'relink' && store.hasCredentials(sid)) {
+            const r = await link.silentRelink(sid);
+            if (r.ok) { token = store.getToken(sid); res = await fetchLinked(sid, token, s => progress(Math.min(3, s + 1)), t => store.setToken(sid, t)); }
+            else throw e;
+          } else throw e;
+        }
         if (!res.cs2 && prev && prev.cs2) res.cs2 = prev.cs2; // keep last known CS2 stats if we had to skip
         store.setCache(sid, { stats: res, statsAt: Date.now() });
         if (res.cs2Note === 'in-game') warnings.push({ type: 'warning', title: 'CS2 stats skipped', msg: 'This account is in a game right now, and asking CS2 would kick it. Showing the last known CS2 stats.' });
@@ -316,10 +328,12 @@ function ipc() {
   ipcMain.handle('update:install', () => updater.install());
   ipcMain.handle('stats:refresh', (_, sid) => refreshStats(String(sid)));
   ipcMain.handle('link:qr', (_, sid) => link.startQR(String(sid), e => send('link', e), onLinked));
-  ipcMain.handle('link:pw', (_, sid, login, pw) => link.startPassword(String(sid), String(login), String(pw), e => send('link', e), onLinked));
+  ipcMain.handle('link:pw', (_, sid, login, pw, remember) => link.startPassword(String(sid), String(login), String(pw), e => send('link', e), onLinked, !!remember));
+  ipcMain.handle('link:token', (_, sid, token) => link.pasteToken(String(sid), String(token), e => send('link', e), onLinked));
   ipcMain.handle('link:code', (_, code) => link.submitCode(String(code), e => send('link', e)));
   ipcMain.handle('link:cancel', () => link.cancel());
-  ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
+  ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.removeCredentials(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
+  ipcMain.handle('credentials:clear', (_, sid) => { store.removeCredentials(String(sid)); return oneAccount(String(sid)); });
   ipcMain.handle('open', (_, url) => {
     if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url)) shell.openExternal(url);
   });

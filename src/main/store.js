@@ -100,9 +100,27 @@ function getMachineToken(sid) {
   return t && t.machine ? dec(t.machine) : null;
 }
 function isLinked(sid) { return !!(tokens[sid] && tokens[sid].refresh); }
-function removeToken(sid) { delete tokens[sid]; writeTokens(); }
+function removeToken(sid) { const t = tokens[sid]; if (!t) return; delete t.refresh; delete t.machine; if (!t.cred) delete tokens[sid]; writeTokens(); }
+
+// Stored credentials (opt-in): username + password, encrypted like tokens. Kept only to re-mint a
+// sign-in token automatically when the saved one expires, so stats keep working without re-entry.
+function setCredentials(sid, login, password) {
+  const t = tokens[sid] || {};
+  t.cred = { login: enc(login), password: enc(password) };
+  tokens[sid] = t;
+  writeTokens();
+}
+function getCredentials(sid) {
+  const c = tokens[sid] && tokens[sid].cred;
+  if (!c) return null;
+  const login = dec(c.login), password = dec(c.password);
+  return login && password ? { login, password } : null;
+}
+function hasCredentials(sid) { return !!(tokens[sid] && tokens[sid].cred); }
+function removeCredentials(sid) { const t = tokens[sid]; if (!t) return; delete t.cred; if (!t.refresh) delete tokens[sid]; writeTokens(); }
 
 module.exports = {
   SCALES, load, flush, settings, setSettings, windowState, setWindowState, meta, setMeta, cache, setCache, dropStats, forget,
   setToken, getToken, getMachineToken, isLinked, removeToken,
+  setCredentials, getCredentials, hasCredentials, removeCredentials,
 };

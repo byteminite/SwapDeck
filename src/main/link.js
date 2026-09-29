@@ -1,10 +1,24 @@
-// "Link account": a one-time Steam sign-in (QR or password + Steam Guard) that gives
-// SwapDeck a refresh token for reading stats. Passwords are never stored.
+// "Link account": a one-time Steam sign-in that gives SwapDeck a refresh token for reading stats.
+// Sign-in options: QR code, password + Steam Guard, or pasting an existing refresh token.
+// Passwords are stored only if you explicitly opt in ("remember"), encrypted with Windows DPAPI.
 
 const os = require('os');
 const QRCode = require('qrcode');
 const { LoginSession, EAuthTokenPlatformType, EAuthSessionGuardType } = require('steam-session');
 const store = require('./store');
+
+// A Steam refresh token is a JWT: iss=steam, sub=<steamid64>, with an exp. Validate shape/owner/expiry
+// before trusting a pasted one, so we reject the wrong account or an expired paste with a clear message.
+function inspectToken(token) {
+  const parts = String(token || '').trim().split('.');
+  if (parts.length !== 3) return { ok: false, reason: "That doesn't look like a Steam token." };
+  let c;
+  try { c = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')); }
+  catch { return { ok: false, reason: "That token couldn't be read." }; }
+  if (c.iss !== 'steam' || !/^\d{17}$/.test(String(c.sub || ''))) return { ok: false, reason: 'That is not a Steam sign-in token (need a refresh token, not an access token).' };
+  if (c.exp && c.exp * 1000 < Date.now()) return { ok: false, reason: 'That token has already expired.' };
+  return { ok: true, sid: String(c.sub) };
+}
 
 let cur = null; // { sid, session, emit, onLinked, qr }
 
@@ -63,12 +77,13 @@ function begin(sid, emit, onLinked) {
     }
     try {
       store.setToken(sid, session.refreshToken, session.steamGuardMachineToken);
+      if (me.remember && me.creds) store.setCredentials(sid, me.creds.login, me.creds.password);
     } catch (e) {
       fail(e.message);
       return;
     }
     cur = null;
-    emit({ step: 'ok' });
+    emit({ step: 'ok', remembered: !!(me.remember && me.creds) });
     onLinked(sid);
   });
   return me;
@@ -101,8 +116,10 @@ function guardStep(validActions) {
   return { step: 'confirm' };
 }
 
-async function startPassword(sid, accountName, password, emit, onLinked) {
+async function startPassword(sid, accountName, password, emit, onLinked, remember) {
   const me = begin(sid, emit, onLinked);
+  me.remember = !!remember;
+  if (remember) me.creds = { login: accountName, password };
   emit({ step: 'working', work: 'Signing in to Steam…' });
   try {
     const details = { accountName, password };
@@ -129,4 +146,53 @@ async function submitCode(code, emit) {
   }
 }
 
-module.exports = { startQR, startPassword, submitCode, cancel };
+// Store a refresh token the user pasted (e.g. exported from another tool). No Steam round-trip here;
+// the stats fetch that follows verifies it against Steam and reports back if it's rejected.
+function pasteToken(sid, token, emit, onLinked) {
+  cancel();
+  const chk = inspectToken(token);
+  if (!chk.ok) { emit({ step: 'fail', err: chk.reason }); return; }
+  if (chk.sid !== sid) { emit({ step: 'fail', err: 'That token is for a different Steam account than this one.' }); return; }
+  try {
+    store.setToken(sid, String(token).trim(), null);
+  } catch (e) {
+    emit({ step: 'fail', err: e.message });
+    return;
+  }
+  emit({ step: 'ok' });
+  onLinked(sid);
+}
+
+// Best-effort silent relink: when a stored token has expired and the user opted to remember the
+// password, mint a fresh token in the background. Only works for accounts whose sign-in needs no
+// interactive Steam Guard code (e.g. email guard covered by a stored machine token). Self-contained:
+// it never touches the interactive `cur` session.
+function silentRelink(sid) {
+  const creds = store.getCredentials(sid);
+  if (!creds) return Promise.resolve({ ok: false, reason: 'no-credentials' });
+  return new Promise(resolve => {
+    const session = new LoginSession(EAuthTokenPlatformType.SteamClient, {
+      machineId: true,
+      machineFriendlyName: `SwapDeck (${os.hostname()})`,
+    });
+    session.loginTimeout = 30000;
+    let done = false;
+    const finish = r => { if (done) return; done = true; try { session.cancelLoginAttempt(); } catch {} resolve(r); };
+    session.on('error', () => finish({ ok: false, reason: 'error' }));
+    session.on('timeout', () => finish({ ok: false, reason: 'timeout' }));
+    session.on('authenticated', () => {
+      if (session.steamID && session.steamID.getSteamID64() !== sid) return finish({ ok: false, reason: 'mismatch' });
+      try { store.setToken(sid, session.refreshToken, session.steamGuardMachineToken); } catch { return finish({ ok: false, reason: 'store' }); }
+      finish({ ok: true });
+    });
+    const details = { accountName: creds.login, password: creds.password };
+    const mt = store.getMachineToken(sid);
+    if (mt) details.steamGuardMachineToken = mt;
+    session.startWithCredentials(details).then(r => {
+      // A guard prompt means we can't finish silently (mobile 2FA needs a code the user must type).
+      if (r.actionRequired) finish({ ok: false, reason: 'guard' });
+    }).catch(() => finish({ ok: false, reason: 'error' }));
+  });
+}
+
+module.exports = { startQR, startPassword, submitCode, pasteToken, silentRelink, cancel, inspectToken };

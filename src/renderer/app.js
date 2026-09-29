@@ -87,6 +87,7 @@ const I = {
   trash: (s) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
   qr: html`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0a0c" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>`,
   shield: html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>`,
+  key: html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>`,
   phone: html`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>`,
   smile: html`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>`,
   book: html`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
@@ -340,6 +341,12 @@ class App extends Component {
     await this.reload();
     this.toast('info', 'Forgot ' + (a ? a.name : 'account'), "Removed from Steam's saved logins on this PC." + (r.restarted ? ' Steam restarted.' : ''));
   }
+  async forgetPassword(id) {
+    const a = this.find(id);
+    const res = await api.clearCredentials(id);
+    if (res) this.replaceAcc(res);
+    this.toast('info', 'Password forgotten', (a ? a.name : 'This account') + "'s saved password was removed. The sign-in token stays.");
+  }
   async unlink() {
     const id = this.state.unlinkId, a = this.find(id);
     this.setState({ unlinkId: null, tab: 'overview' });
@@ -363,7 +370,7 @@ class App extends Component {
   }
 
   // ---- linking ----
-  openLink(id) { const a = this.find(id); this.setState({ link: { id, step: 'choose', login: a ? a.login : '', pw: '', code: '', guard: 'mobile', qr: null } }); }
+  openLink(id) { const a = this.find(id); this.setState({ link: { id, step: 'choose', login: a ? a.login : '', pw: '', code: '', guard: 'mobile', qr: null, remember: false, token: '' } }); }
   setLink(p) { this.setState(s => ({ link: s.link && { ...s.link, ...p } })); }
   closeLink() { api.linkCancel(); this.setState({ link: null }); }
   onLinkEvent(e) {
@@ -375,8 +382,14 @@ class App extends Component {
   linkQR() { const L = this.state.link; this.setLink({ step: 'qr', qr: null }); api.linkQR(L.id); }
   linkPW() {
     const L = this.state.link; if (!L || !L.login || !L.pw) return;
+    const remember = !!L.remember;
     this.setLink({ step: 'working', work: 'Signing in to Steam…', pw: '' });
-    api.linkPassword(L.id, L.login, L.pw);
+    api.linkPassword(L.id, L.login, L.pw, remember);
+  }
+  linkToken() {
+    const L = this.state.link; if (!L || !L.token.trim()) return;
+    this.setLink({ step: 'working', work: 'Saving token…' });
+    api.linkToken(L.id, L.token.trim());
   }
   linkGuard() {
     const L = this.state.link; if (!L || L.code.length < 5) return;
@@ -773,7 +786,7 @@ class App extends Component {
       ${tab === 'games' ? this.renderGamesTab(d, ld) : null}
     </div>
     <div style="padding:12px 20px;border-top:1px solid rgba(255,255,255,.07);flex:none;display:flex;align-items:center;gap:8px">
-      <span style="font:400 11px/1.4 'Geist',sans-serif;color:#8d8d98;flex:1">Forget removes the saved login from Steam on this PC. Unlink only removes stats access.</span>
+      <span style="font:400 11px/1.4 'Geist',sans-serif;color:#8d8d98;flex:1">${d.hasCredentials ? html`<span style="display:inline-flex;align-items:center;gap:5px;color:#a1a1aa">${I.key}Password saved · stats refresh on their own. <button class="hv-cyantext" style="border:0;background:transparent;color:#67e8f9;font:inherit;cursor:pointer;padding:0;text-decoration:underline" onClick=${() => this.forgetPassword(d.id)}>Forget password</button></span>` : 'Forget removes the saved login from Steam on this PC. Unlink only removes stats access.'}</span>
       ${L ? html`<button class="hv-bright30" style="display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#c9c9d1;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ unlinkId: d.id })}>Unlink</button>` : null}
       <button class="hv-red10" style="display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:10px;border:1px solid rgba(248,113,113,.35);background:transparent;color:#fca5a5;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ confirmId: d.id })}>${I.trash(13)}Forget account</button>
     </div>
@@ -1039,9 +1052,9 @@ ${games.map(x => html`
 
   renderLink() {
     const S = this.state, Lk = S.link, acc = this.find(Lk.id), name = acc ? acc.name : '';
-    const back = ['qr', 'scanned', 'pw', 'guard', 'confirm', 'fail'].includes(Lk.step);
+    const back = ['qr', 'scanned', 'pw', 'token', 'guard', 'confirm', 'fail'].includes(Lk.step);
     const input = "width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#f4f4f5;font:500 13px 'Geist Mono',monospace;outline:none";
-    const toChoose = () => { api.linkCancel(); this.setLink({ step: 'choose', code: '', pw: '', qr: null, error: null }); };
+    const toChoose = () => { api.linkCancel(); this.setLink({ step: 'choose', code: '', pw: '', token: '', qr: null, error: null }); };
     const qrBox = (dim) => Lk.qr ? html`<svg viewBox=${`0 0 ${Lk.qr.size} ${Lk.qr.size}`} width="190" height="190" shape-rendering="crispEdges" style=${`display:block;${dim ? 'opacity:.18' : ''}`}><path d=${Lk.qr.path} fill="#0a0a0c" /></svg>` : html`<div style="width:190px;height:190px;display:grid;place-items:center">${Spin(26, 3, 'border-color:rgba(0,0,0,.12);border-top-color:#22d3ee')}</div>`;
     const white = (on) => `width:100%;padding:11px 14px;border:0;border-radius:11px;background:${on ? '#fff' : 'rgba(255,255,255,.25)'};color:#0a0a0c;font:600 13px 'Geist',sans-serif;cursor:pointer;text-align:left`;
 
@@ -1055,10 +1068,14 @@ ${games.map(x => html`
         </button>
         <button class="hv-bd28" style="display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);cursor:pointer;text-align:left" onClick=${() => this.setLink({ step: 'pw' })}>
           <span style="width:38px;height:38px;flex:none;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;color:#e8e8ec">${I.lock(18)}</span>
-          <div style="flex:1"><div style="font:600 13.5px 'Geist',sans-serif;color:#f4f4f5">Login and password</div><div style="font:400 11.5px 'Geist',sans-serif;color:#a1a1aa;margin-top:2px">Then a Steam Guard code from email or the app.</div></div>
+          <div style="flex:1"><div style="font:600 13.5px 'Geist',sans-serif;color:#f4f4f5">Login and password</div><div style="font:400 11.5px 'Geist',sans-serif;color:#a1a1aa;margin-top:2px">Then a Steam Guard code, with an option to remember it.</div></div>
+        </button>
+        <button class="hv-bd28" style="display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);cursor:pointer;text-align:left" onClick=${() => this.setLink({ step: 'token' })}>
+          <span style="width:38px;height:38px;flex:none;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;color:#e8e8ec">${I.key || I.lock(18)}</span>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font:600 13.5px 'Geist',sans-serif;color:#f4f4f5">Paste a sign-in token</span><span style="font:600 9px 'Geist Mono',monospace;letter-spacing:.06em;padding:2px 6px;border-radius:99px;background:rgba(255,255,255,.08);color:#a1a1aa">ADVANCED</span></div><div style="font:400 11.5px 'Geist',sans-serif;color:#a1a1aa;margin-top:2px">A Steam refresh token you already have.</div></div>
         </button>
       </div>
-      <div style="font:400 11px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:14px">SwapDeck keeps only Steam's sign-in token, encrypted on this PC. Your password is never stored.</div>`;
+      <div style="font:400 11px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:14px">SwapDeck keeps Steam's sign-in token, encrypted on this PC. Your password is stored only if you tick "Remember" — see that screen.</div>`;
     else if (Lk.step === 'qr') body = html`
       <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
         <div style="padding:12px;border-radius:16px;background:#fff">${qrBox(false)}</div>
@@ -1077,8 +1094,17 @@ ${games.map(x => html`
       <input class="fc-cyan" style=${input} value=${Lk.login} onInput=${e => this.setLink({ login: e.target.value })} autocomplete="off" spellcheck="false" />
       <label style="display:block;font:500 12px 'Geist',sans-serif;color:#d4d4d8;margin:14px 0 6px">Password</label>
       <input type="password" class="fc-cyan" style=${input} placeholder="••••••••" value=${Lk.pw} onInput=${e => this.setLink({ pw: e.target.value })} onKeyDown=${e => { if (e.key === 'Enter') this.linkPW(); }} autocomplete="off" />
-      <button style=${white(Lk.login && Lk.pw) + ';margin-top:18px'} onClick=${() => this.linkPW()}>Sign in →</button>
-      <div style="font:400 11px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:12px">Sent straight to Steam over an encrypted connection. Only the resulting token is kept.</div>`;
+      <label style="display:flex;align-items:flex-start;gap:9px;margin-top:14px;cursor:pointer" onClick=${e => { e.preventDefault(); this.setLink({ remember: !Lk.remember }); }}>
+        <span style=${`width:18px;height:18px;flex:none;margin-top:1px;border-radius:5px;border:1px solid ${Lk.remember ? 'rgba(34,211,238,.7)' : 'rgba(255,255,255,.22)'};background:${Lk.remember ? 'rgba(34,211,238,.25)' : 'transparent'};display:grid;place-items:center;color:#67e8f9`}>${Lk.remember ? I.check(12, '#67e8f9', 3) : null}</span>
+        <span style="font:400 11.5px/1.5 'Geist',sans-serif;color:#a1a1aa">Remember the password on this PC so SwapDeck can refresh stats on its own later. Stored encrypted with Windows. <span style="color:#fcd34d">A saved password is more sensitive than a token — only on a PC you trust.</span></span>
+      </label>
+      <button style=${white(Lk.login && Lk.pw) + ';margin-top:16px'} onClick=${() => this.linkPW()}>Sign in →</button>
+      <div style="font:400 11px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:12px">Sent straight to Steam over an encrypted connection.</div>`;
+    else if (Lk.step === 'token') body = html`
+      <label style="display:block;font:500 12px 'Geist',sans-serif;color:#d4d4d8;margin-bottom:6px">Steam refresh token</label>
+      <textarea class="fc-cyan" style="width:100%;box-sizing:border-box;resize:none;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#f4f4f5;font:500 11px/1.5 'Geist Mono',monospace;outline:none;word-break:break-all" rows="4" placeholder="eyJ…" value=${Lk.token} onInput=${e => this.setLink({ token: e.target.value })}></textarea>
+      <button style=${white(!!Lk.token.trim()) + ';margin-top:16px'} onClick=${() => this.linkToken()}>Use this token →</button>
+      <div style="font:400 11px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:12px">A Steam <b style="color:#c9c9d1">refresh</b> token (JWT) for this account, e.g. exported from another tool. SwapDeck checks it's for this account, stores it encrypted, then loads stats.</div>`;
     else if (Lk.step === 'guard') body = html`
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><span style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);display:grid;place-items:center;color:#67e8f9">${I.shield}</span><div style="font:600 14px 'Geist',sans-serif;color:#f4f4f5">Steam Guard code</div></div>
       <div style="font:400 12.5px/1.6 'Geist',sans-serif;color:#a1a1aa;margin-bottom:12px">${Lk.guard === 'email' ? `Enter the code Steam emailed to your ${Lk.detail ? '@' + Lk.detail + ' ' : ''}address.` : 'Enter the code shown in the Steam Mobile app (Steam Guard).'}${Lk.canConfirm ? ' Or just approve the sign-in in the Steam Mobile app.' : ''}</div>
