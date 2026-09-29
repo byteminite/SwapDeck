@@ -1,0 +1,82 @@
+@font-face { font-family: 'Geist'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-cyrillic-ext.woff2) format('woff2'); unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }
+@font-face { font-family: 'Geist'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-cyrillic.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'Geist'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-vietnamese.woff2) format('woff2'); unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face { font-family: 'Geist'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Geist'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-cyrillic-ext.woff2) format('woff2'); unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-cyrillic.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-symbols2.woff2) format('woff2'); unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-vietnamese.woff2) format('woff2'); unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Geist Mono'; font-weight: 100 900; font-display: swap; src: url(fonts/geist-mono-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { margin: 0; background: #0a0a0c; height: 100%; overflow: hidden; }
+body { color: #f4f4f5; font-family: 'Geist', system-ui, sans-serif; }
+button, input, textarea, select { font-family: inherit; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid rgba(34, 211, 238, .7); outline-offset: 2px; }
+img { display: block; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .16); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .26); }
+
+@keyframes bspin { to { transform: rotate(1turn); } }
+@keyframes spin { to { transform: rotate(1turn); } }
+@keyframes shim { 0%, 100% { opacity: .35; } 50% { opacity: .8; } }
+@keyframes pdot { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes tin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes dfade { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.drag { -webkit-app-region: drag; }
+.nodrag { -webkit-app-region: no-drag; }
+.spinner { display: inline-block; border-radius: 99px; border: 2px solid rgba(255, 255, 255, .18); border-top-color: #22d3ee; animation: spin .8s linear infinite; box-sizing: border-box; flex: none; }
+.shim { background: rgba(255, 255, 255, .09); animation: shim 1.2s ease-in-out infinite; }
+
+/* hover states (inline styles in the markup need !important to be overridden) */
+.hv-min:hover { background: rgba(34, 211, 238, .12) !important; color: #67e8f9 !important; }
+.hv-max:hover { background: rgba(129, 140, 248, .14) !important; color: #a5b4fc !important; }
+.hv-close:hover { background: #e5484d !important; color: #fff !important; }
+.hv-danger-outline:hover { border-color: rgba(248, 113, 113, .5) !important; color: #fca5a5 !important; }
+.hv-green:hover { background: rgba(74, 222, 128, .16) !important; }
+.hv-bright:hover { color: #f4f4f5 !important; border-color: rgba(255, 255, 255, .28) !important; }
+.hv-bd35:hover { border-color: rgba(255, 255, 255, .35) !important; }
+.hv-bd30:hover { border-color: rgba(255, 255, 255, .3) !important; }
+.hv-bd28:hover { border-color: rgba(255, 255, 255, .28) !important; }
+.hv-dark50:hover { background: rgba(0, 0, 0, .5) !important; }
+.hv-dark55:hover { background: rgba(0, 0, 0, .55) !important; color: #fff !important; }
+.hv-cyanbg:hover { background: #a5f3fc !important; }
+.hv-cyan20:hover { background: rgba(34, 211, 238, .2) !important; }
+.hv-cyan15:hover { background: rgba(34, 211, 238, .15) !important; }
+.hv-cyan12:hover { background: rgba(34, 211, 238, .12) !important; }
+.hv-cyantext:hover { color: #a5f3fc !important; }
+.hv-white:hover { color: #f4f4f5 !important; }
+.hv-bright125:hover { filter: brightness(1.25); }
+.hv-row:hover { background: rgba(255, 255, 255, .035) !important; }
+.hv-bright30:hover { border-color: rgba(255, 255, 255, .3) !important; color: #f4f4f5 !important; }
+.hv-red10:hover { background: rgba(248, 113, 113, .1) !important; }
+.hv-red:hover { background: #ef4444 !important; }
+.hv-gray:hover { background: #e4e4e7 !important; }
+.hv-ghost:hover { background: rgba(255, 255, 255, .07) !important; color: #f4f4f5 !important; }
+.hv-w06:hover { background: rgba(255, 255, 255, .06) !important; }
+.hv-addcol:hover { border-color: rgba(34, 211, 238, .6) !important; color: #67e8f9 !important; background: rgba(34, 211, 238, .04) !important; }
+
+/* focus states */
+.fc-cyan:focus { border-color: rgba(34, 211, 238, .55) !important; }
+.fc-search:focus { border-color: rgba(34, 211, 238, .55) !important; background: rgba(34, 211, 238, .04) !important; }
+.fc-tag:focus { border-color: rgba(34, 211, 238, .55) !important; border-style: solid !important; }
+
+/* animated gradient borders */
+.add-btn { position: relative; overflow: hidden; border-radius: 12px; padding: 1px; border: 0; background: rgba(255, 255, 255, .1); cursor: pointer; }
+.add-btn::before { content: ''; position: absolute; inset: -120%; background: conic-gradient(from 0deg, transparent 0 60%, #22d3ee 74%, #818cf8 86%, transparent 96%); animation: bspin 3.4s linear infinite; }
+.add-btn:hover { background: rgba(255, 255, 255, .2); }
+.sw-ring { position: relative; width: 84px; height: 84px; border-radius: 24px; overflow: hidden; padding: 2px; box-sizing: border-box; }
+.sw-ring::before { content: ''; position: absolute; inset: -60%; background: conic-gradient(from 0deg, transparent 0 55%, #22d3ee 72%, #818cf8 86%, transparent 96%); animation: bspin 1.6s linear infinite; }
+
+.gallery { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .16) transparent; }
+.gallery::-webkit-scrollbar { height: 6px; }
+.scroll-y { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent; }
+
+select.sd-select { appearance: none; -webkit-appearance: none; width: 100%; padding: 9px 32px 9px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .03) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center; color: #e8e8ec; font: 500 12.5px 'Geist', sans-serif; outline: none; cursor: pointer; }
+select.sd-select option { background: #15151b; color: #e8e8ec; }

@@ -1,0 +1,449 @@
+const path = require('path');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, screen } = require('electron');
+const store = require('./src/main/store');
+const steam = require('./src/main/steam');
+const { fetchPublic } = require('./src/main/profile');
+const link = require('./src/main/link');
+const { fetchLinked } = require('./src/main/stats');
+const updater = require('./src/main/updater');
+
+let win = null;
+let loc = { exe: null, dir: null, checked: [] };
+let lastStatus = { running: false, activeSid: null, autoLoginUser: '' };
+let lastMtime = 0;
+let busy = null;            // 'switch' | 'close' | 'start' | 'add' | 'forget'
+let adding = null;          // { cancelled }
+const fetching = new Set(); // sids with a stats refresh in flight
+
+const send = (ch, ...args) => { if (win && !win.isDestroyed()) win.webContents.send(ch, ...args); };
+
+// ---------- state ----------
+
+function account(a) {
+  const m = store.meta(a.sid);
+  const c = store.cache(a.sid);
+  return {
+    sid: a.sid,
+    login: a.login,
+    name: a.persona,
+    avatar: steam.avatar(loc.dir, a.sid) || (c.pub && c.pub.avatar) || null,
+    avatarSrc: steam.avatar(loc.dir, a.sid) ? 'local' : (c.pub && c.pub.avatar) ? 'profile' : null,
+    lastUsed: Math.max(m.lastUsed || 0, (a.timestamp || 0) * 1000),
+    tags: m.tags, note: m.note, pinned: m.pinned, launch: m.launch,
+    linked: store.isLinked(a.sid),
+    pub: c.pub || null, pubAt: c.pubAt || 0,
+    stats: c.stats || null, statsAt: c.statsAt || 0,
+  };
+}
+
+function accounts() {
+  try { return steam.listAccounts(loc.dir).map(account); } catch (e) { console.error(e); return []; }
+}
+function oneAccount(sid) {
+  return accounts().find(a => a.sid === sid) || null;
+}
+
+function steamState() {
+  return {
+    found: !!loc.exe, exe: loc.exe, checked: loc.checked,
+    running: lastStatus.running, activeSid: lastStatus.activeSid, autoLoginUser: lastStatus.autoLoginUser,
+    busy: busy === 'close' ? 'closing' : busy === 'start' ? 'starting' : null,
+  };
+}
+
+async function detect() {
+  loc = await steam.locate(store.settings().steamExe);
+  if (loc.exe) lastStatus = await steam.status();
+  lastMtime = loc.dir ? steam.loginUsersMtime(loc.dir) : 0;
+}
+
+let games = [];
+function loadGames() { games = steam.installedGames(loc.dir); }
+
+async function poll() {
+  if (!loc.exe) return;
+  try {
+    const s = await steam.status();
+    if (s.running !== lastStatus.running || s.activeSid !== lastStatus.activeSid || s.autoLoginUser !== lastStatus.autoLoginUser) {
+      lastStatus = s;
+      send('steam', steamState());
+    }
+    const mt = steam.loginUsersMtime(loc.dir);
+    if (mt !== lastMtime) { lastMtime = mt; send('accounts', accounts()); }
+  } catch (e) { console.error('poll', e); }
+}
+
+// Public profiles are cheap, so keep online status fresh in the background.
+async function refreshPublicAll() {
+  for (const a of accounts()) {
+    if (Date.now() - a.pubAt < 10 * 60 * 1000 || fetching.has(a.sid)) continue;
+    try {
+      const pub = await fetchPublic(a.sid);
+      store.setCache(a.sid, { pub, pubAt: Date.now() });
+      send('account', oneAccount(a.sid));
+    } catch {}
+    await steam.sleep(400);
+  }
+}
+
+// ---------- actions ----------
+
+function launchOf(sid) {
+  const m = store.meta(sid), s = store.settings();
+  if (m.launch === 'none') return null;
+  if (m.launch === 'default') return s.launchAfter && s.defaultGame ? s.defaultGame : null;
+  return m.launch;
+}
+const gameName = appid => (games.find(g => g.appid === String(appid)) || {}).name || `App ${appid}`;
+
+function guard(kind) {
+  if (!loc.exe) { const e = new Error('Steam not found'); e.code = 'NOT_FOUND'; throw e; }
+  if (busy) { const e = new Error('Steam is busy'); e.code = 'BUSY'; e.busy = busy; throw e; }
+  busy = kind;
+}
+
+async function wrap(kind, fn) {
+  try {
+    guard(kind);
+  } catch (e) {
+    return { ok: false, code: e.code, error: e.message, busy: e.busy };
+  }
+  try {
+    return { ok: true, ...(await fn()) };
+  } catch (e) {
+    console.error(kind, e);
+    return { ok: false, code: e.code || 'ERROR', error: e.message };
+  } finally {
+    busy = null;
+    lastStatus = await steam.status().catch(() => lastStatus);
+    send('steam', steamState());
+  }
+}
+
+function switchTo(sid) {
+  return wrap('switch', async () => {
+    const acc = steam.listAccounts(loc.dir).find(a => a.sid === sid);
+    if (!acc) throw new Error('That account is no longer in Steam\'s saved logins.');
+    const appid = launchOf(sid);
+    const game = appid ? gameName(appid) : null;
+    const running = await steam.isRunning();
+    const steps = [];
+    if (running) steps.push('Closing Steam…');
+    steps.push(`Logging in as ${acc.persona}…`, 'Waiting for Steam to start…');
+    if (game) steps.push(`Launching ${game}…`);
+    steps.push('Done');
+    let i = 0;
+    const progress = () => send('switch', { sid, steps, step: i });
+
+    progress();
+    if (running) { await steam.shutdown(loc.exe); i++; progress(); }
+
+    const chooserOff = steam.disableUserChooser(loc.dir);
+    await steam.regSet('AutoLoginUser', 'REG_SZ', acc.login);
+    await steam.regSet('RememberPassword', 'REG_DWORD', 1);
+    steam.markMostRecent(loc.dir, sid);
+    steam.start(loc.exe, store.settings().steamArgs);
+    i++; progress();
+
+    const target = String(steam.accountIdFromSid(sid));
+    const signedIn = await steam.waitFor(async () => {
+      const r = await steam.readSteamReg();
+      return String(r.activeUser) === target;
+    }, 90000, 1000);
+    store.setMeta(sid, { lastUsed: Date.now() });
+    if (!signedIn) {
+      return { warn: 'Steam started but hasn\'t signed in yet. If it asks for a password, the saved login expired; sign in once with "Remember me" ticked.', game: null, name: acc.persona, chooserOff };
+    }
+    i++; progress();
+
+    if (appid) {
+      await shell.openExternal(`steam://rungameid/${encodeURIComponent(appid)}`);
+      await steam.sleep(1200);
+      i++; progress();
+    }
+    if (store.settings().closeAfter) setTimeout(() => app.quit(), 2200);
+    return { game, name: acc.persona, closing: store.settings().closeAfter, chooserOff };
+  });
+}
+
+function closeSteam() {
+  return wrap('close', async () => {
+    send('steam', steamState());
+    await steam.shutdown(loc.exe);
+  });
+}
+
+function startSteam() {
+  return wrap('start', async () => {
+    send('steam', steamState());
+    steam.start(loc.exe, store.settings().steamArgs);
+    await steam.waitFor(() => steam.isRunning(), 20000, 700);
+    await steam.waitFor(async () => (await steam.readSteamReg()).activeUser > 0, 30000, 1000);
+  });
+}
+
+function addAccount() {
+  return wrap('add', async () => {
+    adding = { cancelled: false };
+    const me = adding;
+    const known = new Set(steam.listAccounts(loc.dir).map(a => a.sid));
+    if (await steam.isRunning()) await steam.shutdown(loc.exe);
+    if (me.cancelled) return { cancelled: true };
+    await steam.regSet('AutoLoginUser', 'REG_SZ', '');
+    steam.clearAutoLogin(loc.dir);
+    steam.start(loc.exe, store.settings().steamArgs);
+
+    const end = Date.now() + 10 * 60 * 1000;
+    let seenAt = 0;
+    while (Date.now() < end) {
+      await steam.sleep(1500);
+      if (me.cancelled) return { cancelled: true };
+      const r = await steam.readSteamReg();
+      if (!r.activeUser) continue;
+      const sid = steam.sidFromAccountId(r.activeUser);
+      const acc = steam.listAccounts(loc.dir).find(a => a.sid === sid);
+      if (acc) {
+        store.setMeta(sid, { lastUsed: Date.now() });
+        return { sid, name: acc.persona, existing: known.has(sid) };
+      }
+      // Signed in, but Steam hasn't written loginusers.vdf yet.
+      seenAt = seenAt || Date.now();
+      if (Date.now() - seenAt > 20000) return { sid, name: 'New account', existing: false };
+    }
+    return { timeout: true };
+  }).finally(() => { adding = null; });
+}
+
+function forget(sid) {
+  return wrap('forget', async () => {
+    const st = await steam.status();
+    if (st.running) await steam.shutdown(loc.exe);
+    const login = steam.removeAccount(loc.dir, sid);
+    const reg = await steam.readSteamReg();
+    if (login && reg.autoLoginUser.toLowerCase() === login.toLowerCase()) await steam.regSet('AutoLoginUser', 'REG_SZ', '');
+    store.forget(sid);
+    store.removeToken(sid);
+    const restarted = st.running && st.activeSid && st.activeSid !== sid;
+    if (restarted) steam.start(loc.exe, store.settings().steamArgs);
+    return { restarted, wasCurrent: st.activeSid === sid };
+  });
+}
+
+async function refreshStats(sid) {
+  if (fetching.has(sid)) return { ok: false, busy: true };
+  fetching.add(sid);
+  const warnings = [];
+  const progress = step => send('stats', { sid, step });
+  try {
+    progress(0);
+    try {
+      const pub = await fetchPublic(sid);
+      store.setCache(sid, { pub, pubAt: Date.now() });
+    } catch (e) {
+      warnings.push({ type: 'error', title: 'Public profile unavailable', msg: e.message });
+    }
+    const token = store.getToken(sid);
+    if (!token && store.isLinked(sid)) {
+      // Token exists but can't be decrypted (e.g. Windows profile changed).
+      store.removeToken(sid);
+      warnings.push({ type: 'error', title: 'Link expired', msg: 'The saved sign-in couldn\'t be read on this PC. Link the account again.' });
+    }
+    if (token) {
+      progress(1);
+      try {
+        const prev = store.cache(sid).stats;
+        const res = await fetchLinked(sid, token, s => progress(Math.min(3, s + 1)), t => store.setToken(sid, t));
+        if (!res.cs2 && prev && prev.cs2) res.cs2 = prev.cs2; // keep last known CS2 stats if we had to skip
+        store.setCache(sid, { stats: res, statsAt: Date.now() });
+        if (res.cs2Note === 'in-game') warnings.push({ type: 'warning', title: 'CS2 stats skipped', msg: 'This account is in a game right now, and asking CS2 would kick it. Showing the last known CS2 stats.' });
+        if (res.cs2Note === 'gc-timeout') warnings.push({ type: 'warning', title: "CS2 didn't answer", msg: 'CS2\'s servers took too long. Try refreshing again in a bit.' });
+      } catch (e) {
+        if (e.code === 'relink') { store.removeToken(sid); store.dropStats(sid); }
+        warnings.push({ type: 'error', title: e.code === 'relink' ? 'Link expired' : 'Couldn\'t fetch account stats', msg: e.message });
+      }
+    }
+    return { ok: true, account: oneAccount(sid), warnings };
+  } finally {
+    fetching.delete(sid);
+    send('stats', { sid, step: null });
+  }
+}
+
+// ---------- IPC ----------
+
+function ipc() {
+  ipcMain.handle('state', async () => {
+    await detect();
+    loadGames();
+    return { steam: steamState(), accounts: accounts(), games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor, update: updater.current() };
+  });
+  ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
+  ipcMain.handle('steam:close', () => closeSteam());
+  ipcMain.handle('steam:start', () => startSteam());
+  ipcMain.handle('add', () => addAccount());
+  ipcMain.handle('add:cancel', () => { if (adding) adding.cancelled = true; });
+  ipcMain.handle('forget', (_, sid) => forget(String(sid)));
+  ipcMain.handle('meta', (_, sid, patch) => {
+    const allowed = {};
+    for (const k of ['tags', 'note', 'pinned', 'launch']) if (k in patch) allowed[k] = patch[k];
+    if (allowed.note != null) allowed.note = String(allowed.note).slice(0, 140);
+    store.setMeta(String(sid), allowed);
+    return oneAccount(String(sid));
+  });
+  ipcMain.handle('settings', (_, patch) => {
+    const allowed = {};
+    for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs']) if (k in patch) allowed[k] = patch[k];
+    if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
+    const s = store.setSettings(allowed);
+    if ('uiScale' in allowed) applyZoom(false);
+    return s;
+  });
+  ipcMain.handle('steam:browse', async () => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Find steam.exe', properties: ['openFile'],
+      filters: [{ name: 'Steam', extensions: ['exe'] }],
+      defaultPath: loc.exe || 'C:\\Program Files (x86)\\Steam\\steam.exe',
+    });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    const p = r.filePaths[0];
+    if (path.basename(p).toLowerCase() !== 'steam.exe') return { ok: false, error: 'That isn\'t steam.exe.' };
+    store.setSettings({ steamExe: p });
+    await detect();
+    loadGames();
+    return { ok: true, path: p };
+  });
+  ipcMain.handle('update:check', () => updater.check(true));
+  ipcMain.handle('update:install', () => updater.install());
+  ipcMain.handle('stats:refresh', (_, sid) => refreshStats(String(sid)));
+  ipcMain.handle('link:qr', (_, sid) => link.startQR(String(sid), e => send('link', e), onLinked));
+  ipcMain.handle('link:pw', (_, sid, login, pw) => link.startPassword(String(sid), String(login), String(pw), e => send('link', e), onLinked));
+  ipcMain.handle('link:code', (_, code) => link.submitCode(String(code), e => send('link', e)));
+  ipcMain.handle('link:cancel', () => link.cancel());
+  ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
+  ipcMain.handle('open', (_, url) => {
+    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url)) shell.openExternal(url);
+  });
+  ipcMain.on('win', (_, a) => {
+    if (!win) return;
+    if (a === 'min') win.minimize();
+    else if (a === 'max') win.isMaximized() ? win.unmaximize() : win.maximize();
+    else if (a === 'close') win.close();
+  });
+}
+
+function onLinked(sid) {
+  send('account', oneAccount(sid));
+}
+
+// ---------- UI scale ----------
+
+// 100% UI scale = the page at 90% zoom in a 900x640 window, which is the default window size.
+// "auto" scales from that reference as the window grows. The CSS layout needs at least 900x640 px.
+const REF_W = 900, REF_H = 640, BASE_ZOOM = 0.9, MIN_W = 900, MIN_H = 640;
+const SCALES = store.SCALES;
+let zoomFactor = 1; // user-facing scale (1 = 100%)
+
+function applyZoom(announce) {
+  if (!win || win.isDestroyed()) return;
+  const [w, h] = win.getContentSize();
+  const pref = store.settings().uiScale ?? 'auto';
+  const rel = pref === 'auto' ? Math.max(0.8, Math.min(w / REF_W, h / REF_H)) : Number(pref) || 1;
+  // Never scale past the point where the layout's minimum size no longer fits the window.
+  const z = Math.round(Math.max(0.5, Math.min(rel * BASE_ZOOM, w / MIN_W, h / MIN_H, 2)) * 1000) / 1000;
+  if (Math.abs(win.webContents.getZoomFactor() - z) > 0.004) win.webContents.setZoomFactor(z);
+  zoomFactor = Math.round(z / BASE_ZOOM * 100) / 100;
+  send('zoom', { pref, factor: zoomFactor, announce: !!announce });
+}
+
+function stepZoom(dir) {
+  const cur = zoomFactor;
+  const next = dir > 0 ? SCALES.find(s => s > cur + 0.01) : [...SCALES].reverse().find(s => s < cur - 0.01);
+  if (next == null) return;
+  store.setSettings({ uiScale: next });
+  applyZoom(true);
+}
+
+// ---------- window ----------
+
+const DEFAULT_W = 900, DEFAULT_H = 640;
+
+// Last position/size, if it's still (mostly) on a connected screen. Otherwise null → centred default.
+function savedBounds() {
+  const s = store.windowState();
+  if (!s || ![s.x, s.y, s.width, s.height].every(Number.isFinite)) return null;
+  const wa = screen.getDisplayMatching(s).workArea;
+  const visW = Math.min(s.x + s.width, wa.x + wa.width) - Math.max(s.x, wa.x);
+  const visH = Math.min(s.y + s.height, wa.y + wa.height) - Math.max(s.y, wa.y);
+  if (visW < 200 || visH < 100) return null;
+  return {
+    x: s.x, y: s.y,
+    width: Math.min(Math.max(s.width, MIN_W), wa.width),
+    height: Math.min(Math.max(s.height, MIN_H), wa.height),
+    maximized: !!s.maximized,
+  };
+}
+
+function trackBounds() {
+  let t = null;
+  const save = () => {
+    if (!win || win.isDestroyed() || win.isMinimized() || win.isFullScreen()) return;
+    // Normal bounds, so un-maximizing next session goes back to the size you had before maximizing.
+    store.setWindowState({ ...win.getNormalBounds(), maximized: win.isMaximized() });
+  };
+  const later = () => { clearTimeout(t); t = setTimeout(save, 400); };
+  for (const ev of ['resize', 'move', 'maximize', 'unmaximize']) win.on(ev, later);
+  win.on('close', () => { clearTimeout(t); save(); });
+}
+
+function createWindow() {
+  const b = savedBounds();
+  win = new BrowserWindow({
+    ...(b ? { x: b.x, y: b.y, width: b.width, height: b.height } : { width: DEFAULT_W, height: DEFAULT_H, center: true }),
+    minWidth: MIN_W, minHeight: MIN_H, useContentSize: true,
+    frame: false, backgroundColor: '#0a0a0c', show: false, title: 'SwapDeck',
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true, nodeIntegration: false, sandbox: true,
+    },
+  });
+  win.once('ready-to-show', () => { if (b && b.maximized) win.maximize(); win.show(); });
+  trackBounds();
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', e => e.preventDefault());
+  win.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  win.on('closed', () => { win = null; });
+
+  const wc = win.webContents;
+  wc.setVisualZoomLevelLimits(1, 1);
+  wc.on('did-finish-load', () => applyZoom(false));
+  win.on('resize', () => applyZoom(false));
+  // Ctrl + mouse wheel
+  wc.on('zoom-changed', (_, dir) => stepZoom(dir === 'in' ? 1 : -1));
+  // Ctrl + / Ctrl - / Ctrl 0 (back to auto)
+  wc.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown' || !input.control || input.alt) return;
+    if (input.key === '=' || input.key === '+') { e.preventDefault(); stepZoom(1); }
+    else if (input.key === '-' || input.key === '_') { e.preventDefault(); stepZoom(-1); }
+    else if (input.key === '0') { e.preventDefault(); store.setSettings({ uiScale: 'auto' }); applyZoom(true); }
+  });
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.whenReady().then(async () => {
+    store.load();
+    Menu.setApplicationMenu(null);
+    ipc();
+    await detect();
+    createWindow();
+    updater.init(s => send('update', s));
+    setInterval(poll, 2500);
+    setTimeout(refreshPublicAll, 2500);
+    setInterval(refreshPublicAll, 5 * 60 * 1000);
+  });
+  app.on('window-all-closed', () => app.quit());
+  app.on('before-quit', () => { link.cancel(); try { store.flush(); } catch {} });
+}
