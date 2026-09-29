@@ -94,3 +94,7 @@ src/main/stats.js     linked stats via steam-user + CS2 game coordinator (global
 src/main/store.js     JSON store + encrypted tokens
 src/renderer/         UI (Preact + htm, no build step)
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
