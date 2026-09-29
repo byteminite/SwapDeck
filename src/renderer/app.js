@@ -160,8 +160,16 @@ class App extends Component {
 
   async reload() {
     const st = await api.state();
-    this.setState({ steam: st.steam, accounts: st.accounts, games: st.games, settings: st.settings, version: st.version, zoom: st.zoom, update: st.update });
+    if (st.locked) { this.setState({ locked: true, vault: st.vault, version: st.version }); return st; }
+    this.setState({ locked: false, steam: st.steam, accounts: st.accounts, games: st.games, settings: st.settings, version: st.version, zoom: st.zoom, update: st.update, vault: st.vault });
     return st;
+  }
+  async unlockVault(pw) {
+    this.setState({ unlocking: true, unlockErr: null });
+    const r = await api.vaultUnlock(pw);
+    if (!r.ok) { this.setState({ unlocking: false, unlockErr: r.error, unlockPw: '' }); return; }
+    this.setState({ unlocking: false, unlockPw: '' });
+    await this.reload();
   }
 
   // ---- derived ----
@@ -402,6 +410,7 @@ class App extends Component {
   render() {
     const S = this.state;
     if (!S.loaded) return html`<div style="height:100vh;display:grid;place-items:center">${Spin(26, 3)}</div>`;
+    if (S.locked) return this.renderLock();
     const accts = this.accts, steam = this.steamState, running = steam === 'running', nf = steam === 'not-found';
     const vis = this.visible(), selId = this.selId(), has = accts.length > 0;
     const cur = accts.find(a => a.current), busy = S.steam.busy;
@@ -1004,6 +1013,7 @@ ${games.map(x => html`
       })}
     </div>
     <div style="font:400 11px 'Geist',sans-serif;color:#8d8d98;margin-top:6px">Auto fits everything to the window size. Shortcuts: <span style="font-family:'Geist Mono',monospace;color:#c9c9d1">Ctrl +</span> / <span style="font-family:'Geist Mono',monospace;color:#c9c9d1">Ctrl −</span> / <span style="font-family:'Geist Mono',monospace;color:#c9c9d1">Ctrl 0</span> (auto) or Ctrl + mouse wheel.</div>
+    ${this.renderVaultRow()}
     ${this.renderUpdateRow()}
     ${sect('PRIVACY', '20px 0 8px')}
     <div style="font:400 11.5px/1.6 'Geist',sans-serif;color:#8d8d98">Linked accounts store only Steam's sign-in token, encrypted with Windows (DPAPI) in SwapDeck's app data. Passwords are never saved. Tags, notes and cached stats stay on this PC.</div>
@@ -1012,6 +1022,104 @@ ${games.map(x => html`
     </div>
   </div>
 </div>`;
+  }
+
+  renderLock() {
+    const S = this.state, v = S.vault || {};
+    const submit = () => { if ((S.unlockPw || '').length) this.unlockVault(S.unlockPw); };
+    return html`
+<div style="height:100vh;display:flex;flex-direction:column;background:#0a0a0c">
+  <div class="drag" style="height:44px;flex:none;background:linear-gradient(180deg,#111116,#0c0c10);border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 8px 0 14px;gap:10px">
+    <div style="position:relative;width:22px;height:22px;flex:none;border-radius:7px;background:linear-gradient(135deg,#22d3ee,#6366f1)"><span style="position:absolute;left:5px;top:5px;width:8px;height:8px;border-radius:3px;background:rgba(255,255,255,.95)"></span><span style="position:absolute;right:5px;bottom:5px;width:8px;height:8px;border-radius:3px;background:rgba(10,10,14,.55);border:1.5px solid rgba(255,255,255,.95);box-sizing:border-box"></span></div>
+    <span style="font:700 13px 'Geist',sans-serif;color:#f4f4f5">SwapDeck</span>
+    <div class="nodrag" style="margin-left:auto"><button class="hv-close" style="width:34px;height:28px;border-radius:8px;border:0;background:transparent;color:#a1a1aa;display:grid;place-items:center;cursor:pointer" onClick=${() => api.win('close')}>${I.x(12)}</button></div>
+  </div>
+  <div style="flex:1;display:grid;place-items:center;padding:24px">
+    <div style="width:360px;max-width:100%;text-align:center;animation:dfade .25s ease">
+      <div style="width:56px;height:56px;margin:0 auto 18px;border-radius:16px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);display:grid;place-items:center;color:#67e8f9">${I.lock(24)}</div>
+      <div style="font:700 20px 'Geist',sans-serif;color:#f4f4f5">SwapDeck is locked</div>
+      <div style="font:400 12.5px/1.6 'Geist',sans-serif;color:#a1a1aa;margin-top:7px">Enter your master password to unlock your saved sign-ins.</div>
+      <input type="password" class="fc-cyan" autofocus style="width:100%;box-sizing:border-box;margin-top:18px;padding:11px 13px;border-radius:11px;border:1px solid ${S.unlockErr ? 'rgba(248,113,113,.5)' : 'rgba(255,255,255,.12)'};background:rgba(255,255,255,.03);color:#f4f4f5;font:500 14px 'Geist',sans-serif;outline:none;text-align:center" placeholder="Master password" value=${S.unlockPw || ''}
+        onInput=${e => this.setState({ unlockPw: e.target.value, unlockErr: null })} onKeyDown=${e => { if (e.key === 'Enter') submit(); }} />
+      ${S.unlockErr ? html`<div style="font:400 12px 'Geist',sans-serif;color:#fca5a5;margin-top:10px">${S.unlockErr}</div>` : null}
+      <button class="hv-cyanbg" style="width:100%;margin-top:14px;padding:11px;border:0;border-radius:11px;background:${S.unlocking ? 'rgba(255,255,255,.25)' : '#fff'};color:#0a0a0c;font:600 13px 'Geist',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" onClick=${submit}>${S.unlocking ? Spin(14, 2, 'border-color:rgba(0,0,0,.2);border-top-color:#0a0a0c') : null}Unlock</button>
+      ${v.autoUnlock === false ? html`<div style="font:400 10.5px/1.5 'Geist',sans-serif;color:#7c7c88;margin-top:14px">Forgot it? There's no recovery — you'd remove the master password from Settings after unlocking, or reset by deleting SwapDeck's data.</div>` : null}
+    </div>
+  </div>
+</div>`;
+  }
+
+  async vaultSet() {
+    const V = this.state.vaultForm || {};
+    if ((V.pw || '').length < 4) { this.setState({ vaultForm: { ...V, err: 'Use at least 4 characters.' } }); return; }
+    if (V.pw !== V.pw2) { this.setState({ vaultForm: { ...V, err: 'The two passwords don\'t match.' } }); return; }
+    const r = await api.vaultSet(V.pw, !!V.auto);
+    if (!r.ok) { this.setState({ vaultForm: { ...V, err: r.error } }); return; }
+    this.setState({ vault: r.vault, vaultForm: null });
+    this.toast('success', 'Master password set', 'Your saved sign-ins are now encrypted with it.');
+  }
+  async vaultChange() {
+    const V = this.state.vaultForm || {};
+    if ((V.pw || '').length < 4) { this.setState({ vaultForm: { ...V, err: 'Use at least 4 characters.' } }); return; }
+    if (V.pw !== V.pw2) { this.setState({ vaultForm: { ...V, err: 'The two new passwords don\'t match.' } }); return; }
+    const r = await api.vaultChange(V.old || '', V.pw);
+    if (!r.ok) { this.setState({ vaultForm: { ...V, err: r.error } }); return; }
+    this.setState({ vault: r.vault, vaultForm: null });
+    this.toast('success', 'Master password changed', 'Use the new one next time SwapDeck is locked.');
+  }
+  async vaultRemove() {
+    const V = this.state.vaultForm || {};
+    const r = await api.vaultRemove(V.old || '');
+    if (!r.ok) { this.setState({ vaultForm: { ...V, err: r.error } }); return; }
+    this.setState({ vault: r.vault, vaultForm: null });
+    this.toast('info', 'Master password removed', 'Saved sign-ins fall back to Windows encryption.');
+  }
+  async vaultAuto(on) {
+    const v = await api.vaultAutoUnlock(on);
+    this.setState({ vault: v });
+    this.toast('info', on ? 'Auto-unlock on' : 'Auto-unlock off', on ? "SwapDeck won't ask for the master password on this PC." : 'SwapDeck will ask for the master password at launch.');
+  }
+
+  renderVaultRow() {
+    const S = this.state, v = S.vault || { mode: 'dpapi' }, F = S.vaultForm;
+    const master = v.mode === 'master';
+    const input = "width:100%;box-sizing:border-box;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#f4f4f5;font:500 12.5px 'Geist',sans-serif;outline:none;margin-top:8px";
+    const setF = p => this.setState({ vaultForm: { ...(S.vaultForm || {}), ...p, err: null } });
+    let form = null;
+    if (F && F.kind === 'set') form = html`
+      <div style="margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02)">
+        <input type="password" class="fc-cyan" style=${input.replace('margin-top:8px', 'margin-top:0')} placeholder="New master password" value=${F.pw || ''} onInput=${e => setF({ pw: e.target.value })} />
+        <input type="password" class="fc-cyan" style=${input} placeholder="Confirm password" value=${F.pw2 || ''} onInput=${e => setF({ pw2: e.target.value })} onKeyDown=${e => { if (e.key === 'Enter') this.vaultSet(); }} />
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer" onClick=${e => { e.preventDefault(); setF({ auto: !F.auto }); }}><span style=${`width:16px;height:16px;border-radius:5px;border:1px solid ${F.auto ? 'rgba(34,211,238,.7)' : 'rgba(255,255,255,.22)'};background:${F.auto ? 'rgba(34,211,238,.25)' : 'transparent'};display:grid;place-items:center`}>${F.auto ? I.check(11, '#67e8f9', 3) : null}</span><span style="font:400 11.5px 'Geist',sans-serif;color:#a1a1aa">Don't ask on this PC (auto-unlock with Windows)</span></label>
+        <div style="font:400 10.5px/1.5 'Geist',sans-serif;color:#fcd34d;margin-top:8px">There's no recovery if you forget it.</div>
+        ${F.err ? html`<div style="font:400 11.5px 'Geist',sans-serif;color:#fca5a5;margin-top:8px">${F.err}</div>` : null}
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="hv-cyanbg" style="padding:8px 14px;border:0;border-radius:9px;background:#fff;color:#0a0a0c;font:600 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.vaultSet()}>Set password</button><button class="hv-bright" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#c9c9d1;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: null })}>Cancel</button></div>
+      </div>`;
+    else if (F && F.kind === 'change') form = html`
+      <div style="margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02)">
+        <input type="password" class="fc-cyan" style=${input.replace('margin-top:8px', 'margin-top:0')} placeholder="Current password" value=${F.old || ''} onInput=${e => setF({ old: e.target.value })} />
+        <input type="password" class="fc-cyan" style=${input} placeholder="New password" value=${F.pw || ''} onInput=${e => setF({ pw: e.target.value })} />
+        <input type="password" class="fc-cyan" style=${input} placeholder="Confirm new password" value=${F.pw2 || ''} onInput=${e => setF({ pw2: e.target.value })} onKeyDown=${e => { if (e.key === 'Enter') this.vaultChange(); }} />
+        ${F.err ? html`<div style="font:400 11.5px 'Geist',sans-serif;color:#fca5a5;margin-top:8px">${F.err}</div>` : null}
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="hv-cyanbg" style="padding:8px 14px;border:0;border-radius:9px;background:#fff;color:#0a0a0c;font:600 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.vaultChange()}>Change</button><button class="hv-bright" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#c9c9d1;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: null })}>Cancel</button></div>
+      </div>`;
+    else if (F && F.kind === 'remove') form = html`
+      <div style="margin-top:10px;padding:12px;border-radius:12px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.05)">
+        <div style="font:400 11.5px/1.5 'Geist',sans-serif;color:#a1a1aa">Confirm your master password to remove it. Saved sign-ins go back to Windows-only encryption.</div>
+        <input type="password" class="fc-cyan" style=${input} placeholder="Master password" value=${F.old || ''} onInput=${e => setF({ old: e.target.value })} onKeyDown=${e => { if (e.key === 'Enter') this.vaultRemove(); }} />
+        ${F.err ? html`<div style="font:400 11.5px 'Geist',sans-serif;color:#fca5a5;margin-top:8px">${F.err}</div>` : null}
+        <div style="display:flex;gap:8px;margin-top:12px"><button class="hv-red" style="padding:8px 14px;border:0;border-radius:9px;background:#dc2626;color:#fff;font:600 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.vaultRemove()}>Remove password</button><button class="hv-bright" style="padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#c9c9d1;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: null })}>Cancel</button></div>
+      </div>`;
+    return html`
+      <label style="display:block;font:500 13px 'Geist',sans-serif;color:#f4f4f5;margin:16px 0 4px">Master password</label>
+      <div style="font:400 11.5px/1.5 'Geist',sans-serif;color:#8d8d98">${master ? 'Your saved tokens and passwords are encrypted with a master password.' : 'Saved tokens and passwords are encrypted with Windows (DPAPI). Add a master password for a lock screen on top.'}</div>
+      ${!F ? html`<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+        ${!master ? html`<button class="hv-bd30" style="padding:8px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#e8e8ec;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: { kind: 'set', auto: false } })}>Set a master password</button>`
+        : html`<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px 'Geist Mono',monospace;padding:5px 10px;border-radius:99px;background:rgba(74,222,128,.1);color:#86efac;border:1px solid rgba(74,222,128,.35)">${I.lock(12)}ON</span>
+          <button class="hv-bd30" style="padding:8px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#e8e8ec;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: { kind: 'change' } })}>Change</button>
+          <button class="hv-red10" style="padding:8px 13px;border-radius:10px;border:1px solid rgba(248,113,113,.35);background:transparent;color:#fca5a5;font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ vaultForm: { kind: 'remove' } })}>Remove</button>
+          <label style="display:flex;align-items:center;gap:7px;margin-left:auto;cursor:pointer" onClick=${e => { e.preventDefault(); this.vaultAuto(!v.autoUnlock); }}><span style="font:400 11.5px 'Geist',sans-serif;color:#a1a1aa">Auto-unlock</span>${Toggle(!!v.autoUnlock)}</label>`}
+      </div>` : form}`;
   }
 
   renderUpdateRow() {

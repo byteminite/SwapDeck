@@ -3,7 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { app, safeStorage } = require('electron');
+const { app } = require('electron');
+const vault = require('./vault');
 
 const DEFAULTS = {
   settings: {
@@ -23,6 +24,7 @@ const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 let file, tokenFile, data, tokens;
 
 function load() {
+  vault.load();
   file = path.join(app.getPath('userData'), 'swapdeck.json');
   tokenFile = path.join(app.getPath('userData'), 'tokens.json');
   try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { data = {}; }
@@ -77,12 +79,31 @@ function forget(sid) { delete data.meta[sid]; delete data.cache[sid]; save(); }
 function writeTokens() {
   fs.writeFileSync(tokenFile, JSON.stringify(tokens));
 }
-function enc(s) {
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows encryption is unavailable, so SwapDeck can\'t store sign-in tokens safely.');
-  return safeStorage.encryptString(s).toString('base64');
-}
-function dec(b) {
-  try { return safeStorage.decryptString(Buffer.from(b, 'base64')); } catch { return null; }
+const enc = s => vault.encrypt(s);
+const dec = b => vault.decrypt(b);
+
+// Decrypt every stored secret with the CURRENT cipher, and re-encrypt it all with whatever cipher is
+// active after `mutate()` runs (used when turning a master password on/off or changing it).
+function reencryptAround(mutate) {
+  const plain = {};
+  for (const [sid, t] of Object.entries(tokens)) {
+    const p = {};
+    if (t.refresh) p.refresh = dec(t.refresh);
+    if (t.machine) p.machine = dec(t.machine);
+    if (t.cred) p.cred = { login: dec(t.cred.login), password: dec(t.cred.password) };
+    plain[sid] = p;
+  }
+  mutate();
+  const out = {};
+  for (const [sid, p] of Object.entries(plain)) {
+    const t = {};
+    if (p.refresh != null) t.refresh = enc(p.refresh);
+    if (p.machine != null) t.machine = enc(p.machine);
+    if (p.cred && p.cred.login != null && p.cred.password != null) t.cred = { login: enc(p.cred.login), password: enc(p.cred.password) };
+    if (Object.keys(t).length) out[sid] = t;
+  }
+  tokens = out;
+  writeTokens();
 }
 function setToken(sid, refreshToken, machineToken) {
   const t = tokens[sid] || {};
@@ -123,4 +144,5 @@ module.exports = {
   SCALES, load, flush, settings, setSettings, windowState, setWindowState, meta, setMeta, cache, setCache, dropStats, forget,
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
+  reencryptAround, vault,
 };

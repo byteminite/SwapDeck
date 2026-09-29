@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('api', {
   openProfile: url => invoke('open', url),
   checkUpdates: () => invoke('update:check'),
   installUpdate: () => invoke('update:install'),
+  vaultStatus: () => invoke('vault:status'),
+  vaultUnlock: pw => invoke('vault:unlock', pw),
+  vaultSet: (pw, autoUnlock) => invoke('vault:set', pw, autoUnlock),
+  vaultChange: (oldPw, newPw) => invoke('vault:change', oldPw, newPw),
+  vaultRemove: pw => invoke('vault:remove', pw),
+  vaultAutoUnlock: on => invoke('vault:autounlock', on),
   win: action => ipcRenderer.send('win', action),
   on: (ch, fn) => {
     if (!EVENTS.includes(ch)) throw new Error('Unknown channel ' + ch);

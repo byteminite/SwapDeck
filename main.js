@@ -287,7 +287,9 @@ function ipc() {
   ipcMain.handle('state', async () => {
     await detect();
     loadGames();
-    return { steam: steamState(), accounts: accounts(), games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor, update: updater.current() };
+    const v = store.vault.status();
+    if (v.locked) return { locked: true, vault: v, version: app.getVersion(), zoom: zoomFactor };
+    return { steam: steamState(), accounts: accounts(), games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor, update: updater.current(), vault: v };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
   ipcMain.handle('steam:close', () => closeSteam());
@@ -326,6 +328,29 @@ function ipc() {
   });
   ipcMain.handle('update:check', () => updater.check(true));
   ipcMain.handle('update:install', () => updater.install());
+  ipcMain.handle('vault:status', () => store.vault.status());
+  ipcMain.handle('vault:unlock', (_, password) => store.vault.unlock(String(password)));
+  ipcMain.handle('vault:set', (_, password, autoUnlock) => {
+    if (store.vault.mode() === 'master') return { ok: false, error: 'A master password is already set.' };
+    if (!password || String(password).length < 4) return { ok: false, error: 'Use at least 4 characters.' };
+    try { store.reencryptAround(() => store.vault.enable(String(password), !!autoUnlock)); return { ok: true, vault: store.vault.status() }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('vault:change', (_, oldPw, newPw) => {
+    if (!newPw || String(newPw).length < 4) return { ok: false, error: 'Use at least 4 characters.' };
+    let r;
+    try { store.reencryptAround(() => { r = store.vault.change(String(oldPw), String(newPw)); if (!r.ok) throw new Error(r.error); }); }
+    catch (e) { return { ok: false, error: e.message }; }
+    return { ok: true, vault: store.vault.status() };
+  });
+  ipcMain.handle('vault:remove', (_, password) => {
+    if (store.vault.mode() !== 'master') return { ok: false, error: 'No master password is set.' };
+    const chk = store.vault.unlock(String(password));
+    if (!chk.ok) return chk;
+    try { store.reencryptAround(() => store.vault.disable()); return { ok: true, vault: store.vault.status() }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('vault:autounlock', (_, on) => { store.vault.setAutoUnlock(!!on); return store.vault.status(); });
   ipcMain.handle('stats:refresh', (_, sid) => refreshStats(String(sid)));
   ipcMain.handle('link:qr', (_, sid) => link.startQR(String(sid), e => send('link', e), onLinked));
   ipcMain.handle('link:pw', (_, sid, login, pw, remember) => link.startPassword(String(sid), String(login), String(pw), e => send('link', e), onLinked, !!remember));
