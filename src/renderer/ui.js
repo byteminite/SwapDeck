@@ -89,6 +89,24 @@ function themeTokens(baseKey, acc, still) {
   return out;
 }
 
+// An account badge: the Steam avatar when there is one, else the generated gradient (with initials on top).
+const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
+
+// Smooth sideways scrolling for the tag rows: each wheel notch moves a target, and the row eases towards it.
+function chipScroll(el, dy) {
+  const max = el.scrollWidth - el.clientWidth;
+  if (!el._anim) el._to = el.scrollLeft;
+  el._to = Math.max(0, Math.min(max, el._to + dy));
+  if (el._anim) return;
+  const step = () => {
+    const d = el._to - el.scrollLeft;
+    if (Math.abs(d) < 0.6) { el.scrollLeft = el._to; el._anim = 0; return; }
+    el.scrollLeft += d * 0.22;
+    el._anim = requestAnimationFrame(step);
+  };
+  el._anim = requestAnimationFrame(step);
+}
+
 // Tag rows fade at an edge only while there is more to scroll that way, so the first and last tags are fully visible at the ends.
 function chipFade(el) {
   const l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
@@ -747,7 +765,7 @@ class App extends Component {
         bg: this.cardBg(g), filter: g.installed ? 'none' : 'grayscale(1) brightness(.55)', nameFg: g.installed ? 'var(--text)' : 'var(--text-subtle)',
         typeLbl: g.steam ? 'STEAM' : 'NON-STEAM', typeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', typeBd: g.steam ? 'rgba(var(--fg-rgb),.22)' : 'rgba(251,191,36,.4)',
         hasMon: !!mon || !!this.resOf(g), monTitle: [mon ? 'Display: ' + mon.label : null, this.resOf(g) ? 'Resolution: ' + this.resOf(g).name : null].filter(Boolean).join(' · '),
-        hasAcct: !!a, aIni: a ? a.ini : '', aBg: a ? a.grad : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
+        hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         hovOp: hov && !run ? 1 : 0, hovPe: hov && !run ? 'auto' : 'none', ty: hov ? 'translateY(-3px)' : 'none',
         ring: run ? '0 0 0 2px #4ade80,0 0 30px rgba(74,222,128,.25)' : hov ? '0 0 0 2px rgba(var(--fg-rgb),.4),0 18px 40px rgba(0,0,0,.5)' : '0 0 0 1px rgba(var(--fg-rgb),.08)',
@@ -796,13 +814,13 @@ class App extends Component {
       gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false }),
       gSteam: g.steam, gNonSteam: !g.steam,
-      gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a ? a.ini : '', gAcctBg: a ? a.grad : '',
+      gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
       gAcctBd: S.acctMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
       gAcctHint: a ? (a.current && this.steamState === 'running' ? 'Already signed in, so Play launches straight away.' : 'Play switches to ' + a.name + ' first, then launches.') : 'Launches on whichever account Steam is signed in with.',
       acctMenu: S.acctMenu, onAcctMenu: () => this.setState(s => ({ acctMenu: !s.acctMenu })),
       acctOpts: [{ isNone: true, isAcct: false, label: "Don't switch", sub: 'Use whoever is signed in', cur: false, ...opt(!g.acct), on: () => this.setAcct(g.id, null) },
-        ...accs.map(x => ({ isNone: false, isAcct: true, ini: x.ini, grad: x.grad, label: x.name, sub: x.login + (x.tags.length ? ' · ' + x.tags.join(', ') : ''), cur: x.current, ...opt(g.acct === x.id), on: () => this.setAcct(g.id, x.id) }))],
+        ...accs.map(x => ({ isNone: false, isAcct: true, ini: x.avatar ? '' : x.ini, grad: avBg(x), label: x.name, sub: x.login + (x.tags.length ? ' · ' + x.tags.join(', ') : ''), cur: x.current, ...opt(g.acct === x.id), on: () => this.setAcct(g.id, x.id) }))],
       segDisp: [['Default', !mon, () => this.setDisp(g.id, { mon: null })], ['Choose monitor', !!mon, () => this.setDisp(g.id, { mon: g.display.mon || (other ? other.id : null) })]].map(([l, sel, on]) => ({ label: l, on, bg: sel ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: sel ? 'var(--text)' : 'var(--text-subtle)' })),
       diagOp: mon ? 1 : .55,
       gMons: mons.map(m => {
@@ -1046,7 +1064,7 @@ class App extends Component {
       ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...this.gameVals(), ...lv, ...this.addGameVals(),
       ...this.settingsVals(), ...this.themeVals(), ...dv,
       // Tag rows scroll sideways with the normal mouse wheel.
-      onChipWheel: e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { e.preventDefault(); el.scrollLeft += e.deltaY; } },
+      onChipWheel: e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { e.preventDefault(); chipScroll(el, e.deltaY); } },
       chipRef: this.chipRef, onChipScroll: e => chipFade(e.currentTarget),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
