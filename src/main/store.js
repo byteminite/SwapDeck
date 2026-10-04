@@ -22,6 +22,7 @@ const DEFAULTS = {
     startView: 'acc',        // acc | lib: the screen SwapDeck opens on
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
     tray: false,             // keep running in the tray when the window is closed
+    lastSeenVersion: null,   // the version whose What's new was last shown
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
@@ -34,14 +35,15 @@ const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primar
 
 const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
-let file, tokenFile, data, tokens;
+let file, tokenFile, data, tokens, existed = false;
 
 function load() {
   vault.load();
   file = path.join(app.getPath('userData'), 'swapdeck.json');
   tokenFile = path.join(app.getPath('userData'), 'tokens.json');
   data = {};
-  if (fs.existsSync(file)) {
+  existed = fs.existsSync(file);
+  if (existed) {
     try {
       data = JSON.parse(fs.readFileSync(file, 'utf8'));
       // Keep a copy of the last file that loaded fine.
@@ -275,4 +277,5 @@ module.exports = {
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
   gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, sessions, cs2Cfg, setCs2Cfg, exportData, importData,
+  existedBefore: () => existed, // false on a fresh install
 };

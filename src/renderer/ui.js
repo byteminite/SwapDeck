@@ -5,6 +5,7 @@ import { html, render, Component } from './vendor/htm-preact.js';
 import { view } from './view.js';
 import { displayVals } from './displays.js';
 import { galleryEl } from './gallery.js';
+import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 
 const api = window.api;
@@ -126,7 +127,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
-    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false,
+    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
   _t = []; _tid = 0;
 
@@ -147,7 +148,7 @@ class App extends Component {
       api.on('update', u => {
         this.setState({ update: u });
         if (!u.announce) return;
-        if (u.state === 'ready') this.toast('success', 'Update ready: v' + u.version, 'Restart SwapDeck to install it now, or it installs when you quit.', { label: 'Restart now', fn: () => api.installUpdate() });
+        if (u.state === 'ready') this.toast('success', 'Update ready: v' + u.version, (u.notes ? u.notes + ' ' : '') + 'Restart SwapDeck to install it now, or it installs when you quit.', { label: 'Restart now', fn: () => api.installUpdate() });
         else if (u.state === 'none') this.toast('info', "You're up to date", 'SwapDeck v' + u.current + ' is the latest version.');
         else if (u.state === 'error') this.toast('warning', 'Update check failed', u.error);
       }),
@@ -185,10 +186,19 @@ class App extends Component {
     this.setState({
       locked: false, steam: st.steam, accounts: st.accounts, games: st.games, settings: st.settings, version: st.version, zoom: st.zoom,
       update: st.update, vault: st.vault, lib: st.lib || [], monitors: st.monitors || [], monPos: st.monPos || {}, resProfiles: st.resProfiles || [],
-      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null, playLog: st.playLog || {}, sessions: st.sessions || [],
+      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null, wn: this.wnCheck(st), playLog: st.playLog || {}, sessions: st.sessions || [],
     });
     return st;
   }
+  // What's new: once after an update. A fresh install just remembers the version without showing it.
+  wnCheck(st) {
+    if (this._wnDone) return this.state.wn;
+    this._wnDone = true;
+    const v = st.version, last = st.settings && st.settings.lastSeenVersion;
+    if (st.newInstall || !CHANGELOG.some(r => r.v === v)) { if (last !== v) api.setSettings({ lastSeenVersion: v }); return false; }
+    return !last || newer(v, last);
+  }
+  closeWn() { this.setState({ wn: false }); this.setCfg({ lastSeenVersion: this.state.version }); }
   async reloadLib() { const lib = await api.libList(); if (lib) this.setState({ lib }); }
   async reloadMonitors() { const monitors = await api.displays(); if (monitors && monitors.length) this.setState({ monitors }); }
 
@@ -359,6 +369,7 @@ class App extends Component {
       if (S.defMenu) return this.setState({ defMenu: false });
       if (S.rmId) return this.setState({ rmId: null });
       if (S.ag) return this.setState({ ag: null });
+      if (S.wn) return this.closeWn();
       if (S.menu) return this.setState({ menu: null });
       if (S.acctMenu) return this.setState({ acctMenu: false });
       if (S.gd) return this.setState({ gd: null });
@@ -1240,6 +1251,15 @@ class App extends Component {
       rmOn: !!rmG, rmName: rmG ? rmG.name : '', onRmNo: () => this.setState({ rmId: null }), onRmYes: () => this.removeGame(),
       dTestName: tm ? tm.label : 'another monitor', dTestIdle: !S.disp.testing && !!tm, dTesting: !!S.disp.testing, onDTest: () => this.testDisp(), onRestoreNow: () => this.restoreNow(),
       rootRef: this.rootRef, onWin: a => api.win(a), verShort: 'v' + (S.version || ''),
+      ...(() => {
+        const cur = CHANGELOG.find(r => r.v === S.version) || CHANGELOG[0];
+        return {
+          wnOn: !!S.wn && !S.locked, wnVer: cur.v, wnTitle: cur.title, wnIntro: cur.intro,
+          wnItems: cur.highlights.map(([title, text]) => ({ title, text })),
+          onWnClose: () => this.closeWn(), onWnAll: () => { this.closeWn(); this.openSettings('about'); },
+          clLog: CHANGELOG.map(r => ({ v: r.v, date: r.date, title: r.title, intro: r.intro, sections: r.sections.map(([title, items]) => ({ title, items })) })),
+        };
+      })(),
       _nm: nm,
     };
   }

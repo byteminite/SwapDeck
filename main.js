@@ -363,7 +363,7 @@ function ipc() {
     return {
       steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows() }, version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
-      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(),
+      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(), newInstall: !store.existedBefore(),
     };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
@@ -383,6 +383,7 @@ function ipc() {
     const allowed = {};
     for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
+    if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('startup' in patch) { try { setStartWithWindows(patch.startup); } catch (e) { store.logError && store.logError('startup', e); } }
