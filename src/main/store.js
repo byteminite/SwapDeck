@@ -25,7 +25,7 @@ const DEFAULTS = {
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true }, lastPlayed: 0, playMs: 0 };
+const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, lastPlayed: 0, playMs: 0 }; // display.res = resolution profile id
 
 const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
@@ -53,6 +53,7 @@ function load() {
     games: data.games || {},             // gameId -> per-game settings (DEFAULT_GAME shape)
     customGames: data.customGames || [], // non-Steam games: { id, name, exe, img, iconMode }
     displaySaved: data.displaySaved || null, // monitor layout before SwapDeck changed it
+    resProfiles: data.resProfiles || [], // user-made resolution profiles: { id, name, w, h, hz, stretch }
     monPos: data.monPos || {},           // device name -> last normal-time { x, y, w, h, hz }
   };
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
@@ -106,6 +107,8 @@ const customGames = () => data.customGames;
 function setCustomGames(list) { data.customGames = list; save(); }
 const displaySaved = () => data.displaySaved;
 function setDisplaySaved(v) { data.displaySaved = v; save(); }
+const resProfiles = () => data.resProfiles;
+function setResProfiles(v) { data.resProfiles = v; save(); }
 const monPos = () => data.monPos;
 function setMonPos(v) { data.monPos = v; save(); }
 
@@ -196,5 +199,5 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
-  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos,
+  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles,
 };

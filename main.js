@@ -292,6 +292,14 @@ async function refreshStats(sid) {
   }
 }
 
+// Resolution profiles are made by the user; a game stores a profile id (or null for "don't change").
+function cleanProfile(p) {
+  const w = Math.round(+p.w), h = Math.round(+p.h), hz = Math.round(+p.hz) || 0;
+  if (!(w >= 320 && w <= 16384 && h >= 200 && h <= 16384) || hz < 0 || hz > 1000) return null;
+  return { id: /^rd+$/.test(p.id) ? p.id : 'r' + Date.now(), name: String(p.name || '').trim().slice(0, 40) || w + '×' + h, w, h, hz, stretch: !!p.stretch };
+}
+const validRes = id => store.resProfiles().some(p => p.id === id) ? id : null;
+
 const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, applyNormal: () => applyNormal() });
 
 // First run: the current layout is the normal one. While no game profile is active, remember where
@@ -333,7 +341,7 @@ function ipc() {
     return {
       steam: steamState(), accounts: accs, games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
-      displaySaved: !!store.displaySaved(), monPos: store.monPos(),
+      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(),
     };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
@@ -421,6 +429,7 @@ function ipc() {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
       ...('mode' in patch.display ? { mode: patch.display.mode === 'only' ? 'only' : 'primary' } : {}),
       ...('restore' in patch.display ? { restore: !!patch.display.restore } : {}),
+      ...('res' in patch.display ? { res: validRes(patch.display.res) } : {}),
     };
     library.setCfg(g, allowed);
     return findGame(g.id);
@@ -473,6 +482,24 @@ function ipc() {
 
   // ---- displays ----
   ipcMain.handle('display:list', () => display.list().catch(() => []));
+  ipcMain.handle('display:modes', (_, id) => display.modes(String(id)).catch(() => []));
+  ipcMain.handle('res:save', (_, p) => {
+    const c = cleanProfile(p || {}); if (!c) return { ok: false, error: 'Use a width and height like 1280 × 960.' };
+    const list = store.resProfiles().filter(x => x.id !== c.id);
+    const i = store.resProfiles().findIndex(x => x.id === c.id);
+    list.splice(i < 0 ? list.length : i, 0, c);
+    store.setResProfiles(list);
+    return { ok: true, profile: c, list };
+  });
+  ipcMain.handle('res:remove', (_, id) => {
+    store.setResProfiles(store.resProfiles().filter(x => x.id !== id));
+    for (const [gid, cfg] of Object.entries(store.allGameCfgs())) if (cfg.display && cfg.display.res === id) store.setGameCfg(gid, { display: { res: null } });
+    return store.resProfiles();
+  });
+  ipcMain.handle('res:test', (_, id) => {
+    const p = store.resProfiles().find(x => x.id === id);
+    return p ? player.testRes(p) : { ok: false, error: 'Profile not found.' };
+  });
   ipcMain.handle('display:test', (_, id) => player.test(String(id)));
   ipcMain.handle('display:restore', () => player.restoreNow());
   ipcMain.handle('display:normal', async () => {

@@ -15,7 +15,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
 
   const emit = s => send('launch', {
     gid: s.gid, steps: s.steps, step: s.step, running: s.running,
-    mon: s.monId, mode: s.mode, restore: s.restore, acct: s.acct,
+    mon: s.monId, res: s.resTxt, changed: s.changed, mode: s.mode, restore: s.restore, acct: s.acct,
   });
 
   async function end(reason, error) {
@@ -31,7 +31,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
     const cfg = store.gameCfg(s.gid);
     const ms = s.runningAt ? Date.now() - s.runningAt : 0;
     store.setGameCfg(s.gid, { lastPlayed: Date.now(), playMs: (cfg.playMs || 0) + (s.steam ? 0 : ms) });
-    send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId });
+    send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
 
   async function play(id) {
@@ -48,25 +48,30 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
     const acc = g.steam && g.acct ? accounts().find(a => a.sid === g.acct) : null;
     const needSw = !!acc && !(st.running && st.activeSid === acc.sid);
     let mon = null, needD = false;
+    const res = g.display.res ? store.resProfiles().find(p => p.id === g.display.res) || null : null;
+    const mons = g.display.mon || res ? await display.list().catch(() => []) : [];
     if (g.display.mon) {
-      const mons = await display.list().catch(() => []);
       mon = mons.find(m => m.id === g.display.mon) || null;
       needD = !!mon && !(mon.primary && mon.attached && g.display.mode === 'primary');
     }
+    // Resolution: on the game's monitor, or the primary when the game uses the default display.
+    const resMon = mon || mons.find(m => m.primary) || null;
+    const needR = !!res && !!resMon && !(resMon.attached && resMon.w === res.w && resMon.h === res.h && !res.stretch && !needD);
+    const resTxt = res ? res.name + ' (' + res.w + '×' + res.h + (res.stretch ? ', stretched' : '') + ')' : '';
     const cur = accounts().find(a => a.sid === st.activeSid);
     const steps = [];
     if (g.steam) steps.push(needSw
       ? { k: 'acct', label: 'Switching to ' + acc.name, sub: 'Restarting Steam as ' + acc.login }
       : { k: 'acct', label: acc ? 'Switching to ' + acc.name : 'Steam account', sub: (acc ? 'Already signed in' : 'Using ' + (cur ? cur.name : 'the current account')) + ' · skipped', skip: true });
-    steps.push(needD
-      ? { k: 'disp', label: 'Setting display', sub: mon.label + (g.display.mode === 'only' ? ' only · others off' : ' → primary') }
+    steps.push(needD || needR
+      ? { k: 'disp', label: 'Setting display', sub: [needD ? mon.label + (g.display.mode === 'only' ? ' only · others off' : ' → primary') : null, needR ? resTxt : null].filter(Boolean).join(' · ') }
       : { k: 'disp', label: 'Setting display', sub: (mon ? mon.label + ' is already primary' : 'Default display') + ' · skipped', skip: true });
     steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
 
     const s = session = {
       gid: id, appid: g.appid, steam: g.steam, steps, step: 0, running: false,
-      monId: needD ? mon.id : null, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
+      monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
       saved: null, runningAt: 0, timer: null,
     };
     emit(s);
@@ -79,10 +84,10 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
       if (session !== s) return { ok: false, cancelled: true };
       s.step++; emit(s);
 
-      if (needD) {
-        s.saved = await display.apply(mon.id, g.display.mode);
+      if (needD || needR) {
+        s.saved = await display.apply(needD ? mon.id : null, g.display.mode, needR ? res : null);
         store.setDisplaySaved(s.saved);
-        send('display-changed', { label: mon.label, mode: g.display.mode });
+        send('display-changed', { label: (needD ? mon : resMon).label, mode: needD ? g.display.mode : null, res: needR ? resTxt : null });
       }
       if (session !== s) return { ok: false, cancelled: true };
       s.step++; emit(s);
@@ -148,9 +153,22 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
     } catch (e) { return { ok: false, error: e.message }; }
   }
 
-  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, mode: session.mode, restore: session.restore, acct: session.acct };
+  // Settings "Test" on a resolution profile: apply it to the primary monitor for 10 s, then switch back.
+  async function testRes(p) {
+    if (session) return { ok: false, error: 'Finish your game first.' };
+    try {
+      const before = await display.apply(null, 'primary', p);
+      store.setDisplaySaved(before);
+      await new Promise(r => setTimeout(r, 10000));
+      await display.restore(before);
+      store.setDisplaySaved(null);
+      return { ok: true };
+    } catch (e) { return { ok: false, error: e.message }; }
+  }
 
-  return { play, stop, restoreNow, test, current };
+  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct };
+
+  return { play, stop, restoreNow, test, testRes, current };
 }
 
 module.exports = { createPlayer };

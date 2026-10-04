@@ -7,7 +7,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { app, screen } = require('electron');
 
-const VERSION = 3;
+const VERSION = 4;
 const PS1 = `param([string]$Op, [string]$Target, [string]$DllPath, [string]$SrcPath)
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $DllPath)) { Add-Type -Path $SrcPath -OutputAssembly $DllPath -OutputType Library }
@@ -64,16 +64,43 @@ async function list() {
   return mons;
 }
 
-const serialize = raw => raw.map(m => [m.name, m.attached ? 1 : 0, m.primary ? 1 : 0, m.x, m.y, m.w, m.h, m.hz].join('|')).join(';');
+const serialize = raw => raw.map(m => [m.name, m.attached ? 1 : 0, m.primary ? 1 : 0, m.x, m.y, m.w, m.h, m.hz, m.fo == null ? -1 : m.fo].join('|')).join(';');
 
 async function check(out) {
   if (out !== 'ok') throw new Error('Windows refused the display change (' + out.replace(/^error:/, '') + ').');
 }
 
-// Returns the layout before the change, so the caller can persist it for "Restore display now".
-async function apply(id, mode) {
+// Resolutions a monitor offers: [{ w, h, hz }], biggest first.
+async function modes(id) {
+  const out = await run('modes', id);
+  return JSON.parse(out.slice(out.indexOf('['))).map(([w, h, hz]) => ({ w, h, hz }));
+}
+
+// A layout with one monitor at a different resolution (and optionally stretched). Monitors to the
+// right of / below it move by the size difference so the desktop stays joined up.
+function withResolution(raw, id, res) {
+  const t = raw.find(m => m.name === id && m.attached);
+  if (!t) throw new Error("That monitor isn't switched on.");
+  const dw = res.w - t.w, dh = res.h - t.h;
+  return serialize(raw.map(m => {
+    if (m === t) return { ...m, w: res.w, h: res.h, hz: res.hz || 0, fo: res.stretch ? 2 : (t.fo === 2 ? 0 : t.fo) };
+    if (!m.attached) return m;
+    return { ...m, x: m.x >= t.x + t.w ? m.x + dw : m.x, y: m.y >= t.y + t.h ? m.y + dh : m.y };
+  }));
+}
+
+// Game display profile: optionally make a monitor primary / the only one, then optionally change
+// the resolution of that monitor (or of the primary). Returns the layout from before the change,
+// so the caller can persist it for "Restore display now".
+async function apply(id, mode, res) {
   const before = serialize(await rawList());
-  await check(await run(mode === 'only' ? 'only' : 'primary', id));
+  if (id) await check(await run(mode === 'only' ? 'only' : 'primary', id));
+  if (res && res.w && res.h) {
+    const raw = await rawList();
+    const target = id || (raw.find(m => m.primary) || {}).name;
+    try { await check(await run('restore', withResolution(raw, target, res))); }
+    catch (e) { await run('restore', before).catch(() => {}); throw e; }
+  }
   return before;
 }
 
@@ -90,7 +117,8 @@ function normalLayout(raw, onIds, primaryId, pos) {
   const ms = raw.map(m => {
     if (!on.has(m.name)) return { ...m, attached: false, primary: false };
     const p = pos[m.name] || (m.attached ? { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz } : null);
-    return { ...m, attached: true, primary: m.name === primaryId, ...(p || { x: null, y: null, w: m.bw, h: m.bh, hz: m.bhz }) };
+    // Normal setup never keeps a game's stretched scaling.
+    return { ...m, attached: true, primary: m.name === primaryId, fo: m.fo === 2 ? 0 : m.fo, ...(p || { x: null, y: null, w: m.bw, h: m.bh, hz: m.bhz }) };
   });
   if (!ms.some(m => m.attached && m.w > 0)) throw new Error('Pick at least one monitor for your normal setup.');
   if (!ms.some(m => m.primary)) { const f = ms.find(m => m.attached); f.primary = true; }
@@ -109,4 +137,4 @@ async function makePrimary(id) {
   await check(await run('primary', id));
 }
 
-module.exports = { list, apply, restore, applyNormal, normalLayout, makePrimary, rawList, serialize };
+module.exports = { list, modes, apply, restore, applyNormal, normalLayout, withResolution, makePrimary, rawList, serialize };

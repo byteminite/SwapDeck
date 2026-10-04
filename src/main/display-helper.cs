@@ -1,5 +1,5 @@
-// SwapDeck display helper: list monitors, make one primary (switching it on if needed),
-// use only one, and restore a saved layout. Compiled once by PowerShell (Add-Type) into a DLL in
+// SwapDeck display helper: list monitors and their modes, make one primary (switching it on if needed),
+// use only one, and apply or restore a layout (positions, resolutions, stretch). Compiled once by PowerShell (Add-Type) into a DLL in
 // SwapDeck's app data. Uses EnumDisplayDevices / EnumDisplaySettingsEx / ChangeDisplaySettingsEx.
 // Written for the C# 5 compiler that ships with Windows PowerShell.
 using System;
@@ -12,7 +12,7 @@ public static class SDDisplay
 {
     const int ENUM_CURRENT = -1, ENUM_REGISTRY = -2;
     const int ATTACHED = 0x1, PRIMARY = 0x4, MIRROR = 0x8;
-    const int DM_POSITION = 0x20, DM_W = 0x80000, DM_H = 0x100000, DM_HZ = 0x400000;
+    const int DM_POSITION = 0x20, DM_W = 0x80000, DM_H = 0x100000, DM_HZ = 0x400000, DM_FIXEDOUTPUT = 0x20000000;
     const uint CDS_UPDATEREGISTRY = 0x1, CDS_SET_PRIMARY = 0x10, CDS_NORESET = 0x10000000;
     const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x1;
 
@@ -52,6 +52,7 @@ public static class SDDisplay
         public bool attached, primary;
         public int x, y, w, h, hz;   // current (or registry) mode
         public int bw, bh, bhz;      // best available mode, used when switching a monitor on
+        public int fo = -1;          // scaling (0 default, 1 centre, 2 stretch); -1 = unknown / leave alone
     }
 
     static DEVMODE NewDm() { var dm = new DEVMODE(); dm.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE)); return dm; }
@@ -107,7 +108,7 @@ public static class SDDisplay
             }
             var dm = NewDm();
             if (EnumDisplaySettingsEx(dd.DeviceName, m.attached ? ENUM_CURRENT : ENUM_REGISTRY, ref dm, 0))
-            { m.x = dm.dmPositionX; m.y = dm.dmPositionY; m.w = dm.dmPelsWidth; m.h = dm.dmPelsHeight; m.hz = dm.dmDisplayFrequency; }
+            { m.x = dm.dmPositionX; m.y = dm.dmPositionY; m.w = dm.dmPelsWidth; m.h = dm.dmPelsHeight; m.hz = dm.dmDisplayFrequency; if (m.attached) m.fo = dm.dmDisplayFixedOutput; }
             list.Add(m);
         }
         return list;
@@ -134,6 +135,9 @@ public static class SDDisplay
                 dm.dmPositionX = t.x; dm.dmPositionY = t.y; dm.dmPelsWidth = t.w; dm.dmPelsHeight = t.h;
                 if (t.hz > 0) dm.dmDisplayFrequency = t.hz;
                 if (t.primary) flags |= CDS_SET_PRIMARY;
+                // Scaling (stretch) only when asked for and different from now: some drivers reject the field.
+                var c = cur.Find(m => m.name == t.name);
+                if (t.fo >= 0 && c != null && c.fo >= 0 && c.fo != t.fo) { dm.dmFields |= DM_FIXEDOUTPUT; dm.dmDisplayFixedOutput = t.fo; }
             }
             else
             {
@@ -160,13 +164,13 @@ public static class SDDisplay
             sb.Append("{\"name\":").Append(J(m.name)).Append(",\"monitor\":").Append(J(m.monitor)).Append(",\"hwid\":").Append(J(m.hwid))
               .Append(",\"attached\":").Append(m.attached ? "true" : "false").Append(",\"primary\":").Append(m.primary ? "true" : "false")
               .Append(",\"x\":").Append(m.x).Append(",\"y\":").Append(m.y).Append(",\"w\":").Append(m.w).Append(",\"h\":").Append(m.h)
-              .Append(",\"hz\":").Append(m.hz).Append(",\"bw\":").Append(m.bw).Append(",\"bh\":").Append(m.bh).Append(",\"bhz\":").Append(m.bhz)
+              .Append(",\"hz\":").Append(m.hz).Append(",\"fo\":").Append(m.fo).Append(",\"bw\":").Append(m.bw).Append(",\"bh\":").Append(m.bh).Append(",\"bhz\":").Append(m.bhz)
               .Append('}');
         }
         return sb.Append(']').ToString();
     }
 
-    // Saved layout format: name|attached|primary|x|y|w|h|hz;...
+    // Saved layout format: name|attached|primary|x|y|w|h|hz[|fo];...
     static List<Mon> Parse(string s)
     {
         var list = new List<Mon>();
@@ -178,7 +182,8 @@ public static class SDDisplay
             list.Add(new Mon
             {
                 name = f[0], attached = f[1] == "1", primary = f[2] == "1",
-                x = int.Parse(f[3], ci), y = int.Parse(f[4], ci), w = int.Parse(f[5], ci), h = int.Parse(f[6], ci), hz = int.Parse(f[7], ci)
+                x = int.Parse(f[3], ci), y = int.Parse(f[4], ci), w = int.Parse(f[5], ci), h = int.Parse(f[6], ci), hz = int.Parse(f[7], ci),
+                fo = f.Length > 8 ? int.Parse(f[8], ci) : -1
             });
         }
         return list;
@@ -189,6 +194,24 @@ public static class SDDisplay
         var cur = List();
         if (cmd == "list") return ToJson(cur);
         if (cmd == "restore") return Apply(Parse(arg), List());
+        if (cmd == "modes")
+        {
+            // Every resolution the monitor (driver) offers, best refresh rate per size, biggest first.
+            var best = new Dictionary<long, int[]>();
+            var dm = NewDm();
+            for (int k = 0; EnumDisplaySettingsEx(arg, k, ref dm, 0); k++)
+            {
+                if (dm.dmBitsPerPel != 0 && dm.dmBitsPerPel < 32) continue;
+                long key = (long)dm.dmPelsWidth * 100000 + dm.dmPelsHeight;
+                int[] v;
+                if (!best.TryGetValue(key, out v) || dm.dmDisplayFrequency > v[2]) best[key] = new[] { dm.dmPelsWidth, dm.dmPelsHeight, dm.dmDisplayFrequency };
+            }
+            var all = new List<int[]>(best.Values);
+            all.Sort((a, b) => (b[0] * b[1]).CompareTo(a[0] * a[1]));
+            var sb = new StringBuilder("[");
+            for (int i = 0; i < all.Count; i++) sb.Append(i > 0 ? "," : "").Append('[').Append(all[i][0]).Append(',').Append(all[i][1]).Append(',').Append(all[i][2]).Append(']');
+            return sb.Append(']').ToString();
+        }
         var t = cur.Find(m => m.name == arg);
         if (t == null) return "error:unknown-monitor";
         if (cmd == "primary")
