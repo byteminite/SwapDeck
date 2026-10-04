@@ -7,7 +7,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { app, screen } = require('electron');
 
-const VERSION = 4;
+const VERSION = 5;
 const PS1 = `param([string]$Op, [string]$Target, [string]$DllPath, [string]$SrcPath)
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $DllPath)) { Add-Type -Path $SrcPath -OutputAssembly $DllPath -OutputType Library }
@@ -48,6 +48,17 @@ async function rawList() {
   return JSON.parse(out.slice(out.indexOf('[')));
 }
 
+// A monitor's id is its stable hardware key (EDID id + instance). Windows' \.DISPLAYn name can change
+// (a switched-off monitor may sit on any free output), so it's only used when talking to Windows.
+// Older settings stored the DISPLAYn name, so ids that look like one still match.
+const idOf = m => m.key || m.name;
+const byId = (raw, id) => raw.find(m => idOf(m) === id) || raw.find(m => m.name === id) || null;
+function nameOf(raw, id) {
+  const m = byId(raw, id);
+  if (!m) throw new Error("That monitor isn't connected right now.");
+  return m.name;
+}
+
 // Monitors with model names (from EDID; Electron's label as a fallback for active ones).
 // Switched-off monitors report their best mode, since that's what SwapDeck would switch them on with.
 async function list() {
@@ -57,10 +68,10 @@ async function list() {
     const e = m.attached ? eds.find(x => Math.abs(x.r.x - m.x) < 4 && Math.abs(x.r.y - m.y) < 4) : null;
     const label = m.monitor || (e && e.d.label) || '';
     const w = m.attached ? m.w : m.bw, h = m.attached ? m.h : m.bh, hz = m.attached ? m.hz : m.bhz;
-    return { id: m.name, hwid: m.hwid, label, attached: m.attached, primary: m.primary, x: m.x, y: m.y, w, h, hz, portrait: h > w };
+    return { id: idOf(m), name: m.name, hwid: m.hwid, label, attached: m.attached, primary: m.primary, x: m.x, y: m.y, w, h, hz, portrait: h > w };
   });
   // Number them like Windows does (DISPLAY1 → 1), and name unnamed ones.
-  for (const m of mons) { m.num = (m.id.match(/(\d+)$/) || [, '?'])[1]; if (!m.label) m.label = 'Display ' + m.num; }
+  for (const m of mons) { m.num = (m.name.match(/(\d+)$/) || [, '?'])[1]; if (!m.label) m.label = 'Display ' + m.num; }
   return mons;
 }
 
@@ -72,14 +83,14 @@ async function check(out) {
 
 // Resolutions a monitor offers: [{ w, h, hz }], biggest first.
 async function modes(id) {
-  const out = await run('modes', id);
+  const out = await run('modes', nameOf(await rawList(), id));
   return JSON.parse(out.slice(out.indexOf('['))).map(([w, h, hz]) => ({ w, h, hz }));
 }
 
 // A layout with one monitor at a different resolution (and optionally stretched). Monitors to the
 // right of / below it move by the size difference so the desktop stays joined up.
-function withResolution(raw, id, res) {
-  const t = raw.find(m => m.name === id && m.attached);
+function withResolution(raw, name, res) {
+  const t = raw.find(m => m.name === name && m.attached);
   if (!t) throw new Error("That monitor isn't switched on.");
   const dw = res.w - t.w, dh = res.h - t.h;
   return serialize(raw.map(m => {
@@ -93,15 +104,39 @@ function withResolution(raw, id, res) {
 // the resolution of that monitor (or of the primary). Returns the layout from before the change,
 // so the caller can persist it for "Restore display now".
 async function apply(id, mode, res) {
-  const before = serialize(await rawList());
-  if (id) await check(await run(mode === 'only' ? 'only' : 'primary', id));
+  const raw0 = await rawList();
+  const before = serialize(raw0);
+  const name = id ? nameOf(raw0, id) : null;
+  if (name) await check(await run(mode === 'only' ? 'only' : 'primary', name));
   if (res && res.w && res.h) {
-    const raw = await rawList();
-    const target = id || (raw.find(m => m.primary) || {}).name;
-    try { await check(await run('restore', withResolution(raw, target, res))); }
-    catch (e) { await run('restore', before).catch(() => {}); throw e; }
+    try {
+      const raw = await rawList();
+      const t = name ? raw.find(m => m.name === name) : raw.find(m => m.primary);
+      if (!t) throw new Error("Couldn't find the monitor to change.");
+      await check(await run('restore', withResolution(raw, t.name, await pickMode(t, res))));
+    } catch (e) { await run('restore', before).catch(() => {}); throw e; }
   }
   return before;
+}
+
+// Match a resolution profile to a mode the monitor really offers. With no refresh rate in the
+// profile, the fastest one available at that size is used.
+async function pickMode(t, res) {
+  const out = await run('modes', t.name);
+  const all = JSON.parse(out.slice(out.indexOf('['))).map(([w, h, hz]) => ({ w, h, hz }));
+  const label = t.monitor || t.name;
+  const same = all.filter(m => m.w === res.w && m.h === res.h);
+  if (!same.length) {
+    const err = new Error(label + " doesn't offer " + res.w + '×' + res.h + '. If you made it in the NVIDIA or AMD control panel, check it was made for this monitor and that the panel’s Test passed, then restart SwapDeck.');
+    err.code = 'NO_MODE';
+    throw err;
+  }
+  if (res.hz && !same.some(m => m.hz === res.hz)) {
+    const err = new Error(label + ' runs ' + res.w + '×' + res.h + ' at ' + same.map(m => m.hz + ' Hz').join(', ') + ', not ' + res.hz + ' Hz. Clear the Hz box to use the fastest.');
+    err.code = 'NO_MODE';
+    throw err;
+  }
+  return { ...res, hz: res.hz || Math.max(...same.map(m => m.hz)) };
 }
 
 async function restore(saved) {
@@ -115,10 +150,11 @@ function normalLayout(raw, onIds, primaryId, pos) {
   const on = new Set(onIds);
   if (primaryId) on.add(primaryId);
   const ms = raw.map(m => {
-    if (!on.has(m.name)) return { ...m, attached: false, primary: false };
-    const p = pos[m.name] || (m.attached ? { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz } : null);
+    const id = idOf(m), want = on.has(id) || on.has(m.name), main = id === primaryId || m.name === primaryId;
+    if (!want && !main) return { ...m, attached: false, primary: false };
+    const p = pos[id] || pos[m.name] || (m.attached ? { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz } : null);
     // Normal setup never keeps a game's stretched scaling.
-    return { ...m, attached: true, primary: m.name === primaryId, fo: m.fo === 2 ? 0 : m.fo, ...(p || { x: null, y: null, w: m.bw, h: m.bh, hz: m.bhz }) };
+    return { ...m, attached: true, primary: main, fo: m.fo === 2 ? 0 : m.fo, ...(p || { x: null, y: null, w: m.bw, h: m.bh, hz: m.bhz }) };
   });
   if (!ms.some(m => m.attached && m.w > 0)) throw new Error('Pick at least one monitor for your normal setup.');
   if (!ms.some(m => m.primary)) { const f = ms.find(m => m.attached); f.primary = true; }
@@ -134,7 +170,7 @@ async function applyNormal(onIds, primaryId, pos) {
 }
 
 async function makePrimary(id) {
-  await check(await run('primary', id));
+  await check(await run('primary', nameOf(await rawList(), id)));
 }
 
 module.exports = { list, modes, apply, restore, applyNormal, normalLayout, withResolution, makePrimary, rawList, serialize };

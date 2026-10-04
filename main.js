@@ -304,7 +304,21 @@ const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, apply
 
 // First run: the current layout is the normal one. While no game profile is active, remember where
 // each switched-on monitor sits, so the normal setup can put monitors back in the same place.
+// Monitor ids used to be Windows' DISPLAYn names, which can change; now they're hardware keys.
+function migrateMonIds(monitors) {
+  const map = Object.fromEntries(monitors.filter(m => m.id !== m.name).map(m => [m.name, m.id]));
+  const fix = v => (v && map[v]) || v;
+  const s = store.settings(), patch = {};
+  if (s.normalMon && map[s.normalMon]) patch.normalMon = fix(s.normalMon);
+  if (Array.isArray(s.normalOn) && s.normalOn.some(v => map[v])) patch.normalOn = [...new Set(s.normalOn.map(fix))];
+  if (Object.keys(patch).length) store.setSettings(patch);
+  const pos = store.monPos();
+  if (Object.keys(pos).some(k => map[k])) store.setMonPos(Object.fromEntries(Object.entries(pos).map(([k, v]) => [fix(k), v])));
+  for (const [gid, cfg] of Object.entries(store.allGameCfgs())) if (cfg.display && map[cfg.display.mon]) store.setGameCfg(gid, { display: { mon: fix(cfg.display.mon) } });
+}
+
 function rememberNormal(monitors) {
+  migrateMonIds(monitors);
   const s = store.settings();
   if (!s.normalMon) { const p = monitors.find(x => x.primary); if (p) store.setSettings({ normalMon: p.id }); }
   if (!s.normalOn && monitors.length) store.setSettings({ normalOn: monitors.filter(x => x.attached).map(x => x.id) });

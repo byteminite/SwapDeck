@@ -15,6 +15,7 @@ public static class SDDisplay
     const int DM_POSITION = 0x20, DM_W = 0x80000, DM_H = 0x100000, DM_HZ = 0x400000, DM_FIXEDOUTPUT = 0x20000000;
     const uint CDS_UPDATEREGISTRY = 0x1, CDS_SET_PRIMARY = 0x10, CDS_NORESET = 0x10000000;
     const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x1;
+    const int EDS_RAWMODE = 0x2;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct DISPLAY_DEVICE
@@ -48,7 +49,7 @@ public static class SDDisplay
 
     class Mon
     {
-        public string name = "", monitor = "", hwid = "";
+        public string name = "", monitor = "", hwid = "", key = "";
         public bool attached, primary;
         public int x, y, w, h, hz;   // current (or registry) mode
         public int bw, bh, bhz;      // best available mode, used when switching a monitor on
@@ -95,6 +96,7 @@ public static class SDDisplay
             {
                 name = dd.DeviceName,
                 hwid = hw.Length > 1 ? hw[1] : "",
+                key = hw.Length > 2 ? hw[1] + "#" + hw[2] : dd.DeviceName,
                 monitor = EdidName(md.DeviceID),
                 attached = (dd.StateFlags & ATTACHED) != 0,
                 primary = (dd.StateFlags & PRIMARY) != 0
@@ -109,7 +111,11 @@ public static class SDDisplay
             var dm = NewDm();
             if (EnumDisplaySettingsEx(dd.DeviceName, m.attached ? ENUM_CURRENT : ENUM_REGISTRY, ref dm, 0))
             { m.x = dm.dmPositionX; m.y = dm.dmPositionY; m.w = dm.dmPelsWidth; m.h = dm.dmPelsHeight; m.hz = dm.dmDisplayFrequency; if (m.attached) m.fo = dm.dmDisplayFixedOutput; }
-            list.Add(m);
+            // A switched-off monitor can show up under several of the GPU's free outputs.
+            // Keep one entry per physical monitor: the attached one, else the first.
+            var dup = list.Find(x => x.key == m.key);
+            if (dup == null) list.Add(m);
+            else if (m.attached && !dup.attached) list[list.IndexOf(dup)] = m;
         }
         return list;
     }
@@ -161,7 +167,7 @@ public static class SDDisplay
         {
             var m = list[i];
             if (i > 0) sb.Append(',');
-            sb.Append("{\"name\":").Append(J(m.name)).Append(",\"monitor\":").Append(J(m.monitor)).Append(",\"hwid\":").Append(J(m.hwid))
+            sb.Append("{\"name\":").Append(J(m.name)).Append(",\"key\":").Append(J(m.key)).Append(",\"monitor\":").Append(J(m.monitor)).Append(",\"hwid\":").Append(J(m.hwid))
               .Append(",\"attached\":").Append(m.attached ? "true" : "false").Append(",\"primary\":").Append(m.primary ? "true" : "false")
               .Append(",\"x\":").Append(m.x).Append(",\"y\":").Append(m.y).Append(",\"w\":").Append(m.w).Append(",\"h\":").Append(m.h)
               .Append(",\"hz\":").Append(m.hz).Append(",\"fo\":").Append(m.fo).Append(",\"bw\":").Append(m.bw).Append(",\"bh\":").Append(m.bh).Append(",\"bhz\":").Append(m.bhz)
@@ -199,7 +205,8 @@ public static class SDDisplay
             // Every resolution the monitor (driver) offers, best refresh rate per size, biggest first.
             var best = new Dictionary<long, int[]>();
             var dm = NewDm();
-            for (int k = 0; EnumDisplaySettingsEx(arg, k, ref dm, 0); k++)
+            // Raw modes too, so custom resolutions made in the GPU control panel are listed.
+            for (int k = 0; EnumDisplaySettingsEx(arg, k, ref dm, EDS_RAWMODE); k++)
             {
                 if (dm.dmBitsPerPel != 0 && dm.dmBitsPerPel < 32) continue;
                 long key = (long)dm.dmPelsWidth * 100000 + dm.dmPelsHeight;

@@ -872,7 +872,8 @@ class App extends Component {
     return {
       drawerOn: true, onDrawerClose: () => this.setState({ drawerId: null }),
       dName: d.name, dLogin: d.login, dIni: d.ini, dLast: d.last, dSid: d.sid,
-      dBg: d.avatar ? 'url("' + d.avatar + '") center/cover no-repeat,' + d.grad : 'radial-gradient(120% 120% at 10% 0%,rgba(var(--fg-rgb),.22),transparent 55%),' + d.grad,
+      dBg: 'radial-gradient(120% 120% at 10% 0%,rgba(var(--fg-rgb),.22),transparent 55%),' + d.grad,
+      dHasAv: !!d.avatar, dAvBg: d.avatar ? 'url("' + d.avatar + '") center/cover no-repeat,#111' : 'rgba(0,0,0,.28)',
       dCur: d.current, dCurLabel: running ? 'CURRENT' : 'AUTO-LOGIN', dStText: stText(p), dStDot: ST[stKey(p)],
       dLinked: L, dNotLinked: !L,
       dCanSwitch: dCanSw, dSignedIn: !dCanSw, dSwLabel: d.current ? 'Start Steam' : 'Switch', dSwSub: g ? 'then ' + g : 'no game after',
