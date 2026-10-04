@@ -64,7 +64,8 @@ function check(isManual) {
 }
 
 function install() {
-  if (autoUpdater && state.state === 'ready') autoUpdater.quitAndInstall(false, true);
+  // Silent install (no installer window), then SwapDeck reopens on the new version.
+  if (autoUpdater && state.state === 'ready') autoUpdater.quitAndInstall(true, true);
 }
 
 const current = () => state;
