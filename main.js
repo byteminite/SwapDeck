@@ -520,7 +520,7 @@ function ipc() {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
       accounts: accs.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
-      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 5)
+      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
         .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed })),
     };
   });
@@ -612,7 +612,9 @@ function placeTrayPanel(h) {
   // Sit next to the taskbar, wherever it is.
   if (pt.y > wa.y + wa.height) y = wa.y + wa.height - H - 8;
   else if (pt.y < wa.y) y = wa.y + 8;
-  else { y = Math.round(pt.y - H / 2); x = pt.x < wa.x + wa.width / 2 ? wa.x + 8 : wa.x + wa.width - TRAY_W - 8; }
+  else if (pt.x < wa.x || pt.x > wa.x + wa.width) { y = Math.round(pt.y - H / 2); x = pt.x < wa.x ? wa.x + 8 : wa.x + wa.width - TRAY_W - 8; }
+  // The icon is inside the hidden-icons flyout (the ^), not on the taskbar: use the corner above the clock, like Windows' own popups.
+  else { x = wa.x + wa.width - TRAY_W - 12; y = wa.y + wa.height - H - 12; }
   x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - TRAY_W - 8));
   y = Math.max(wa.y + 8, Math.min(y, wa.y + wa.height - H - 8));
   w.setBounds({ x, y, width: TRAY_W, height: H });
@@ -624,6 +626,8 @@ function toggleTrayPanel() {
   placeTrayPanel();
   w.webContents.send('tray-show');
   w.show(); w.focus();
+  // Taking focus again a moment later makes Windows close the hidden-icons flyout if the click came from there.
+  setTimeout(() => { if (w.isVisible()) w.focus(); }, 120);
 }
 
 function showWin() {

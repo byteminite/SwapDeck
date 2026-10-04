@@ -31,6 +31,17 @@ class Tray extends Component {
   }
   componentWillUnmount() { this._off.forEach(f => f()); window.removeEventListener('keydown', this._key); this._ro.disconnect(); }
   async load() { const d = await api.trayData(); if (d) this.setState({ d }); }
+  listRef = el => { this._list = el; };
+  // Smooth wheel scrolling for the games list.
+  listWheel = e => {
+    const el = e.currentTarget, max = el.scrollHeight - el.clientHeight; if (max <= 0) return;
+    e.preventDefault();
+    if (!el._anim) el._to = el.scrollTop;
+    el._to = Math.max(0, Math.min(max, el._to + e.deltaY));
+    if (el._anim) return;
+    const step = () => { const d = el._to - el.scrollTop; if (Math.abs(d) < .6) { el.scrollTop = el._to; el._anim = 0; return; } el.scrollTop += d * .22; el._anim = requestAnimationFrame(step); };
+    el._anim = requestAnimationFrame(step);
+  };
   boxRef = el => { if (el && el !== this._box) { this._box = el; this._ro.observe(el); } };
 
   applyTheme(el, d) {
@@ -88,6 +99,7 @@ class Tray extends Component {
 
   ${d.games.length ? html`<div style="padding:12px 8px 6px">
     <div style=${H + ';padding:0 8px 6px'}>PLAY</div>
+    <div ref=${this.listRef} onWheel=${this.listWheel} style="max-height:262px;overflow-y:auto;padding-right:2px">
     ${d.games.map(g => {
       const dis = !!sess;
       return html`<div class="tp-row" style=${`display:flex;align-items:center;gap:11px;padding:6px 8px;border-radius:10px;cursor:${dis ? 'default' : 'pointer'};opacity:${dis && !(sess && sess.gid === g.id) ? .5 : 1}`} onClick=${() => !dis && this.play(g)}>
@@ -96,6 +108,7 @@ class Tray extends Component {
         ${dis ? null : html`<span class="tp-play" style="width:28px;height:28px;flex:none;border-radius:99px;background:var(--accent);color:var(--accent-contrast);display:grid;place-items:center;opacity:0;transition:opacity .15s"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"/></svg></span>`}
       </div>`;
     })}
+    </div>
   </div>` : null}
 
   <div style="display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid rgba(var(--fg-rgb),.06);margin-top:6px">
