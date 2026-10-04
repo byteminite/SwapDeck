@@ -296,7 +296,7 @@ async function refreshStats(sid) {
 function cleanProfile(p) {
   const w = Math.round(+p.w), h = Math.round(+p.h), hz = Math.round(+p.hz) || 0;
   if (!(w >= 320 && w <= 16384 && h >= 200 && h <= 16384) || hz < 0 || hz > 1000) return null;
-  return { id: /^rd+$/.test(p.id) ? p.id : 'r' + Date.now(), name: String(p.name || '').trim().slice(0, 40) || w + '×' + h, w, h, hz, stretch: !!p.stretch };
+  return { id: /^r\d+$/.test(p.id) ? p.id : 'r' + Date.now(), name: String(p.name || '').trim().slice(0, 40) || w + '×' + h, w, h, hz, stretch: !!p.stretch };
 }
 const validRes = id => store.resProfiles().some(p => p.id === id) ? id : null;
 

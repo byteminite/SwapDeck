@@ -1031,6 +1031,8 @@ class App extends Component {
     return {
       ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...this.gameVals(), ...lv, ...this.addGameVals(),
       ...this.settingsVals(), ...this.themeVals(), ...dv,
+      // Tag rows scroll sideways with the normal mouse wheel.
+      onChipWheel: e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { e.preventDefault(); el.scrollLeft += e.deltaY; } },
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib, showAcctLoading: false, showNoResults: b.showNoResults && !isLib, showEmpty: b.showEmpty && !isLib, stNFPanel: b.stNF && !isLib,
