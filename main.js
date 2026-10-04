@@ -374,6 +374,7 @@ function ipc() {
   ipcMain.handle('settings', (_, patch) => {
     const allowed = {};
     for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
+    if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
     const s = store.setSettings(allowed);

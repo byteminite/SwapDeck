@@ -19,6 +19,7 @@ const DEFAULTS = {
     customAccent: '#c084fc',
     followTag: false,        // accent follows the running game's tag
     reduceMotion: false,
+    startView: 'acc',        // acc | lib: the screen SwapDeck opens on
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },

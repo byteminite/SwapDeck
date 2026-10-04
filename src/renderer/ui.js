@@ -167,8 +167,9 @@ class App extends Component {
       api.on('display-changed', d => this.toast('info', 'Switched display' + (d.mode ? ' to ' + d.label : ''), [d.mode === 'only' ? 'Other monitors are off while you play.' : d.mode ? d.label + ' is primary while you play.' : null, d.res ? d.res + ' on ' + d.label + '.' : null].filter(Boolean).join(' '))),
     ];
     this._clock = setInterval(() => this.setState({}), 30000);
-    await this.reload();
-    this.setState({ loaded: true });
+    const st = await this.reload();
+    // Start on the screen picked in Settings → General.
+    this.setState({ loaded: true, view: st && st.settings && st.settings.startView === 'lib' ? 'lib' : 'acc' });
   }
   componentWillUnmount() {
     window.removeEventListener('keydown', this._key);
@@ -718,6 +719,7 @@ class App extends Component {
       defMenu: S.defMenu, onDefMenu: () => this.setState(s => ({ defMenu: !s.defMenu })), defBd: S.defMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
       defName: dg ? dg.name : inst.length ? 'Pick a game' : 'No installed games', defBg: dg ? this.cardBg(dg) : 'rgba(var(--fg-rgb),.06)',
       defOpts: inst.map(g => ({ name: g.name, cover: this.cardBg(g), sel: !!dg && g.id === dg.id, bg: dg && g.id === dg.id ? 'rgba(var(--accent-rgb),.08)' : 'transparent', on: () => { this.setCfg({ defaultGame: String(g.appid) }); this.setState({ defMenu: false }); } })),
+      startOpts: [['acc', 'Accounts'], ['lib', 'Library']].map(([k, l]) => { const on = (cfg.startView || 'acc') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ startView: k }) }; }),
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),
       mpIsOff: !master && !M.form, mpIsForm: !!M.form, mpIsOn: master && !M.form, mpA: M.a, mpB: M.b, mpMismatch: M.mismatch, mpErr: M.err,
       mpOld: M.old, mpOldOn: M.form === 'change' || M.form === 'remove', mpNewOn: M.form === 'set' || M.form === 'change',
