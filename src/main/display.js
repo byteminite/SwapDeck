@@ -2,46 +2,10 @@
 // and restore the layout SwapDeck saved before changing anything.
 // The work happens in display-helper.cs, compiled once by PowerShell into a DLL in app data.
 
-const fs = require('fs');
-const path = require('path');
-const { execFile } = require('child_process');
-const { app, screen } = require('electron');
+const { screen } = require('electron');
+const { createHelper } = require('./native');
 
-const VERSION = 5;
-const PS1 = `param([string]$Op, [string]$Target, [string]$DllPath, [string]$SrcPath)
-$ErrorActionPreference = 'Stop'
-if (-not (Test-Path -LiteralPath $DllPath)) { Add-Type -Path $SrcPath -OutputAssembly $DllPath -OutputType Library }
-Add-Type -Path $DllPath
-$t = if ($Target -eq '_none_') { '' } else { $Target }
-[SDDisplay]::Run($Op, $t)
-`;
-
-let paths = null;
-function ensureFiles() {
-  if (paths) return paths;
-  const dir = app.getPath('userData');
-  const src = path.join(dir, `sd-display-v${VERSION}.cs`);
-  const ps1 = path.join(dir, `sd-display-v${VERSION}.ps1`);
-  const dll = path.join(dir, `sd-display-v${VERSION}.dll`);
-  // Copy out of the (possibly packed) app so PowerShell can read it.
-  if (!fs.existsSync(src)) fs.writeFileSync(src, fs.readFileSync(path.join(__dirname, 'display-helper.cs'), 'utf8'));
-  fs.writeFileSync(ps1, PS1);
-  paths = { src, ps1, dll };
-  return paths;
-}
-
-function run(cmd, arg) {
-  const p = ensureFiles();
-  return new Promise((resolve, reject) => {
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', p.ps1,
-      '-Op', cmd, '-Target', arg || '_none_', '-DllPath', p.dll, '-SrcPath', p.src],
-    { windowsHide: true, timeout: 60000 }, (err, stdout, stderr) => {
-      const out = String(stdout || '').trim();
-      if (err && !out) return reject(new Error(String(stderr || err.message).trim().split('\n')[0]));
-      resolve(out);
-    });
-  });
-}
+const run = createHelper({ name: 'display', version: 5, source: 'display-helper.cs', cls: 'SDDisplay' });
 
 async function rawList() {
   const out = await run('list');
@@ -107,7 +71,11 @@ async function apply(id, mode, res) {
   const raw0 = await rawList();
   const before = serialize(raw0);
   const name = id ? nameOf(raw0, id) : null;
-  if (name) await check(await run(mode === 'only' ? 'only' : 'primary', name));
+  if (name) {
+    // A failed change can leave some monitors already written: put the old layout back.
+    try { await check(await run(mode === 'only' ? 'only' : 'primary', name)); }
+    catch (e) { await run('restore', before).catch(() => {}); throw e; }
+  }
   if (res && res.w && res.h) {
     try {
       const raw = await rawList();

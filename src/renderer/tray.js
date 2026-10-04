@@ -88,7 +88,7 @@ class Tray extends Component {
     <div style=${H + ';padding:0 4px 10px'}>SWITCH ACCOUNT</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px">
       ${accts.map(a => {
-        const isCur = cur && cur.sid === a.sid, sw = switching === a.sid, dis = !st.found || busy || isCur;
+        const isCur = cur && cur.sid === a.sid, sw = switching === a.sid, dis = !st.found || busy || isCur || !!sess; // switching restarts Steam, which would close a running game
         return html`<button class="tp-av" style=${`display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;padding:2px 0;color:inherit;cursor:${dis ? 'default' : 'pointer'};transition:transform .15s;min-width:0`} onClick=${() => !dis && this.switchTo(a)} title=${isCur ? a.name + ' · signed in now' : 'Switch to ' + a.name}>
           <span style=${`position:relative;width:52px;height:52px;border-radius:16px;background:${avBg(a)};display:grid;place-items:center;font:600 15px 'Geist Mono',monospace;color:#fff;box-shadow:${isCur ? '0 0 0 2px var(--surface),0 0 0 4px var(--accent)' : '0 0 0 1px rgba(var(--fg-rgb),.12)'};opacity:${busy && !sw ? .5 : 1}`}>${a.avatar ? null : initials(a.name)}${sw ? html`<span style="position:absolute;inset:0;border-radius:16px;background:rgba(0,0,0,.55);display:grid;place-items:center">${spin(18)}</span>` : null}</span>
           <span style=${`max-width:100%;font:500 11px 'Geist',sans-serif;color:${isCur ? 'var(--accent-strong)' : 'var(--text-soft)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis`}>${a.name}</span>

@@ -277,8 +277,8 @@ class App extends Component {
     if (S.locked) return;
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
     if (k === 'b') return this.onKey({ key: 'Escape', target: document.body });
+    if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw || S.acctMenu) return;
     if (S.gd) { if (k === 'a') this.play(S.gd); return; }
-    if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw) return;
     if (S.launch && !S.launch.hidden) return;
     if (k === 'lb' || k === 'rb') return this.setView(S.view === 'lib' ? 'acc' : 'lib');
     if (S.view === 'lib') {
@@ -384,6 +384,7 @@ class App extends Component {
   busyToast(r) {
     if (r.code === 'NOT_FOUND') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings first.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return true; }
     if (r.code === 'BUSY') { this.toast('warning', 'Steam is busy', 'Wait for the current Steam action to finish, then try again.'); return true; }
+    if (r.code === 'RUNNING') { this.toast('warning', 'A game is running', r.error); return true; }
     return false;
   }
   async switchTo(id) {

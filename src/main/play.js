@@ -23,6 +23,7 @@ async function closeApp(name) {
 
 function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLaunch }) {
   let session = null; // { gid, appid, steam, saved, restore, mode, monId, runningAt, timer, child }
+  let starting = false, testing = false; // a Play still preparing, a display test in progress
 
   const emit = s => send('launch', {
     gid: s.gid, steps: s.steps, step: s.step, running: s.running,
@@ -40,7 +41,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       catch (e) { restoreErr = e.message; }
     }
     if (s.prevAudio) {
-      try { await audio.setDefault(s.prevAudio); }
+      try { await audio.restore(s.prevAudio); }
       catch (e) { send('notice', { type: 'warning', title: "Couldn't switch the sound back", msg: e.message }); }
     }
     for (const name of s.closeOnEnd) closeApp(name);
@@ -54,7 +55,13 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
   }
 
   async function play(id) {
-    if (session) return { ok: false, code: 'RUNNING', error: 'A game is already running through SwapDeck.' };
+    if (session || starting) return { ok: false, code: 'RUNNING', error: 'A game is already running through SwapDeck.' };
+    if (testing) return { ok: false, error: 'A display test is running. Try again in a few seconds.' };
+    starting = true;
+    try { return await start(id); } finally { starting = false; }
+  }
+
+  async function start(id) {
     const loc = getLoc();
     const lib = library.build(loc.dir, accounts());
     const g = lib.find(x => x.id === id);
@@ -90,8 +97,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (g.audio) {
       const devs = await audio.list().catch(() => []);
       dev = devs.find(d => d.id === g.audio) || null;
-      prevAudio = (devs.find(d => d.def) || {}).id || null;
-      steps.push(dev && dev.id !== prevAudio
+      prevAudio = await audio.current().catch(() => null);
+      steps.push(dev && !(prevAudio && dev.id === prevAudio.console && dev.id === prevAudio.multimedia)
         ? { k: 'audio', label: 'Setting sound', sub: dev.name }
         : { k: 'audio', label: 'Setting sound', sub: (dev ? dev.name + ' is already in use' : "That sound device isn't connected") + ' · skipped', skip: true });
     }
@@ -122,7 +129,10 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       s.step++; emit(s);
 
       if (needD || needR) {
-        s.saved = await display.apply(needD ? mon.id : null, g.display.mode, needR ? res : null);
+        const saved = await display.apply(needD ? mon.id : null, g.display.mode, needR ? res : null);
+        // Stop was pressed while the display was changing: put it straight back.
+        if (session !== s) { await display.restore(saved).catch(() => {}); return { ok: false, cancelled: true }; }
+        s.saved = saved;
         store.setDisplaySaved(s.saved);
         send('display-changed', { label: (needD ? mon : resMon).label, mode: needD ? g.display.mode : null, res: needR ? resTxt : null });
       }
@@ -130,12 +140,17 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       s.step++; emit(s);
 
       if (g.audio) {
-        if (dev && dev.id !== prevAudio) {
-          try { await audio.setDefault(dev.id); s.prevAudio = prevAudio; }
-          catch (e) { send('notice', { type: 'warning', title: "Couldn't switch the sound", msg: e.message }); }
+        if (dev && !(prevAudio && dev.id === prevAudio.console && dev.id === prevAudio.multimedia)) {
+          try {
+            await audio.setDefault(dev.id);
+            if (session !== s) { await audio.restore(prevAudio).catch(() => {}); return { ok: false, cancelled: true }; }
+            s.prevAudio = prevAudio;
+          } catch (e) { send('notice', { type: 'warning', title: "Couldn't switch the sound", msg: e.message }); }
         }
+        if (session !== s) return { ok: false, cancelled: true };
         s.step++; emit(s);
       }
+      if (session !== s) return { ok: false, cancelled: true };
       if (apps.length) {
         for (const a of toStart) {
           try {
@@ -155,15 +170,24 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
         // and the game is tracked through Steam's RunningAppID as usual once the launcher starts it.
         const child = spawn(g.launcher, steam.splitArgs(g.opts), { cwd: path.dirname(g.launcher), detached: true, stdio: 'ignore', windowsHide: false });
         child.on('error', e => { if (session === s) end('error', 'Couldn\'t start ' + path.basename(g.launcher) + ': ' + e.message); });
-        // Closing the launcher without ever starting the game ends the session.
-        child.on('exit', () => { if (session === s && !s.seenAt) end('exit'); });
+        // A launcher that exits within seconds handed off to a copy that was already open (Content Manager
+        // does this), so keep waiting. Closing it later without ever starting the game ends the session.
+        const launchedAt = Date.now();
+        child.on('exit', () => { if (session === s && !s.seenAt && Date.now() - launchedAt > 10000) end('exit'); });
         child.unref();
       } else if (g.steam) {
         steam.start(loc.exe, store.settings().steamArgs, ['-applaunch', String(g.appid), ...steam.splitArgs(g.opts)]);
       } else {
         const child = spawn(g.exe, steam.splitArgs(g.opts), { cwd: path.dirname(g.exe), detached: true, stdio: 'ignore', windowsHide: false });
         child.on('error', e => { if (session === s) end('error', 'Couldn\'t start the game: ' + e.message); });
-        child.on('exit', () => { if (session === s && s.running) end('exit'); });
+        const launchedAt = Date.now();
+        child.on('exit', () => {
+          if (session !== s || !s.running) return;
+          // Exited within seconds: a launcher stub that started the real game and quit. SwapDeck can't follow
+          // that process, so keep the session and let the user press Stop.
+          if (Date.now() - launchedAt < 10000) { send('notice', { type: 'info', title: g.name + ' handed off to another program', msg: "SwapDeck can't tell when it closes, so press Stop when you're done to put everything back." }); return; }
+          end('exit');
+        });
         child.unref();
       }
       s.step++;
@@ -181,8 +205,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
           if (String(r.runningAppId) === String(g.appid)) { if (!seen) s.seenAt = Date.now(); seen = true; gone = 0; }
           else if (seen && ++gone >= 2) end('exit');
           else if (!seen && !viaLauncher && Date.now() - startedAt > 180000) {
-            // Never showed up (launcher-only game, or it failed to start). Stop watching; the user can press Stop.
+            // Never showed up (it failed to start, or quit within seconds). Stop watching and tell the user.
             clearInterval(s.timer);
+            send('notice', { type: 'warning', title: "SwapDeck can't see " + g.name + ' running', msg: 'If it already closed or never started, press Stop to put your display and sound back.' });
           }
         }, 2000);
       }
@@ -208,7 +233,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
   // Settings "Test a profile": make the monitor primary for 10 s, then switch back.
   async function test(monId) {
-    if (session) return { ok: false, error: 'Finish your game first.' };
+    if (session || starting) return { ok: false, error: 'Finish your game first.' };
+    if (testing) return { ok: false, error: 'Another test is running.' };
+    testing = true;
     try {
       const before = await display.apply(monId, 'primary');
       store.setDisplaySaved(before);
@@ -216,12 +243,14 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       await display.restore(before);
       store.setDisplaySaved(null);
       return { ok: true };
-    } catch (e) { return { ok: false, error: e.message }; }
+    } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }
   }
 
   // Settings "Test" on a resolution profile: apply it to the primary monitor for 10 s, then switch back.
   async function testRes(p) {
-    if (session) return { ok: false, error: 'Finish your game first.' };
+    if (session || starting) return { ok: false, error: 'Finish your game first.' };
+    if (testing) return { ok: false, error: 'Another test is running.' };
+    testing = true;
     try {
       const before = await display.apply(null, 'primary', p);
       store.setDisplaySaved(before);
@@ -229,7 +258,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       await display.restore(before);
       store.setDisplaySaved(null);
       return { ok: true };
-    } catch (e) { return { ok: false, error: e.message }; }
+    } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }
   }
 
   const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct };

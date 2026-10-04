@@ -162,7 +162,25 @@ function exportData() {
 function importData(b) {
   if (!b || b.app !== 'SwapDeck' || b.kind !== 'settings-backup') throw new Error("That file isn't a SwapDeck backup.");
   const keepExe = data.settings.steamExe; // the Steam path belongs to this PC
-  for (const k of BACKUP_KEYS) if (b[k] && typeof b[k] === 'object') data[k] = k === 'settings' ? { ...DEFAULTS.settings, ...b[k] } : b[k];
+  const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+  const ARRAYS = ['customGames', 'resProfiles', 'sessions'];
+  // Only take parts with the right shape, so a damaged or hand-edited file can't break SwapDeck.
+  for (const k of BACKUP_KEYS) {
+    if (k === 'settings' || !(k in b)) continue;
+    if (ARRAYS.includes(k) ? Array.isArray(b[k]) : isObj(b[k])) data[k] = b[k];
+  }
+  if (isObj(b.settings)) {
+    const next = { ...DEFAULTS.settings };
+    for (const [k, def] of Object.entries(DEFAULTS.settings)) {
+      const v = b.settings[k];
+      if (v === undefined) continue;
+      if (k === 'normalOn') { if (v === null || (Array.isArray(v) && v.every(x => typeof x === 'string'))) next[k] = v; }
+      else if (k === 'uiScale') { if (v === 'auto' || SCALES.includes(v)) next[k] = v; }
+      else if (def === null ? (v === null || typeof v === 'string') : typeof v === typeof def) next[k] = v;
+    }
+    data.settings = { ...next, scaleBase: 0.9 };
+  }
+  data.customGames = data.customGames.filter(c => c && typeof c.exe === 'string' && typeof c.name === 'string');
   data.settings.steamExe = keepExe;
   flush();
 }

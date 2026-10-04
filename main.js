@@ -137,6 +137,8 @@ async function wrap(kind, fn) {
 // opts.forPlay: switching as part of launching a Library game, so no "game after switching"
 // and no "close app after switching".
 function switchTo(sid, opts = {}) {
+  // Restarting Steam closes whatever game it's running, so don't while a SwapDeck session is active.
+  if (!opts.forPlay && player.current()) return Promise.resolve({ ok: false, code: 'RUNNING', error: 'A game SwapDeck launched is still running. Restarting Steam now would close it, so quit the game (or press Stop) first.' });
   return wrap('switch', async () => {
     const acc = steam.listAccounts(loc.dir).find(a => a.sid === sid);
     if (!acc) throw new Error('That account is no longer in Steam\'s saved logins.');
@@ -369,7 +371,7 @@ function ipc() {
   ipcMain.handle('steam:start', () => startSteam());
   ipcMain.handle('add', () => addAccount());
   ipcMain.handle('add:cancel', () => { if (adding) adding.cancelled = true; });
-  ipcMain.handle('forget', (_, sid) => forget(String(sid)));
+  ipcMain.handle('forget', (_, sid) => player.current() ? { ok: false, code: 'RUNNING', error: 'A game SwapDeck launched is still running. Restarting Steam now would close it, so quit the game (or press Stop) first.' } : forget(String(sid)));
   ipcMain.handle('meta', (_, sid, patch) => {
     const allowed = {};
     for (const k of ['tags', 'note', 'pinned', 'launch']) if (k in patch) allowed[k] = patch[k];
@@ -839,5 +841,15 @@ if (!app.requestSingleInstanceLock()) {
     setInterval(refreshPublicAll, 5 * 60 * 1000);
   });
   app.on('window-all-closed', () => app.quit());
-  app.on('before-quit', () => { quitting = true; link.cancel(); try { store.flush(); } catch {} });
+  // Quitting mid-session: put the display and sound back and close companion apps first (the game keeps running).
+  let stopping = false;
+  app.on('before-quit', e => {
+    quitting = true;
+    if (player.current() && !stopping) {
+      e.preventDefault(); stopping = true;
+      Promise.race([player.stop(), new Promise(r => setTimeout(r, 15000))]).finally(() => app.quit());
+      return;
+    }
+    link.cancel(); try { store.flush(); } catch {}
+  });
 }

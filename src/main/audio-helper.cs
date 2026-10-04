@@ -104,13 +104,29 @@ public static class SDAudio
             }
             return sb.Append(']').ToString();
         }
-        if (cmd == "set")
+        if (cmd == "defaults")
         {
-            var pc = (IPolicyConfig)new PolicyConfigClient();
-            // Console, multimedia and communications roles, like picking a device in Sound settings.
+            // The default device for each role: console (0), multimedia (1), communications (2).
+            var sb = new StringBuilder("{");
+            string[] names = { "console", "multimedia", "comms" };
             for (int role = 0; role < 3; role++)
             {
-                int hr = pc.SetDefaultEndpoint(arg, role);
+                string id = ""; IMMDevice d;
+                if (en.GetDefaultAudioEndpoint(eRender, role, out d) == 0 && d != null) d.GetId(out id);
+                sb.Append(role > 0 ? "," : "").Append(J(names[role])).Append(':').Append(J(id));
+            }
+            return sb.Append('}').ToString();
+        }
+        if (cmd == "set")
+        {
+            // arg = "<roles>|<device id>", roles like "01" (console + multimedia). Games play through those two;
+            // the communications device (voice chat) is left alone.
+            int bar = arg.IndexOf('|');
+            string roles = bar > 0 ? arg.Substring(0, bar) : "01", id = bar > 0 ? arg.Substring(bar + 1) : arg;
+            var pc = (IPolicyConfig)new PolicyConfigClient();
+            foreach (char c in roles)
+            {
+                int hr = pc.SetDefaultEndpoint(id, c - '0');
                 if (hr != 0) return "error:" + hr;
             }
             return "ok";
