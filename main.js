@@ -334,8 +334,8 @@ function rememberNormal(monitors) {
   const pos = { ...store.monPos() };
   let changed = false;
   for (const m of monitors) if (m.attached) {
-    const p = { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz }, o = pos[m.id];
-    if (!o || o.x !== p.x || o.y !== p.y || o.w !== p.w || o.h !== p.h || o.hz !== p.hz) { pos[m.id] = p; changed = true; }
+    const p = { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz, or: m.or }, o = pos[m.id];
+    if (!o || o.x !== p.x || o.y !== p.y || o.w !== p.w || o.h !== p.h || o.hz !== p.hz || o.or !== p.or) { pos[m.id] = p; changed = true; }
   }
   if (changed) store.setMonPos(pos);
 }

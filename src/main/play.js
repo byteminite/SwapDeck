@@ -37,7 +37,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     clearInterval(s.timer);
     let restored = false, restoreErr = null;
     if (s.saved && s.restore) {
-      try { await display.restore(s.saved); store.setDisplaySaved(null); restored = true; }
+      try { const r = await display.restore(s.saved); if (r && r.fallback) await applyNormal().catch(() => {}); store.setDisplaySaved(null); restored = true; }
       catch (e) { restoreErr = e.message; }
     }
     if (s.prevAudio) {
@@ -131,7 +131,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       if (needD || needR) {
         const saved = await display.apply(needD ? mon.id : null, g.display.mode, needR ? res : null);
         // Stop was pressed while the display was changing: put it straight back.
-        if (session !== s) { await display.restore(saved).catch(() => {}); return { ok: false, cancelled: true }; }
+        if (session !== s) { const r = await display.restore(saved).catch(() => null); if (r && r.fallback) await applyNormal().catch(() => {}); return { ok: false, cancelled: true }; }
         s.saved = saved;
         store.setDisplaySaved(s.saved);
         send('display-changed', { label: (needD ? mon : resMon).label, mode: needD ? g.display.mode : null, res: needR ? resTxt : null });
@@ -225,7 +225,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     const saved = store.displaySaved();
     try {
       // Layouts saved before 1.1.0 name monitors by DISPLAYn, which Windows may have renumbered since: use the normal setup instead.
-      if (saved && !/^\\\\\.\\/.test(saved)) await display.restore(saved); else await applyNormal();
+      if (saved && !/^\\\\\.\\/.test(saved)) { const r = await display.restore(saved); if (r && r.fallback) await applyNormal(); } else await applyNormal();
       store.setDisplaySaved(null);
       if (session) session.saved = null;
       return { ok: true };
@@ -241,7 +241,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       const before = await display.apply(monId, 'primary');
       store.setDisplaySaved(before);
       await new Promise(r => setTimeout(r, 10000));
-      await display.restore(before);
+      const back = await display.restore(before);
+      if (back && back.fallback) await applyNormal().catch(() => {});
       store.setDisplaySaved(null);
       return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }
@@ -256,7 +257,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       const before = await display.apply(null, 'primary', p);
       store.setDisplaySaved(before);
       await new Promise(r => setTimeout(r, 10000));
-      await display.restore(before);
+      const back = await display.restore(before);
+      if (back && back.fallback) await applyNormal().catch(() => {});
       store.setDisplaySaved(null);
       return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }

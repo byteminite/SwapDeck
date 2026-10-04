@@ -12,7 +12,10 @@ public static class SDDisplay
 {
     const int ENUM_CURRENT = -1, ENUM_REGISTRY = -2;
     const int ATTACHED = 0x1, PRIMARY = 0x4, MIRROR = 0x8;
-    const int DM_POSITION = 0x20, DM_W = 0x80000, DM_H = 0x100000, DM_HZ = 0x400000, DM_FIXEDOUTPUT = 0x20000000;
+    const int DM_POSITION = 0x20, DM_ORIENT = 0x80, DM_W = 0x80000, DM_H = 0x100000, DM_HZ = 0x400000, DM_FIXEDOUTPUT = 0x20000000;
+    const uint QDC_ONLY_ACTIVE_PATHS = 0x2;
+    const uint SDC_TOPOLOGY_EXTEND = 0x4, SDC_USE_SUPPLIED_DISPLAY_CONFIG = 0x20, SDC_APPLY = 0x80, SDC_SAVE_TO_DATABASE = 0x200, SDC_ALLOW_CHANGES = 0x400;
+    const int PATH_SIZE = 72, MODE_SIZE = 64; // DISPLAYCONFIG_PATH_INFO, DISPLAYCONFIG_MODE_INFO
     const uint CDS_UPDATEREGISTRY = 0x1, CDS_SET_PRIMARY = 0x10, CDS_NORESET = 0x10000000;
     const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x1;
     const int EDS_RAWMODE = 0x2;
@@ -46,6 +49,9 @@ public static class SDDisplay
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern bool EnumDisplaySettingsEx(string dev, int mode, ref DEVMODE dm, int flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int ChangeDisplaySettingsEx(string dev, ref DEVMODE dm, IntPtr hwnd, uint flags, IntPtr lp);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int ChangeDisplaySettingsEx(string dev, IntPtr dm, IntPtr hwnd, uint flags, IntPtr lp);
+    [DllImport("user32.dll")] static extern int GetDisplayConfigBufferSizes(uint flags, out uint numPaths, out uint numModes);
+    [DllImport("user32.dll")] static extern int QueryDisplayConfig(uint flags, ref uint numPaths, IntPtr paths, ref uint numModes, IntPtr modes, IntPtr topology);
+    [DllImport("user32.dll")] static extern int SetDisplayConfig(uint numPaths, IntPtr paths, uint numModes, IntPtr modes, uint flags);
 
     class Mon
     {
@@ -54,6 +60,7 @@ public static class SDDisplay
         public int x, y, w, h, hz;   // current (or registry) mode
         public int bw, bh, bhz;      // best available mode, used when switching a monitor on
         public int fo = -1;          // scaling (0 default, 1 centre, 2 stretch); -1 = unknown / leave alone
+        public int or = -1;          // rotation (0, 1 = 90°, 2 = 180°, 3 = 270°); -1 = unknown / leave alone
     }
 
     static DEVMODE NewDm() { var dm = new DEVMODE(); dm.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE)); return dm; }
@@ -110,7 +117,7 @@ public static class SDDisplay
             }
             var dm = NewDm();
             if (EnumDisplaySettingsEx(dd.DeviceName, m.attached ? ENUM_CURRENT : ENUM_REGISTRY, ref dm, 0))
-            { m.x = dm.dmPositionX; m.y = dm.dmPositionY; m.w = dm.dmPelsWidth; m.h = dm.dmPelsHeight; m.hz = dm.dmDisplayFrequency; if (m.attached) m.fo = dm.dmDisplayFixedOutput; }
+            { m.x = dm.dmPositionX; m.y = dm.dmPositionY; m.w = dm.dmPelsWidth; m.h = dm.dmPelsHeight; m.hz = dm.dmDisplayFrequency; if (m.attached) { m.fo = dm.dmDisplayFixedOutput; m.or = dm.dmDisplayOrientation; } }
             // A switched-off monitor can show up under several of the GPU's free outputs.
             // Keep one entry per physical monitor: the attached one, else the first.
             var dup = list.Find(x => x.key == m.key);
@@ -144,6 +151,8 @@ public static class SDDisplay
                 // Scaling (stretch) only when asked for and different from now: some drivers reject the field.
                 var c = cur.Find(m => m.name == t.name);
                 if (t.fo >= 0 && c != null && c.fo >= 0 && c.fo != t.fo) { dm.dmFields |= DM_FIXEDOUTPUT; dm.dmDisplayFixedOutput = t.fo; }
+                // Rotation: a portrait monitor switched back on must get its rotation too, or its size doesn't exist.
+                if (t.or >= 0) { dm.dmFields |= DM_ORIENT; dm.dmDisplayOrientation = t.or; }
             }
             else
             {
@@ -170,13 +179,13 @@ public static class SDDisplay
             sb.Append("{\"name\":").Append(J(m.name)).Append(",\"key\":").Append(J(m.key)).Append(",\"monitor\":").Append(J(m.monitor)).Append(",\"hwid\":").Append(J(m.hwid))
               .Append(",\"attached\":").Append(m.attached ? "true" : "false").Append(",\"primary\":").Append(m.primary ? "true" : "false")
               .Append(",\"x\":").Append(m.x).Append(",\"y\":").Append(m.y).Append(",\"w\":").Append(m.w).Append(",\"h\":").Append(m.h)
-              .Append(",\"hz\":").Append(m.hz).Append(",\"fo\":").Append(m.fo).Append(",\"bw\":").Append(m.bw).Append(",\"bh\":").Append(m.bh).Append(",\"bhz\":").Append(m.bhz)
+              .Append(",\"hz\":").Append(m.hz).Append(",\"fo\":").Append(m.fo).Append(",\"or\":").Append(m.or).Append(",\"bw\":").Append(m.bw).Append(",\"bh\":").Append(m.bh).Append(",\"bhz\":").Append(m.bhz)
               .Append('}');
         }
         return sb.Append(']').ToString();
     }
 
-    // Saved layout format: name|attached|primary|x|y|w|h|hz[|fo];...
+    // Saved layout format: name|attached|primary|x|y|w|h|hz[|fo[|or]];...
     static List<Mon> Parse(string s)
     {
         var list = new List<Mon>();
@@ -189,14 +198,59 @@ public static class SDDisplay
             {
                 name = f[0], attached = f[1] == "1", primary = f[2] == "1",
                 x = int.Parse(f[3], ci), y = int.Parse(f[4], ci), w = int.Parse(f[5], ci), h = int.Parse(f[6], ci), hz = int.Parse(f[7], ci),
-                fo = f.Length > 8 ? int.Parse(f[8], ci) : -1
+                fo = f.Length > 8 ? int.Parse(f[8], ci) : -1,
+                or = f.Length > 9 ? int.Parse(f[9], ci) : -1
             });
         }
         return list;
     }
 
+    // Windows' own display configuration (what Win+P and Display settings use): every active path with its
+    // source, target, position, mode and rotation. Saved as base64 and handed back as-is to restore exactly.
+    static string CcdSave()
+    {
+        uint np, nm;
+        int r = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out np, out nm);
+        if (r != 0) return "error:ccd-size:" + r;
+        IntPtr p = Marshal.AllocHGlobal((int)np * PATH_SIZE), m = Marshal.AllocHGlobal((int)nm * MODE_SIZE);
+        try
+        {
+            r = QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref np, p, ref nm, m, IntPtr.Zero);
+            if (r != 0) return "error:ccd-query:" + r;
+            var bytes = new byte[8 + np * PATH_SIZE + nm * MODE_SIZE];
+            BitConverter.GetBytes(np).CopyTo(bytes, 0);
+            BitConverter.GetBytes(nm).CopyTo(bytes, 4);
+            Marshal.Copy(p, bytes, 8, (int)np * PATH_SIZE);
+            Marshal.Copy(m, bytes, 8 + (int)np * PATH_SIZE, (int)nm * MODE_SIZE);
+            return "ccd:" + Convert.ToBase64String(bytes);
+        }
+        finally { Marshal.FreeHGlobal(p); Marshal.FreeHGlobal(m); }
+    }
+
+    static string CcdRestore(string b64)
+    {
+        byte[] bytes;
+        try { bytes = Convert.FromBase64String(b64); } catch { return "error:ccd-data"; }
+        if (bytes.Length < 8) return "error:ccd-data";
+        uint np = BitConverter.ToUInt32(bytes, 0), nm = BitConverter.ToUInt32(bytes, 4);
+        if (bytes.Length != 8 + np * PATH_SIZE + nm * MODE_SIZE) return "error:ccd-data";
+        IntPtr p = Marshal.AllocHGlobal((int)Math.Max(1, np * PATH_SIZE)), m = Marshal.AllocHGlobal((int)Math.Max(1, nm * MODE_SIZE));
+        try
+        {
+            Marshal.Copy(bytes, 8, p, (int)np * PATH_SIZE);
+            Marshal.Copy(bytes, 8 + (int)np * PATH_SIZE, m, (int)nm * MODE_SIZE);
+            int r = SetDisplayConfig(np, p, nm, m, SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_SAVE_TO_DATABASE);
+            return r == 0 ? "ok" : "error:ccd-set:" + r;
+        }
+        finally { Marshal.FreeHGlobal(p); Marshal.FreeHGlobal(m); }
+    }
+
     public static string Run(string cmd, string arg)
     {
+        if (cmd == "ccdsave") return CcdSave();
+        if (cmd == "ccdrestore") return CcdRestore(arg);
+        // Like Win+P > Extend: every connected monitor on, in Windows' remembered arrangement.
+        if (cmd == "extend") { int r = SetDisplayConfig(0, IntPtr.Zero, 0, IntPtr.Zero, SDC_APPLY | SDC_TOPOLOGY_EXTEND); return r == 0 ? "ok" : "error:extend:" + r; }
         var cur = List();
         if (cmd == "list") return ToJson(cur);
         if (cmd == "restore") return Apply(Parse(arg), List());
