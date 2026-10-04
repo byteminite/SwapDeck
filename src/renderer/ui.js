@@ -65,6 +65,15 @@ let LIGHT = false;
 const tagDef = t => TAGDEF[t] || CUSTDEF[[...t].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5];
 const tc = t => { const d = tagDef(t); return ['rgba(' + d[0] + (LIGHT ? ',.12)' : ',.14)'), LIGHT ? d[2] : d[1], 'rgba(' + d[0] + ',.5)']; };
 
+// Game icons cached by 1.0.0 were two URLs glued together (…/apps/730/https://…/hash.jpg.jpg). Keep the real
+// part and load it from Steam's current CDN.
+const fixIcon = u => {
+  if (!u) return u;
+  const i = u.lastIndexOf('https://');
+  if (i > 0) u = u.slice(i).replace(/\.jpg\.jpg$/, '.jpg');
+  return u.replace(/^https:\/\/steamcdn-a\.akamaihd\.net\//, 'https://cdn.cloudflare.steamstatic.com/');
+};
+
 // An account badge: the Steam avatar when there is one, else the generated gradient (with initials on top).
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
 
@@ -117,7 +126,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
-    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null,
+    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false,
   };
   _t = []; _tid = 0;
 
@@ -350,6 +359,7 @@ class App extends Component {
       if (S.defMenu) return this.setState({ defMenu: false });
       if (S.rmId) return this.setState({ rmId: null });
       if (S.ag) return this.setState({ ag: null });
+      if (S.menu) return this.setState({ menu: null });
       if (S.acctMenu) return this.setState({ acctMenu: false });
       if (S.gd) return this.setState({ gd: null });
       if (S.launch && !S.launch.hidden) return this.setState(s => ({ launch: { ...s.launch, hidden: true } }));
@@ -577,6 +587,12 @@ class App extends Component {
   monOf(g) { return g.display.mon ? this.mons().find(m => m.id === g.display.mon) || null : null; }
   normMon() { const s = this.state.settings, m = this.mons(); return m.find(x => x.id === s.normalMon) || m.find(x => x.primary) || null; }
   resOf(g) { return g.display.res ? this.state.resProfiles.find(p => p.id === g.display.res) || null : null; }
+  // Themed dropdowns: one open at a time; opens upward when there isn't room below the button.
+  toggleMenu(key, e) {
+    if (this.state.menu === key) return this.setState({ menu: null });
+    const r = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : null;
+    this.setState({ menu: key, menuUp: !!r && window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom });
+  }
   setView(v) {
     if (v === this.state.view) return;
     this.setState({ view: v, drawerId: null });
@@ -887,7 +903,7 @@ class App extends Component {
       gMeta: g.steam ? 'Steam · App ' + g.appid + (g.tags.length ? ' · ' + g.tags.join(', ') : '') : 'Non-Steam · ' + g.exe.split('\\').pop(),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
-      onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false }),
+      onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null }),
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
@@ -923,9 +939,17 @@ class App extends Component {
       onGLaunchPick: async () => { const p = await api.libPickApp(); if (!p) return; this.gmut(g.id, { launcher: p }); this.gset(g.id, { launcher: p }); },
       onGLaunchReset: () => { this.gmut(g.id, { launcher: null }); this.gset(g.id, { launcher: null }); },
       cScheme: (S.settings.base || 'dark') === 'light' ? 'light' : 'dark',
-      gAudioOpts: [{ v: '', label: "Don't change", sel: !g.audio }, ...S.audioDevs.map(d => ({ v: d.id, label: d.name + (d.def ? '  (in use now)' : ''), sel: g.audio === d.id })),
-        ...(g.audio && !S.audioDevs.some(d => d.id === g.audio) ? [{ v: g.audio, label: S.audioDevs.length ? 'A device that isn’t connected' : 'Loading devices…', sel: true }] : [])],
-      onGAudio: e => { const v = e.target.value || null; this.gmut(g.id, { audio: v }); this.gset(g.id, { audio: v }); },
+      ...(() => {
+        const pickA = v => { this.setState({ menu: null }); this.gmut(g.id, { audio: v }); this.gset(g.id, { audio: v }); };
+        const opt = (v, label, sub) => ({ label, sub, sel: (g.audio || null) === v, bg: (g.audio || null) === v ? 'rgba(var(--accent-rgb),.1)' : 'transparent', on: () => pickA(v) });
+        const curDev = S.audioDevs.find(d => d.id === g.audio);
+        return {
+          gAudioOpts: [opt(null, "Don't change", ''), ...S.audioDevs.map(d => opt(d.id, d.name, d.def ? 'in use now' : ''))],
+          gAudioLabel: !g.audio ? "Don't change" : curDev ? curDev.name : S.audioDevs.length ? 'A device that isn’t connected' : 'Loading devices…',
+          gAudioMenu: S.menu === 'audio', gAudioUp: S.menuUp, gAudioBd: S.menu === 'audio' ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
+          onGAudioMenu: e => this.toggleMenu('audio', e),
+        };
+      })(),
       gAudioHint: g.audio ? 'Becomes the default sound device while ' + g.name + ' runs, then switches back.' : 'Pick a headset or speakers to switch to while this game runs.',
       gApps: (g.apps || []).map((ap, i) => {
         const upd = p => { const apps = g.apps.map((x, j) => j === i ? { ...x, ...p } : x); this.gmut(g.id, { apps }); return apps; };
@@ -1012,7 +1036,7 @@ class App extends Component {
     const seg = (cur, k, l, on) => ({ label: l, bg: cur === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: cur === k ? 'var(--text)' : 'var(--text-subtle)', on });
     const dash = '—';
     const instSteam = S.lib.filter(x => x.steam && x.installed);
-    const gameIc = x => { const lg = S.lib.find(y => y.steam && String(y.appid) === String(x.appid)); const base = G(GAMECOL[hash(x.appid || x.n) % GAMECOL.length], '#111'); return x.icon ? 'url("' + x.icon + '") center/cover no-repeat,' + base : lg ? this.cardBg(lg) : base; };
+    const gameIc = x => { const lg = S.lib.find(y => y.steam && String(y.appid) === String(x.appid)); const base = G(GAMECOL[hash(x.appid || x.n) % GAMECOL.length], '#111'); return x.icon ? 'url("' + fixIcon(x.icon) + '") center/cover no-repeat,' + base : lg ? this.cardBg(lg) : base; };
     const xpMax = c && c.xpMax ? c.xpMax : 1;
     return {
       drawerOn: true, onDrawerClose: () => this.setState({ drawerId: null }),
@@ -1084,8 +1108,11 @@ class App extends Component {
           dCs2Auto: c ? c.autoexec : '',
           dCs2Ph: '// e.g.\nfps_max 0\ncl_crosshairsize 2\nbind "mwheeldown" "+jump"',
           onDCs2Auto: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, autoexec: v } })); clearTimeout(this._cs2T); this._cs2T = setTimeout(() => api.cs2Autoexec(d.sid, v), 500); },
-          dCs2CanCopy: !!(c && c.sources.length), dCs2Sources: c ? c.sources.map(o => ({ ...o, sel: o.sid === c.from })) : [],
-          onDCs2From: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, from: v } })); },
+          dCs2CanCopy: !!(c && c.sources.length),
+          dCs2Opts: c ? c.sources.map(o => ({ label: o.name, sub: '', sel: o.sid === c.from, bg: o.sid === c.from ? 'rgba(var(--accent-rgb),.1)' : 'transparent', on: () => this.setState(st => ({ menu: null, cs2: st.cs2 && { ...st.cs2, from: o.sid } })) })) : [],
+          dCs2Label: c ? ((c.sources.find(o => o.sid === c.from) || {}).name || 'Pick an account') : '',
+          dCs2Menu: S.menu === 'cs2', dCs2Up: S.menuUp, dCs2Bd: S.menu === 'cs2' ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)',
+          onDCs2Menu: e => this.toggleMenu('cs2', e),
           onDCs2Copy: async () => {
             const from = c && c.sources.find(o => o.sid === c.from); if (!from) return;
             const r = await api.cs2Copy(from.sid, d.sid);

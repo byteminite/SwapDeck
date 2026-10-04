@@ -80,3 +80,6 @@ img { display: block; }
 
 select.sd-select { appearance: none; -webkit-appearance: none; width: 100%; padding: 9px 32px 9px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .03) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center; color: #e8e8ec; font: 500 12.5px 'Geist', sans-serif; outline: none; cursor: pointer; }
 select.sd-select option { background: #15151b; color: #e8e8ec; }
+
+/* themed dropdown options */
+.sd-opt:hover { background: rgba(var(--fg-rgb), .06) !important; }
