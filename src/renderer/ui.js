@@ -765,7 +765,9 @@ class App extends Component {
         bg: this.cardBg(g), filter: g.installed ? 'none' : 'grayscale(1) brightness(.55)', nameFg: g.installed ? 'var(--text)' : 'var(--text-subtle)',
         typeLbl: g.steam ? 'STEAM' : 'NON-STEAM', typeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', typeBd: g.steam ? 'rgba(var(--fg-rgb),.22)' : 'rgba(251,191,36,.4)',
         hasMon: !!mon || !!this.resOf(g), monTitle: [mon ? 'Display: ' + mon.label : null, this.resOf(g) ? 'Resolution: ' + this.resOf(g).name : null].filter(Boolean).join(' · '),
-        hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
+        hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '',
+        // Outline the account that's signed in to Steam right now.
+        aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         hovOp: hov && !run ? 1 : 0, hovPe: hov && !run ? 'auto' : 'none', ty: hov ? 'translateY(-3px)' : 'none',
         ring: run ? '0 0 0 2px #4ade80,0 0 30px rgba(74,222,128,.25)' : hov ? '0 0 0 2px rgba(var(--fg-rgb),.4),0 18px 40px rgba(0,0,0,.5)' : '0 0 0 1px rgba(var(--fg-rgb),.08)',
