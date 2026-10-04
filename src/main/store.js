@@ -14,10 +14,17 @@ const DEFAULTS = {
     closeAfter: false,
     steamArgs: '',
     uiScale: 'auto',
+    base: 'dark',            // dark | oled | light
+    accent: 'cyan',          // cyan | violet | amber | red | green | pink | windows | custom
+    customAccent: '#c084fc',
+    followTag: false,        // accent follows the running game's tag
+    reduceMotion: false,
+    normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
+const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true }, lastPlayed: 0, playMs: 0 };
 
 const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
@@ -42,6 +49,9 @@ function load() {
     meta: data.meta || {},
     cache: data.cache || {},
     window: data.window || null,
+    games: data.games || {},             // gameId -> per-game settings (DEFAULT_GAME shape)
+    customGames: data.customGames || [], // non-Steam games: { id, name, exe, img, iconMode }
+    displaySaved: data.displaySaved || null, // monitor layout before SwapDeck changed it
   };
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
 }
@@ -78,6 +88,22 @@ function logError(where, e) {
     fs.appendFileSync(path.join(app.getPath('userData'), 'swapdeck-error.log'), line);
   } catch {}
 }
+
+const gameCfg = id => {
+  const g = data.games[id] || {};
+  return { ...DEFAULT_GAME, ...g, display: { ...DEFAULT_GAME.display, ...(g.display || {}) } };
+};
+function setGameCfg(id, patch) {
+  const cur = gameCfg(id);
+  data.games[id] = { ...cur, ...patch, display: { ...cur.display, ...(patch.display || {}) } };
+  save();
+  return data.games[id];
+}
+const allGameCfgs = () => data.games;
+const customGames = () => data.customGames;
+function setCustomGames(list) { data.customGames = list; save(); }
+const displaySaved = () => data.displaySaved;
+function setDisplaySaved(v) { data.displaySaved = v; save(); }
 
 const windowState = () => data.window;
 function setWindowState(w) { data.window = w; save(); }
@@ -166,4 +192,5 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
+  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved,
 };

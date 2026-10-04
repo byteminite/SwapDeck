@@ -49,7 +49,9 @@ function parse(text) {
       let v = token();
       // Skip platform conditionals like [$WIN32]
       if (v && v.t === 's' && /^\[.*\]$/.test(v.v)) v = token();
-      if (!v) throw new Error('Unexpected end of VDF');
+      if (!v) { obj[k.v] = ''; if (root) return obj; throw new Error('Unexpected end of VDF'); }
+      // A dangling key right before "}" (seen in localconfig.vdf): keep it as empty and close the object.
+      if (v.t === '}') { obj[k.v] = ''; if (root) throw new Error('Unexpected } in VDF'); return obj; }
       if (v.t === '{') obj[k.v] = readObject(false);
       else if (v.t === 's') {
         obj[k.v] = v.v;

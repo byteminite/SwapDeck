@@ -1,11 +1,19 @@
 const path = require('path');
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, screen } = require('electron');
+const fs = require('fs');
+const { pathToFileURL } = require('url');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, screen, protocol, net, systemPreferences } = require('electron');
 const store = require('./src/main/store');
 const steam = require('./src/main/steam');
 const { fetchPublic } = require('./src/main/profile');
 const link = require('./src/main/link');
 const { fetchLinked } = require('./src/main/stats');
 const updater = require('./src/main/updater');
+const library = require('./src/main/library');
+const display = require('./src/main/display');
+const { createPlayer } = require('./src/main/play');
+
+// Local Steam library art and custom covers are served to the UI through sdimg://
+protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 let win = null;
 let loc = { exe: null, dir: null, checked: [] };
@@ -121,11 +129,13 @@ async function wrap(kind, fn) {
   }
 }
 
-function switchTo(sid) {
+// opts.forPlay: switching as part of launching a Library game, so no "game after switching"
+// and no "close app after switching".
+function switchTo(sid, opts = {}) {
   return wrap('switch', async () => {
     const acc = steam.listAccounts(loc.dir).find(a => a.sid === sid);
     if (!acc) throw new Error('That account is no longer in Steam\'s saved logins.');
-    const appid = launchOf(sid);
+    const appid = opts.forPlay ? null : launchOf(sid);
     const game = appid ? gameName(appid) : null;
     const running = await steam.isRunning();
     const steps = [];
@@ -162,8 +172,9 @@ function switchTo(sid) {
       await steam.sleep(1200);
       i++; progress();
     }
-    if (store.settings().closeAfter) setTimeout(() => app.quit(), 2200);
-    return { game, name: acc.persona, closing: store.settings().closeAfter, chooserOff };
+    const closing = !opts.forPlay && store.settings().closeAfter;
+    if (closing) setTimeout(() => app.quit(), 2200);
+    return { game, name: acc.persona, closing, chooserOff, signedIn: true };
   });
 }
 
@@ -281,6 +292,15 @@ async function refreshStats(sid) {
   }
 }
 
+const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send });
+
+function winAccent() {
+  try { const c = systemPreferences.getAccentColor(); return c ? '#' + c.slice(0, 6) : null; } catch { return null; }
+}
+
+// --play=<gameId> from a desktop shortcut
+const playArg = argv => { const a = (argv || []).find(x => /^--play=/.test(x)); return a ? a.slice(7) : null; };
+
 // ---------- IPC ----------
 
 function ipc() {
@@ -289,7 +309,14 @@ function ipc() {
     loadGames();
     const v = store.vault.status();
     if (v.locked) return { locked: true, vault: v, version: app.getVersion(), zoom: zoomFactor };
-    return { steam: steamState(), accounts: accounts(), games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor, update: updater.current(), vault: v };
+    const accs = accounts();
+    const monitors = await display.list().catch(() => []);
+    if (!store.settings().normalMon) { const p = monitors.find(x => x.primary); if (p) store.setSettings({ normalMon: p.id }); }
+    return {
+      steam: steamState(), accounts: accs, games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor,
+      update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
+      displaySaved: !!store.displaySaved(),
+    };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
   ipcMain.handle('steam:close', () => closeSteam());
@@ -306,7 +333,7 @@ function ipc() {
   });
   ipcMain.handle('settings', (_, patch) => {
     const allowed = {};
-    for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
     const s = store.setSettings(allowed);
     if ('uiScale' in allowed) applyZoom(false);
@@ -360,8 +387,75 @@ function ipc() {
   ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.removeCredentials(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
   ipcMain.handle('credentials:clear', (_, sid) => { store.removeCredentials(String(sid)); return oneAccount(String(sid)); });
   ipcMain.handle('open', (_, url) => {
-    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url)) shell.openExternal(url);
+    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases') shell.openExternal(url);
   });
+
+  // ---- library ----
+  const findGame = id => library.build(loc.dir, accounts()).find(g => g.id === id);
+  ipcMain.handle('lib:list', () => library.build(loc.dir, accounts()));
+  ipcMain.handle('lib:set', (_, id, patch) => {
+    const g = findGame(String(id)); if (!g) return null;
+    const allowed = {};
+    if ('acct' in patch) allowed.acct = patch.acct || null;
+    if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
+    if (patch.display) allowed.display = {
+      ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
+      ...('mode' in patch.display ? { mode: patch.display.mode === 'only' ? 'only' : 'primary' } : {}),
+      ...('restore' in patch.display ? { restore: !!patch.display.restore } : {}),
+    };
+    library.setCfg(g, allowed);
+    return findGame(g.id);
+  });
+  ipcMain.handle('lib:pickExe', async () => {
+    const r = await dialog.showOpenDialog(win, { title: "Choose the game's .exe", properties: ['openFile'], filters: [{ name: 'Programs', extensions: ['exe'] }] });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  ipcMain.handle('lib:pickImage', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Choose a cover image', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const src = r.filePaths[0], dir = path.join(app.getPath('userData'), 'covers');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = 'c' + Date.now() + path.extname(src).toLowerCase();
+    fs.copyFileSync(src, path.join(dir, file));
+    return { file, url: 'sdimg://cover/' + file, name: path.basename(src) };
+  });
+  ipcMain.handle('lib:saveCustom', (_, g) => {
+    if (!g || !g.exe || !String(g.name || '').trim()) return null;
+    const list = store.customGames().slice();
+    const rec = { id: g.id && list.some(x => x.id === g.id) ? g.id : 'g' + Date.now(), name: String(g.name).trim().slice(0, 80), exe: String(g.exe), img: g.img || null, iconMode: g.iconMode === 'exe' ? 'exe' : 'gen' };
+    const i = list.findIndex(x => x.id === rec.id);
+    if (i >= 0) list[i] = rec; else list.push(rec);
+    store.setCustomGames(list);
+    store.setGameCfg(rec.id, { opts: String(g.opts || '').slice(0, 400) });
+    return rec.id;
+  });
+  ipcMain.handle('lib:removeCustom', (_, id) => {
+    const list = store.customGames(), rec = list.find(x => x.id === id);
+    if (!rec) return null;
+    store.setCustomGames(list.filter(x => x.id !== id));
+    return { rec, cfg: store.gameCfg(id) };
+  });
+  ipcMain.handle('lib:restoreCustom', (_, saved) => {
+    if (!saved || !saved.rec) return false;
+    store.setCustomGames([...store.customGames().filter(x => x.id !== saved.rec.id), saved.rec]);
+    if (saved.cfg) store.setGameCfg(saved.rec.id, saved.cfg);
+    return true;
+  });
+  ipcMain.handle('game:play', (_, id) => player.play(String(id)));
+  ipcMain.handle('game:stop', () => player.stop());
+  ipcMain.handle('game:shortcut', (_, id) => {
+    const g = findGame(String(id)); if (!g) return { ok: false, error: 'Game not found.' };
+    const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+    const args = (app.isPackaged ? '' : '"' + app.getAppPath() + '" ') + '--play=' + g.id;
+    const file = path.join(app.getPath('desktop'), g.name.replace(/[\\/:*?"<>|]/g, '').trim() + '.lnk');
+    const ok = shell.writeShortcutLink(file, { target: exe, args, description: 'Play ' + g.name + ' through SwapDeck', icon: g.steam ? exe : g.exe, iconIndex: 0 });
+    return ok ? { ok: true, file: path.basename(file) } : { ok: false, error: "Windows didn't create the shortcut." };
+  });
+
+  // ---- displays ----
+  ipcMain.handle('display:list', () => display.list().catch(() => []));
+  ipcMain.handle('display:test', (_, id) => player.test(String(id)));
+  ipcMain.handle('display:restore', () => player.restoreNow());
   ipcMain.on('win', (_, a) => {
     if (!win) return;
     if (a === 'min') win.minimize();
@@ -471,13 +565,27 @@ function createWindow() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.on('second-instance', (_, argv) => {
+    if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+    const id = playArg(argv);
+    if (id) player.play(id);
+  });
   app.whenReady().then(async () => {
     store.load();
     Menu.setApplicationMenu(null);
     ipc();
     await detect();
+    protocol.handle('sdimg', req => {
+      const u = new URL(req.url), parts = decodeURIComponent(u.pathname).split('/').filter(Boolean);
+      let file = null;
+      if (u.hostname === 'lc' && parts.length === 2 && /^\d+$/.test(parts[0]) && ['library_600x900.jpg', 'library_hero.jpg', 'logo.png'].includes(parts[1])) file = steam.artFile(loc.dir, parts[0], parts[1]);
+      else if (u.hostname === 'cover' && parts.length === 1 && /^[\w.-]+$/.test(parts[0])) file = path.join(app.getPath('userData'), 'covers', parts[0]);
+      if (!file || !fs.existsSync(file)) return new Response('', { status: 404 });
+      return net.fetch(pathToFileURL(file).toString());
+    });
     createWindow();
+    const startId = playArg(process.argv);
+    if (startId) win.webContents.once('did-finish-load', () => setTimeout(() => player.play(startId), 1500));
     updater.init(s => send('update', s));
     setInterval(poll, 2500);
     setTimeout(refreshPublicAll, 2500);

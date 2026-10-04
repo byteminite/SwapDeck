@@ -51,6 +51,7 @@ async function readSteamReg() {
     steamPath: main.SteamPath || null,
     autoLoginUser: main.AutoLoginUser || '',
     activeUser: typeof active.ActiveUser === 'number' ? active.ActiveUser : 0,
+    runningAppId: typeof main.RunningAppID === 'number' ? main.RunningAppID : 0,
   };
 }
 
@@ -213,7 +214,7 @@ function disableUserChooser(dir) {
   const p = path.join(dir, 'config', 'config.vdf');
   let text;
   try { text = fs.readFileSync(p, 'utf8'); } catch { return false; }
-  const re = /("AlwaysShowUserChooser"[ \t]+)"1"/g;
+  const re = /("AlwaysShowUserChooser"[ \t]+)"-?1"/g; // Steam also stores "-1"
   if (!re.test(text)) return false;
   fs.copyFileSync(p, p + '.swapdeck.bak');
   const tmp = p + '.swapdeck.tmp';
@@ -301,7 +302,8 @@ function installedGames(dir) {
         const appid = String(vdf.get(st, 'appid'));
         const name = vdf.get(st, 'name');
         if (!name || TOOL_NAME.test(name) || games.has(appid)) continue;
-        games.set(appid, { appid, name });
+        const installdir = vdf.get(st, 'installdir');
+        games.set(appid, { appid, name, folder: installdir ? path.join(lib, 'common', installdir) : null });
       }
       catch {}
     }
@@ -311,7 +313,49 @@ function installedGames(dir) {
     .map(g => ({ ...g, icon: gameIcon(dir, g.appid) }));
 }
 
+// Last played + playtime per app, merged across every account on this PC
+// (userdata/<accountid>/config/localconfig.vdf). Cached by file mtime.
+const playCache = new Map();
+function localPlaytime(dir) {
+  const out = {};
+  if (!dir) return out;
+  const ud = path.join(dir, 'userdata');
+  let ids = [];
+  try { ids = fs.readdirSync(ud).filter(x => /^\d+$/.test(x)); } catch { return out; }
+  for (const id of ids) {
+    const f = path.join(ud, id, 'config', 'localconfig.vdf');
+    let mt;
+    try { mt = fs.statSync(f).mtimeMs; } catch { continue; }
+    let apps = playCache.get(f);
+    if (!apps || apps.mt !== mt) {
+      try {
+        let n = vdf.get(vdf.parse(fs.readFileSync(f, 'utf8')), 'UserLocalConfigStore');
+        for (const k of ['Software', 'Valve', 'Steam']) n = vdf.get(n, k);
+        apps = { mt, data: vdf.get(n, 'apps') || {} };
+      } catch { apps = { mt, data: {} }; }
+      playCache.set(f, apps);
+    }
+    for (const [appid, v] of Object.entries(apps.data)) {
+      if (!v || typeof v !== 'object') continue;
+      const last = Number(vdf.get(v, 'LastPlayed') || 0) * 1000, mins = Number(vdf.get(v, 'Playtime') || 0);
+      if (!last && !mins) continue;
+      const o = out[appid] || (out[appid] = { last: 0, mins: 0 });
+      o.last = Math.max(o.last, last);
+      o.mins += mins;
+    }
+  }
+  return out;
+}
+
+// Cached library art (cover / hero / logo) if Steam has it locally.
+function artFile(dir, appid, file) {
+  if (!dir) return null;
+  const p = path.join(dir, 'appcache', 'librarycache', String(appid), file);
+  return fs.existsSync(p) ? p : null;
+}
+
 module.exports = {
+  localPlaytime, artFile, splitArgs,
   locate, status, isRunning, shutdown, start, waitFor, readSteamReg, regSet,
   listAccounts, loginUsersMtime, markMostRecent, clearAutoLogin, disableUserChooser, removeAccount,
   avatar, installedGames, sidFromAccountId, accountIdFromSid, loginUsersPath, sleep,

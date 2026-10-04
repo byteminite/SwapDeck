@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update'];
+const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update', 'launch', 'launch-end', 'display-changed'];
 
 contextBridge.exposeInMainWorld('api', {
   state: () => invoke('state'),
@@ -31,6 +31,19 @@ contextBridge.exposeInMainWorld('api', {
   vaultChange: (oldPw, newPw) => invoke('vault:change', oldPw, newPw),
   vaultRemove: pw => invoke('vault:remove', pw),
   vaultAutoUnlock: on => invoke('vault:autounlock', on),
+  libList: () => invoke('lib:list'),
+  libSet: (id, patch) => invoke('lib:set', id, patch),
+  libPickExe: () => invoke('lib:pickExe'),
+  libPickImage: () => invoke('lib:pickImage'),
+  libSaveCustom: game => invoke('lib:saveCustom', game),
+  libRemoveCustom: id => invoke('lib:removeCustom', id),
+  libRestoreCustom: saved => invoke('lib:restoreCustom', saved),
+  play: id => invoke('game:play', id),
+  stopGame: () => invoke('game:stop'),
+  shortcut: id => invoke('game:shortcut', id),
+  displays: () => invoke('display:list'),
+  testDisplay: id => invoke('display:test', id),
+  restoreDisplay: () => invoke('display:restore'),
   win: action => ipcRenderer.send('win', action),
   on: (ch, fn) => {
     if (!EVENTS.includes(ch)) throw new Error('Unknown channel ' + ch);
