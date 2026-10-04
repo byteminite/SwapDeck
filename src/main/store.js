@@ -35,7 +35,19 @@ function load() {
   vault.load();
   file = path.join(app.getPath('userData'), 'swapdeck.json');
   tokenFile = path.join(app.getPath('userData'), 'tokens.json');
-  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { data = {}; }
+  data = {};
+  if (fs.existsSync(file)) {
+    try {
+      data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      // Keep a copy of the last file that loaded fine.
+      try { fs.copyFileSync(file, file + '.bak'); } catch (e) { logError('backup', e); }
+    } catch (e) {
+      // Never silently replace a file we couldn't read: set it aside so nothing is lost.
+      logError('load', e);
+      try { fs.copyFileSync(file, file.replace(/.json$/, '') + '.unreadable-' + Date.now() + '.json'); } catch {}
+      try { data = JSON.parse(fs.readFileSync(file + '.bak', 'utf8')); logError('load', 'restored from swapdeck.json.bak'); } catch { data = {}; }
+    }
+  }
   // Before scaleBase 0.9, 100% meant raw zoom 1.0. Now 100% = raw 0.9, so convert a saved fixed scale
   // to the preset that looks the same (the old 90% becomes the new 100%).
   const raw = data.settings || {};
@@ -59,13 +71,17 @@ function load() {
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
 }
 
-let saveTimer = null;
+let saveTimer = null, pendingSince = 0;
 function save() {
+  // Debounced, but never put off for more than a second, even if changes keep coming.
+  if (!pendingSince) pendingSince = Date.now();
   clearTimeout(saveTimer);
+  if (Date.now() - pendingSince > 1000) return flush();
   saveTimer = setTimeout(flush, 150);
 }
 function flush() {
   clearTimeout(saveTimer);
+  pendingSince = 0;
   let json;
   try {
     json = JSON.stringify(data, null, 1);
@@ -83,6 +99,11 @@ function flush() {
     try { fs.writeFileSync(file, json); } catch (e2) { logError('save', e2); }
     try { fs.unlinkSync(tmp); } catch {}
   }
+  // Check the write really landed; a silent failure here is how settings got lost before.
+  try {
+    const size = fs.statSync(file).size;
+    if (size !== Buffer.byteLength(json)) logError('verify', 'swapdeck.json is ' + size + ' bytes, expected ' + Buffer.byteLength(json));
+  } catch (e) { logError('verify', e); }
 }
 
 function logError(where, e) {
