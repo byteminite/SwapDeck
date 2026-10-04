@@ -5,7 +5,7 @@
 const { screen } = require('electron');
 const { createHelper } = require('./native');
 
-const run = createHelper({ name: 'display', version: 6, source: 'display-helper.cs', cls: 'SDDisplay' });
+const run = createHelper({ name: 'display', version: 8, source: 'display-helper.cs', cls: 'SDDisplay' });
 
 async function rawList() {
   const out = await run('list');

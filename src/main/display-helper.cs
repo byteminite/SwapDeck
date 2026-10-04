@@ -111,9 +111,13 @@ public static class SDDisplay
             var bm = NewDm();
             for (int k = 0; EnumDisplaySettingsEx(dd.DeviceName, k, ref bm, 0); k++)
             {
-                bool bigger = (long)bm.dmPelsWidth * bm.dmPelsHeight > (long)m.bw * m.bh;
-                bool faster = bm.dmPelsWidth == m.bw && bm.dmPelsHeight == m.bh && bm.dmDisplayFrequency > m.bhz;
-                if (bigger || faster) { m.bw = bm.dmPelsWidth; m.bh = bm.dmPelsHeight; m.bhz = bm.dmDisplayFrequency; }
+                // Modes come back in the output's remembered rotation (an output that last drove a portrait
+                // monitor lists them sideways): report the unrotated size.
+                bool rot = bm.dmDisplayOrientation == 1 || bm.dmDisplayOrientation == 3;
+                int bw = rot ? bm.dmPelsHeight : bm.dmPelsWidth, bh = rot ? bm.dmPelsWidth : bm.dmPelsHeight;
+                bool bigger = (long)bw * bh > (long)m.bw * m.bh;
+                bool faster = bw == m.bw && bh == m.bh && bm.dmDisplayFrequency > m.bhz;
+                if (bigger || faster) { m.bw = bw; m.bh = bh; m.bhz = bm.dmDisplayFrequency; }
             }
             var dm = NewDm();
             if (EnumDisplaySettingsEx(dd.DeviceName, m.attached ? ENUM_CURRENT : ENUM_REGISTRY, ref dm, 0))
@@ -259,13 +263,18 @@ public static class SDDisplay
             // Every resolution the monitor (driver) offers, best refresh rate per size, biggest first.
             var best = new Dictionary<long, int[]>();
             var dm = NewDm();
+            // A switched-off monitor lists modes in its output's remembered rotation: report them unrotated.
+            var me = cur.Find(m => m.name == arg);
+            bool off = me == null || !me.attached;
             // Raw modes too, so custom resolutions made in the GPU control panel are listed.
             for (int k = 0; EnumDisplaySettingsEx(arg, k, ref dm, EDS_RAWMODE); k++)
             {
                 if (dm.dmBitsPerPel != 0 && dm.dmBitsPerPel < 32) continue;
-                long key = (long)dm.dmPelsWidth * 100000 + dm.dmPelsHeight;
+                bool rot = off && (dm.dmDisplayOrientation == 1 || dm.dmDisplayOrientation == 3);
+                int w = rot ? dm.dmPelsHeight : dm.dmPelsWidth, h = rot ? dm.dmPelsWidth : dm.dmPelsHeight;
+                long key = (long)w * 100000 + h;
                 int[] v;
-                if (!best.TryGetValue(key, out v) || dm.dmDisplayFrequency > v[2]) best[key] = new[] { dm.dmPelsWidth, dm.dmPelsHeight, dm.dmDisplayFrequency };
+                if (!best.TryGetValue(key, out v) || dm.dmDisplayFrequency > v[2]) best[key] = new[] { w, h, dm.dmDisplayFrequency };
             }
             var all = new List<int[]>(best.Values);
             all.Sort((a, b) => (b[0] * b[1]).CompareTo(a[0] * a[1]));
@@ -284,7 +293,7 @@ public static class SDDisplay
                 int minX = int.MaxValue, minY = 0;
                 foreach (var m in cur) if (m.attached && m.x < minX) { minX = m.x; minY = m.y; }
                 foreach (var m in cur) if (m.attached && m != t) { m.x = m.x - minX + t.bw; m.y = m.y - minY; }
-                t.attached = true; t.x = 0; t.y = 0; t.w = t.bw; t.h = t.bh; t.hz = t.bhz;
+                t.attached = true; t.x = 0; t.y = 0; t.w = t.bw; t.h = t.bh; t.hz = t.bhz; t.or = 0; // unrotated
             }
             else
             {
@@ -296,7 +305,7 @@ public static class SDDisplay
         }
         if (cmd == "only")
         {
-            if (!t.attached) { t.w = t.bw; t.h = t.bh; t.hz = t.bhz; }
+            if (!t.attached) { t.w = t.bw; t.h = t.bh; t.hz = t.bhz; t.or = 0; } // switched on unrotated
             if (t.w == 0 || t.h == 0) return "error:no-mode";
             foreach (var m in cur) { m.primary = m == t; m.attached = m == t; }
             t.x = 0; t.y = 0;
