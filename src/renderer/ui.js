@@ -89,6 +89,17 @@ function chipFade(el) {
   el.style.webkitMaskImage = !l && !r ? 'none' : 'linear-gradient(90deg,' + (l ? 'transparent,#000 24px' : '#000,#000') + ',' + (r ? '#000 calc(100% - 24px),transparent' : '#000') + ')';
 }
 
+const dur = ms => { const m = Math.round(ms / 60000); return m < 60 ? m + ' m' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' m'; };
+function when(t) {
+  const d = new Date(t), now = new Date(), day = 86400000;
+  const start = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((start(now) - start(d)) / day), hm = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff === 0) return 'today ' + hm;
+  if (diff === 1) return 'yesterday ' + hm;
+  if (diff < 7) return d.toLocaleDateString('en-GB', { weekday: 'long' }) + ' ' + hm;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 const SCALE_OPTS = ['auto', 80, 90, 100, 110, 125, 150];
 const resSpec = p => p.w + '×' + p.h + (p.hz ? ' · ' + p.hz + ' Hz' : '') + (p.stretch ? ' · stretched' : '');
 
@@ -106,7 +117,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
-    audioDevs: [], playLog: {}, lsel: null,
+    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null,
   };
   _t = []; _tid = 0;
 
@@ -165,7 +176,7 @@ class App extends Component {
     this.setState({
       locked: false, steam: st.steam, accounts: st.accounts, games: st.games, settings: st.settings, version: st.version, zoom: st.zoom,
       update: st.update, vault: st.vault, lib: st.lib || [], monitors: st.monitors || [], monPos: st.monPos || {}, resProfiles: st.resProfiles || [],
-      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null, playLog: st.playLog || {},
+      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null, playLog: st.playLog || {}, sessions: st.sessions || [],
     });
     return st;
   }
@@ -241,9 +252,15 @@ class App extends Component {
 
   // Controller: d-pad / left stick move, A opens or confirms, B goes back, X opens details, LB/RB switch Accounts and Library.
   pollPad() {
-    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+    // Only real controllers (standard Xbox-style layout). Wheels, pedals and button boxes report other
+    // layouts, and a pedal resting at full travel would otherwise look like a stick held over.
+    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(p => p && p.mapping === 'standard') : [];
     const p = pads[0]; if (!p || !document.hasFocus()) { this._padPrev = null; return; }
-    const ax = p.axes[0] || 0, ay = p.axes[1] || 0, btn = i => !!(p.buttons[i] && p.buttons[i].pressed);
+    // A stick already pushed over when first seen is ignored until it returns to the centre.
+    const rest = this._padRest = this._padRest && this._padRest.id === p.id ? this._padRest : { id: p.id, x: Math.abs(p.axes[0] || 0) > .5, y: Math.abs(p.axes[1] || 0) > .5 };
+    if (rest.x && Math.abs(p.axes[0] || 0) < .3) rest.x = false;
+    if (rest.y && Math.abs(p.axes[1] || 0) < .3) rest.y = false;
+    const ax = rest.x ? 0 : p.axes[0] || 0, ay = rest.y ? 0 : p.axes[1] || 0, btn = i => !!(p.buttons[i] && p.buttons[i].pressed);
     const now = { up: btn(12) || ay < -.6, down: btn(13) || ay > .6, left: btn(14) || ax < -.6, right: btn(15) || ax > .6, a: btn(0), b: btn(1), x: btn(2), lb: btn(4), rb: btn(5) };
     const prev = this._padPrev || {}, t = Date.now();
     this._padPrev = now;
@@ -420,7 +437,8 @@ class App extends Component {
   cancelAdd() { api.cancelAdd(); this.setState({ addOpen: false }); }
   openDetails(id) {
     const a = this.find(id);
-    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dAdv: false, dLaunchMenu: false });
+    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dAdv: false, dLaunchMenu: false, cs2: null });
+    api.cs2Info(id).then(info => { if (this.state.drawerId === id) this.setState({ cs2: { sid: id, ...info, from: info.sources[0] ? info.sources[0].sid : null } }); });
     if (a && (!a.pubAt || (a.linked && !a.statsAt))) this.fetchStats(id);
   }
   async fetchStats(id) {
@@ -588,6 +606,7 @@ class App extends Component {
     this.setState({ launch: null });
     this.reloadLib();
     api.playLog().then(playLog => playLog && this.setState({ playLog }));
+    api.playSessions().then(sessions => sessions && this.setState({ sessions }));
     if (e.reason === 'error') this.toast('error', "Couldn't launch " + name, e.error || 'Something went wrong.');
     if (e.restoreErr) this.toast('error', "Couldn't restore the display", e.restoreErr, { label: 'Try again', fn: () => this.restoreNow() });
     else if (e.restored) this.toast('success', 'Display restored', 'Your monitors are back the way they were' + (nm ? ', ' + nm.label + ' primary.' : '.'));
@@ -845,6 +864,8 @@ class App extends Component {
     const logoOk = g.steam && !!g.logo && !S.logoFail[g.id], noArt = !this.coverOf(g);
     const rows = [['Last played', L && L.gid === g.id ? 'playing now' : rel(g.lastPlayed)], ['Playtime', g.hours ? g.hours.toFixed(1) + ' h' + (g.steam ? '' : ' · tracked by SwapDeck') : 'Not played yet'], ['Install folder', g.installed ? g.folder : 'Not installed', g.installed]];
     if (!g.steam) rows.push(['Executable', g.exe, true]);
+    const lastS = S.sessions.find(x => x.gid === g.id && x.ms > 0);
+    if (lastS) { const la = this.find(lastS.sid); rows.splice(2, 0, ['Last session', dur(lastS.ms) + (la ? ' on ' + la.name : '') + ' · ' + when(lastS.start)]); }
     const opt = sel => ({ bg: sel ? 'rgba(var(--accent-rgb),.08)' : 'transparent', sel });
     const accs = [...this.accts].sort((x, y) => (+y.tags.some(t => g.tags.includes(t)) - +x.tags.some(t => g.tags.includes(t))) || x.name.localeCompare(y.name));
     const mons = this.mons(), other = mons.find(m => m.id !== (nm && nm.id) && m.attached) || mons.find(m => m.id !== (nm && nm.id));
@@ -923,6 +944,14 @@ class App extends Component {
         this.gmut(g.id, { apps }); this.gset(g.id, { apps });
       },
       gAppsHint: (g.apps || []).length ? 'Started before the game (unless already running). Ticked ones close when the game exits.' : 'E.g. SimHub, Crew Chief or your wheel software: started with the game, closed afterwards.',
+      onGImportOpts: async () => {
+        const list = await api.steamLaunchOpts(g.id);
+        if (!list.length) { this.toast('info', 'Nothing to import', 'No launch options are set for ' + g.name + ' in Steam on this PC.'); return; }
+        const cur = this.accts.find(x => x.current);
+        const pick = list.find(o => o.sid === g.acct) || (cur && list.find(o => o.sid === cur.id)) || list[0];
+        this.setOpts(g.id, pick.opts);
+        this.toast('success', 'Launch options imported', 'From ' + pick.name + "'s Steam settings: " + pick.opts);
+      },
       gOpts: g.opts, onGOpts: e => this.setOpts(g.id, e.target.value),
       gOptsHint: g.launcher ? 'Passed to the launcher you picked above.' : g.steam ? "Passed to the game on launch, like Steam's own Launch Options." : 'Appended to the .exe command line.',
       gInfo: rows.map((r, i) => ({ label: r[0], val: r[1], mono: !!r[2], plain: !r[2], bd: i === rows.length - 1 ? 'transparent' : 'rgba(var(--fg-rgb),.06)' })),
@@ -1044,6 +1073,26 @@ class App extends Component {
         const log = S.playLog[d.sid] || {}, rows = Object.entries(log).map(([gid, e]) => ({ g: S.lib.find(x => x.id === gid), e })).filter(r => r.g && r.e.ms > 0).sort((x, y) => y.e.ms - x.e.ms);
         const tot = rows.reduce((t, r) => t + r.e.ms, 0), hrs = ms => (ms / 3600000).toFixed(1) + ' h';
         return { dPlayOn: rows.length > 0, dPlayTotal: hrs(tot) + ' total', dPlay: rows.map(r => ({ name: r.g.name, bg: this.cardBg(r.g), h: hrs(r.e.ms), sub: r.e.n + ' session' + (r.e.n === 1 ? '' : 's') + ' · last ' + rel(r.e.last) })) };
+      })(),
+      ...(() => {
+        const ss = S.sessions.filter(x => x.sid === d.sid && x.ms > 0).slice(0, 6).map(x => { const g = S.lib.find(y => y.id === x.gid); return g ? { name: g.name, when: when(x.start), dur: dur(x.ms) } : null; }).filter(Boolean);
+        const c = S.cs2 && S.cs2.sid === d.sid ? S.cs2 : null;
+        return {
+          dSessOn: ss.length > 0, dSess: ss,
+          dCs2On: !!(c && c.installed), dCs2State: c ? (c.hasSettings ? 'has its own settings' : 'no settings yet: play CS2 once on it') : '',
+          dCs2Auto: c ? c.autoexec : '',
+          dCs2Ph: '// e.g.\nfps_max 0\ncl_crosshairsize 2\nbind "mwheeldown" "+jump"',
+          onDCs2Auto: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, autoexec: v } })); clearTimeout(this._cs2T); this._cs2T = setTimeout(() => api.cs2Autoexec(d.sid, v), 500); },
+          dCs2CanCopy: !!(c && c.sources.length), dCs2Sources: c ? c.sources.map(o => ({ ...o, sel: o.sid === c.from })) : [],
+          onDCs2From: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, from: v } })); },
+          onDCs2Copy: async () => {
+            const from = c && c.sources.find(o => o.sid === c.from); if (!from) return;
+            const r = await api.cs2Copy(from.sid, d.sid);
+            if (!r.ok) { this.toast('error', "Couldn't copy CS2 settings", r.error); return; }
+            this.toast('success', 'CS2 settings copied', 'From ' + from.name + ' to ' + d.name + (r.backup ? '. The old ones are backed up in the cfg folder.' : '.'));
+            api.cs2Info(d.sid).then(info => this.setState(st => ({ cs2: st.cs2 && st.cs2.sid === d.sid ? { ...st.cs2, ...info } : st.cs2 })));
+          },
+        };
       })(),
       onDManageLib: () => this.setState({ drawerId: null, view: 'lib', lq: '', lf: 'all' }),
       dAdvOpen: S.dAdv, dAdvRot: S.dAdv ? 'rotate(180deg)' : 'none', onDAdv: () => this.setState(s => ({ dAdv: !s.dAdv })),

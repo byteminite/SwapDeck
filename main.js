@@ -167,6 +167,7 @@ function switchTo(sid, opts = {}) {
       return String(r.activeUser) === target;
     }, 90000, 1000);
     store.setMeta(sid, { lastUsed: Date.now() });
+    applyCs2Autoexec(sid); // before any game starts on this account
     if (!signedIn) {
       return { warn: 'Steam started but hasn\'t signed in yet. If it asks for a password, the saved login expired; sign in once with "Remember me" ticked.', game: null, name: acc.persona, chooserOff };
     }
@@ -305,7 +306,7 @@ function cleanProfile(p) {
 }
 const validRes = id => store.resProfiles().some(p => p.id === id) ? id : null;
 
-const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, applyNormal: () => applyNormal() });
+const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, applyNormal: () => applyNormal(), beforeLaunch: (g, sid) => { if (String(g.appid) === '730') applyCs2Autoexec(sid); } });
 
 // First run: the current layout is the normal one. While no game profile is active, remember where
 // each switched-on monitor sits, so the normal setup can put monitors back in the same place.
@@ -360,7 +361,7 @@ function ipc() {
     return {
       steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows() }, version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
-      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(),
+      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(),
     };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
@@ -514,6 +515,33 @@ function ipc() {
   ipcMain.handle('display:list', () => display.list().catch(() => []));
   ipcMain.handle('audio:list', () => audio.list().catch(() => []));
   ipcMain.handle('play:log', () => store.playLog());
+  ipcMain.handle('play:sessions', () => store.sessions());
+  ipcMain.handle('lib:steamOpts', (_, id) => {
+    const g = findGame(String(id)); if (!g || !g.steam) return [];
+    const names = Object.fromEntries(accounts().map(a => [a.sid, a.name]));
+    return steam.steamLaunchOptions(loc.dir, g.appid).map(o => ({ ...o, name: names[o.sid] || 'another account' }));
+  });
+  // ---- CS2 per-account settings ----
+  ipcMain.handle('cs2:info', (_, sid) => {
+    sid = String(sid);
+    const installed = !!cs2Folder();
+    return {
+      installed, autoexec: store.cs2Cfg(sid).autoexec || '', hasSettings: installed && steam.cs2HasSettings(loc.dir, sid),
+      sources: installed ? accounts().filter(a => a.sid !== sid && steam.cs2HasSettings(loc.dir, a.sid)).map(a => ({ sid: a.sid, name: a.name })) : [],
+    };
+  });
+  ipcMain.handle('cs2:autoexec', (_, sid, text) => {
+    store.setCs2Cfg(String(sid), { autoexec: String(text || '').slice(0, 20000) });
+    // Signed in on this account right now: put it in place straight away.
+    if (lastStatus.running && lastStatus.activeSid === String(sid)) applyCs2Autoexec(String(sid));
+    return true;
+  });
+  ipcMain.handle('cs2:copy', async (_, fromSid, toSid) => {
+    const r = await steam.readSteamReg().catch(() => null);
+    if (r && String(r.runningAppId) === '730') return { ok: false, error: 'Close CS2 first, it saves its settings when it exits.' };
+    try { const res = steam.cs2CopySettings(loc.dir, String(fromSid), String(toSid)); return { ok: true, ...res }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  });
   // ---- tray panel ----
   ipcMain.handle('tray:data', () => {
     const accs = accounts(), lib = library.build(loc.dir, accs), s = store.settings();
@@ -580,6 +608,30 @@ function ipc() {
 
 function onLinked(sid) {
   send('account', oneAccount(sid));
+}
+
+// ---------- CS2 per-account autoexec ----------
+
+// CS2 keeps most settings per account already; autoexec.cfg in the game folder is shared. An account can
+// have its own autoexec text, written into place when SwapDeck switches to it or launches CS2 on it.
+// The user's original autoexec.cfg is saved once as autoexec.swapdeck-original.cfg and put back for
+// accounts without their own.
+function cs2Folder() {
+  const g = steam.installedGames(loc.dir).find(x => String(x.appid) === '730');
+  return g ? g.folder : null;
+}
+function applyCs2Autoexec(sid) {
+  try {
+    const dir = cs2Folder(); if (!dir || !sid) return;
+    const cfgDir = path.join(dir, 'game', 'csgo', 'cfg'), file = path.join(cfgDir, 'autoexec.cfg'), orig = path.join(cfgDir, 'autoexec.swapdeck-original.cfg');
+    const text = store.cs2Cfg(sid).autoexec;
+    if (text && text.trim()) {
+      if (!fs.existsSync(orig)) fs.writeFileSync(orig, fs.existsSync(file) ? fs.readFileSync(file) : '');
+      fs.writeFileSync(file, text.replace(/\r?\n/g, '\r\n'));
+    } else if (fs.existsSync(orig)) {
+      fs.copyFileSync(orig, file);
+    }
+  } catch (e) { send('notice', { type: 'warning', title: "Couldn't set the CS2 autoexec", msg: e.message }); }
 }
 
 // ---------- start with Windows ----------

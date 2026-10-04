@@ -21,7 +21,7 @@ async function closeApp(name) {
   if (await isRunning(name)) await ex('taskkill', ['/IM', name, '/T', '/F']);
 }
 
-function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
+function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLaunch }) {
   let session = null; // { gid, appid, steam, saved, restore, mode, monId, runningAt, timer, child }
 
   const emit = s => send('launch', {
@@ -148,6 +148,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
         s.step++; emit(s);
       }
       if (session !== s) return { ok: false, cancelled: true };
+      if (beforeLaunch && g.steam) beforeLaunch(g, s.logAcct);
 
       if (viaLauncher) {
         // A launcher such as Content Manager: start it instead of the game. Steam stays signed in,

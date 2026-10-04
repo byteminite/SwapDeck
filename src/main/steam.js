@@ -347,6 +347,42 @@ function localPlaytime(dir) {
   return out;
 }
 
+// Launch options set in Steam (game Properties → Launch Options) for one game, per account on this PC.
+function steamLaunchOptions(dir, appid) {
+  localPlaytime(dir); // fills the localconfig cache
+  const out = [];
+  for (const [f, apps] of playCache) {
+    if (!f.startsWith(path.join(dir, 'userdata'))) continue;
+    const v = apps.data && (apps.data[appid] || apps.data[String(appid)]);
+    const o = v && typeof v === 'object' ? vdf.get(v, 'LaunchOptions') : null;
+    if (o && String(o).trim()) out.push({ sid: sidFromAccountId(path.basename(path.dirname(path.dirname(f)))), opts: String(o).trim() });
+  }
+  return out;
+}
+
+// CS2 keeps keybinds, settings and video per Steam account here; autoexec.cfg in the game folder is shared.
+const CS2_FILES = /^cs2_(user_convars|user_keys)_.*\.vcfg$|^cs2_machine_convars\.vcfg$|^cs2_video\.txt$/;
+const cs2CfgDir = (dir, sid) => path.join(dir, 'userdata', String(accountIdFromSid(sid)), '730', 'local', 'cfg');
+function cs2HasSettings(dir, sid) {
+  try { return fs.readdirSync(cs2CfgDir(dir, sid)).some(f => CS2_FILES.test(f)); } catch { return false; }
+}
+// Copy one account's CS2 settings to another, keeping a backup of the target's files.
+function cs2CopySettings(dir, fromSid, toSid) {
+  const src = cs2CfgDir(dir, fromSid), dst = cs2CfgDir(dir, toSid);
+  const files = fs.readdirSync(src).filter(f => CS2_FILES.test(f));
+  if (!files.length) throw new Error('That account has no CS2 settings on this PC yet.');
+  fs.mkdirSync(dst, { recursive: true });
+  const existing = fs.readdirSync(dst).filter(f => CS2_FILES.test(f));
+  let backup = null;
+  if (existing.length) {
+    backup = path.join(dst, 'swapdeck-backup-' + new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19));
+    fs.mkdirSync(backup, { recursive: true });
+    for (const f of existing) fs.copyFileSync(path.join(dst, f), path.join(backup, f));
+  }
+  for (const f of files) fs.copyFileSync(path.join(src, f), path.join(dst, f));
+  return { files: files.length, backup };
+}
+
 // Cached library art (cover / hero / logo) if Steam has it locally.
 // Steam's library art. Older games keep it flat (librarycache/<appid>/library_600x900.jpg); newer ones
 // keep each image in a hashed subfolder, and call the portrait cover library_capsule.jpg.
@@ -383,7 +419,7 @@ function artFile(dir, appid, file) {
 }
 
 module.exports = {
-  localPlaytime, artFile, splitArgs,
+  localPlaytime, artFile, splitArgs, steamLaunchOptions, cs2HasSettings, cs2CopySettings,
   locate, status, isRunning, shutdown, start, waitFor, readSteamReg, regSet,
   listAccounts, loginUsersMtime, markMostRecent, clearAutoLogin, disableUserChooser, removeAccount,
   avatar, installedGames, sidFromAccountId, accountIdFromSid, loginUsersPath, sleep,

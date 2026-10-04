@@ -72,7 +72,9 @@ function load() {
     displaySaved: data.displaySaved || null, // monitor layout before SwapDeck changed it
     resProfiles: data.resProfiles || [], // user-made resolution profiles: { id, name, w, h, hz, stretch }
     monPos: data.monPos || {},
-    playLog: data.playLog || {},         // account sid -> game id -> { ms, n, last }: sessions launched through SwapDeck           // device name -> last normal-time { x, y, w, h, hz }
+    playLog: data.playLog || {},
+    sessions: data.sessions || [],       // recent sessions [{ sid, gid, start, ms }], newest first
+    cs2: data.cs2 || {},                 // account sid -> { autoexec }         // account sid -> game id -> { ms, n, last }: sessions launched through SwapDeck           // device name -> last normal-time { x, y, w, h, hz }
   };
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
 }
@@ -142,11 +144,16 @@ function addPlay(sid, gid, ms) {
   const a = data.playLog[sid] = data.playLog[sid] || {};
   const e = a[gid] = a[gid] || { ms: 0, n: 0, last: 0 };
   e.ms += Math.max(0, ms || 0); e.n++; e.last = Date.now();
+  data.sessions.unshift({ sid, gid, start: Date.now() - Math.max(0, ms || 0), ms: Math.max(0, ms || 0) });
+  data.sessions.length = Math.min(data.sessions.length, 300);
   save();
 }
+const sessions = () => data.sessions;
+const cs2Cfg = sid => data.cs2[sid] || {};
+function setCs2Cfg(sid, patch) { data.cs2[sid] = { ...cs2Cfg(sid), ...patch }; save(); return data.cs2[sid]; }
 
 // Backup: everything except secrets (tokens and passwords stay in tokens.json / the vault).
-const BACKUP_KEYS = ['settings', 'meta', 'games', 'customGames', 'resProfiles', 'monPos', 'playLog'];
+const BACKUP_KEYS = ['settings', 'meta', 'games', 'customGames', 'resProfiles', 'monPos', 'playLog', 'sessions', 'cs2'];
 function exportData() {
   const out = { app: 'SwapDeck', kind: 'settings-backup', version: 1, exported: new Date().toISOString() };
   for (const k of BACKUP_KEYS) out[k] = data[k];
@@ -249,5 +256,5 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
-  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, exportData, importData,
+  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, sessions, cs2Cfg, setCs2Cfg, exportData, importData,
 };
