@@ -348,10 +348,38 @@ function localPlaytime(dir) {
 }
 
 // Cached library art (cover / hero / logo) if Steam has it locally.
+// Steam's library art. Older games keep it flat (librarycache/<appid>/library_600x900.jpg); newer ones
+// keep each image in a hashed subfolder, and call the portrait cover library_capsule.jpg.
+const ART_NAMES = {
+  'library_600x900.jpg': ['library_600x900.jpg', 'library_capsule.jpg', 'library_600x900_2x.jpg'],
+  'library_hero.jpg': ['library_hero.jpg'],
+  'logo.png': ['logo.png'],
+};
+const artCache = new Map(); // "<dir>|<appid>" -> { mtime, files: { name: fullPath } }
+
 function artFile(dir, appid, file) {
   if (!dir) return null;
-  const p = path.join(dir, 'appcache', 'librarycache', String(appid), file);
-  return fs.existsSync(p) ? p : null;
+  const base = path.join(dir, 'appcache', 'librarycache', String(appid));
+  let st;
+  try { st = fs.statSync(base); } catch { return null; }
+  const key = dir + '|' + appid;
+  let c = artCache.get(key);
+  if (!c || c.mtime !== st.mtimeMs) {
+    const files = {};
+    const add = (name, p) => { if (!files[name]) files[name] = p; };
+    try {
+      for (const e of fs.readdirSync(base, { withFileTypes: true })) {
+        if (e.isFile()) add(e.name, path.join(base, e.name));
+        else if (e.isDirectory()) {
+          try { for (const f of fs.readdirSync(path.join(base, e.name))) add(f, path.join(base, e.name, f)); } catch {}
+        }
+      }
+    } catch {}
+    c = { mtime: st.mtimeMs, files };
+    artCache.set(key, c);
+  }
+  for (const name of ART_NAMES[file] || [file]) if (c.files[name]) return c.files[name];
+  return null;
 }
 
 module.exports = {
