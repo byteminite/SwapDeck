@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, screen, protocol, net, systemPreferences } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, dialog, shell, screen, protocol, net, systemPreferences } = require('electron');
 const store = require('./src/main/store');
 const steam = require('./src/main/steam');
 const { fetchPublic } = require('./src/main/profile');
@@ -10,6 +10,7 @@ const { fetchLinked } = require('./src/main/stats');
 const updater = require('./src/main/updater');
 const library = require('./src/main/library');
 const display = require('./src/main/display');
+const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
@@ -355,7 +356,7 @@ function ipc() {
     return {
       steam: steamState(), accounts: accs, games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
-      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(),
+      displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(),
     };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
@@ -375,10 +376,13 @@ function ipc() {
     const allowed = {};
     for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
+    if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
+    if ('tray' in patch) allowed.tray = !!patch.tray;
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
     const s = store.setSettings(allowed);
     if ('uiScale' in allowed) applyZoom(false);
+    if ('tray' in allowed) updateTray();
     return s;
   });
   ipcMain.handle('steam:browse', async () => {
@@ -446,6 +450,12 @@ function ipc() {
       ...('restore' in patch.display ? { restore: !!patch.display.restore } : {}),
       ...('res' in patch.display ? { res: validRes(patch.display.res) } : {}),
     };
+    if ('launcher' in patch) allowed.launcher = g.steam && typeof patch.launcher === 'string' && /\.exe$/i.test(patch.launcher) ? patch.launcher : null;
+    if ('audio' in patch) allowed.audio = typeof patch.audio === 'string' && patch.audio ? patch.audio.slice(0, 300) : null;
+    if (Array.isArray(patch.apps)) allowed.apps = patch.apps
+      .filter(a => a && typeof a.path === 'string' && /.exe$/i.test(a.path))
+      .slice(0, 8)
+      .map(a => ({ path: a.path, args: String(a.args || '').slice(0, 300), close: a.close !== false }));
     library.setCfg(g, allowed);
     return findGame(g.id);
   });
@@ -497,6 +507,25 @@ function ipc() {
 
   // ---- displays ----
   ipcMain.handle('display:list', () => display.list().catch(() => []));
+  ipcMain.handle('audio:list', () => audio.list().catch(() => []));
+  ipcMain.handle('play:log', () => store.playLog());
+  ipcMain.handle('lib:pickApp', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Choose an app to start with the game', properties: ['openFile'], filters: [{ name: 'Programs', extensions: ['exe'] }] });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  ipcMain.handle('backup:export', async () => {
+    const d = new Date(), name = 'SwapDeck-backup-' + d.toISOString().slice(0, 10) + '.json';
+    const r = await dialog.showSaveDialog(win, { title: 'Save a SwapDeck backup', defaultPath: path.join(app.getPath('documents'), name), filters: [{ name: 'SwapDeck backup', extensions: ['json'] }] });
+    if (r.canceled || !r.filePath) return { ok: false };
+    try { fs.writeFileSync(r.filePath, JSON.stringify(store.exportData(), null, 1)); return { ok: true, file: path.basename(r.filePath) }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  });
+  ipcMain.handle('backup:import', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Restore a SwapDeck backup', properties: ['openFile'], filters: [{ name: 'SwapDeck backup', extensions: ['json'] }] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    try { store.importData(JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))); applyZoom(false); updateTray(); return { ok: true, file: path.basename(r.filePaths[0]) }; }
+    catch (e) { return { ok: false, error: e instanceof SyntaxError ? "That file isn't a SwapDeck backup." : e.message }; }
+  });
   ipcMain.handle('display:modes', (_, id) => display.modes(String(id)).catch(() => []));
   ipcMain.handle('res:save', (_, p) => {
     const c = cleanProfile(p || {}); if (!c) return { ok: false, error: 'Use a width and height like 1280 × 960.' };
@@ -531,6 +560,45 @@ function ipc() {
 
 function onLinked(sid) {
   send('account', oneAccount(sid));
+}
+
+// ---------- tray ----------
+
+let tray = null, quitting = false;
+
+function showWin() {
+  if (!win) { createWindow(); return; }
+  if (win.isMinimized()) win.restore();
+  win.show(); win.focus();
+}
+
+function trayMenu() {
+  const s = steamState(), accs = accounts(), lib = library.build(loc.dir, accs), sess = player.current();
+  const recent = lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 8);
+  const sessGame = sess && lib.find(g => g.id === sess.gid);
+  return Menu.buildFromTemplate([
+    { label: 'Open SwapDeck', click: showWin },
+    { type: 'separator' },
+    { label: 'Switch account', enabled: s.found && !busy && accs.length > 0, submenu: accs.map(a => ({
+      label: a.name, type: 'radio', checked: s.running && a.sid === s.activeSid,
+      click: () => { if (!(s.running && a.sid === s.activeSid)) switchTo(a.sid); },
+    })) },
+    { label: 'Play', enabled: recent.length > 0 && !sess, submenu: recent.map(g => ({ label: g.name, click: () => player.play(g.id) })) },
+    ...(sessGame ? [{ label: 'Stop tracking ' + sessGame.name, click: () => player.stop() }] : []),
+    { type: 'separator' },
+    { label: 'Quit SwapDeck', click: () => { quitting = true; app.quit(); } },
+  ]);
+}
+
+// The tray icon exists only while "Keep running in the tray" is on.
+function updateTray() {
+  const on = !!store.settings().tray;
+  if (on && !tray) {
+    tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 }));
+    tray.setToolTip('SwapDeck');
+    tray.on('click', showWin);
+    tray.on('right-click', () => tray.popUpContextMenu(trayMenu()));
+  } else if (!on && tray) { tray.destroy(); tray = null; }
 }
 
 // ---------- UI scale ----------
@@ -610,6 +678,8 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
   win.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  // With the tray on, closing the window only hides it; Quit is in the tray menu.
+  win.on('close', e => { if (tray && !quitting) { e.preventDefault(); win.hide(); } });
   win.on('closed', () => { win = null; });
 
   const wc = win.webContents;
@@ -631,7 +701,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', (_, argv) => {
-    if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+    showWin();
     const id = playArg(argv);
     if (id) player.play(id);
   });
@@ -649,6 +719,7 @@ if (!app.requestSingleInstanceLock()) {
       return net.fetch(pathToFileURL(file).toString());
     });
     createWindow();
+    updateTray();
     const startId = playArg(process.argv);
     if (startId) win.webContents.once('did-finish-load', () => setTimeout(() => player.play(startId), 1500));
     updater.init(s => send('update', s));
@@ -657,5 +728,5 @@ if (!app.requestSingleInstanceLock()) {
     setInterval(refreshPublicAll, 5 * 60 * 1000);
   });
   app.on('window-all-closed', () => app.quit());
-  app.on('before-quit', () => { link.cancel(); try { store.flush(); } catch {} });
+  app.on('before-quit', () => { quitting = true; link.cancel(); try { store.flush(); } catch {} });
 }

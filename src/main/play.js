@@ -1,14 +1,25 @@
-// Library "Play": switch to the game's account if needed, apply its display profile, launch it,
-// notice when it's running and when it closes, then restore the display.
-// Stop never kills the game; it only restores the display and ends tracking.
+// Library "Play": switch to the game's account if needed, apply its display profile and sound device,
+// start its companion apps, launch it, notice when it's running and when it closes, then put
+// everything back. Stop never kills the game; it only restores and ends tracking.
+// Companion apps SwapDeck started (and only those) are closed afterwards if the user asked for it.
 
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const { shell } = require('electron');
 const steam = require('./steam');
 const store = require('./store');
 const display = require('./display');
+const audio = require('./audio');
 const library = require('./library');
+
+const ex = (cmd, args) => new Promise(r => execFile(cmd, args, { windowsHide: true }, (e, out) => r(e ? '' : String(out))));
+const isRunning = async name => (await ex('tasklist', ['/FI', 'IMAGENAME eq ' + name, '/NH', '/FO', 'CSV'])).toLowerCase().includes('"' + name.toLowerCase() + '"');
+// Ask nicely first (like clicking X); force it only if it's still open a few seconds later.
+async function closeApp(name) {
+  await ex('taskkill', ['/IM', name, '/T']);
+  await new Promise(r => setTimeout(r, 5000));
+  if (await isRunning(name)) await ex('taskkill', ['/IM', name, '/T', '/F']);
+}
 
 function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
   let session = null; // { gid, appid, steam, saved, restore, mode, monId, runningAt, timer, child }
@@ -28,9 +39,17 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
       try { await display.restore(s.saved); store.setDisplaySaved(null); restored = true; }
       catch (e) { restoreErr = e.message; }
     }
+    if (s.prevAudio) {
+      try { await audio.setDefault(s.prevAudio); }
+      catch (e) { send('notice', { type: 'warning', title: "Couldn't switch the sound back", msg: e.message }); }
+    }
+    for (const name of s.closeOnEnd) closeApp(name);
     const cfg = store.gameCfg(s.gid);
     const ms = s.runningAt ? Date.now() - s.runningAt : 0;
     store.setGameCfg(s.gid, { lastPlayed: Date.now(), playMs: (cfg.playMs || 0) + (s.steam ? 0 : ms) });
+    // Playtime per account: Steam games count from when Steam reported them running.
+    const played = s.steam ? (s.seenAt ? Date.now() - s.seenAt : 0) : ms;
+    if (s.logAcct && played > 0) store.addPlay(s.logAcct, s.gid, played);
     send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
 
@@ -66,13 +85,31 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
     steps.push(needD || needR
       ? { k: 'disp', label: 'Setting display', sub: [needD ? mon.label + (g.display.mode === 'only' ? ' only · others off' : ' → primary') : null, needR ? resTxt : null].filter(Boolean).join(' · ') }
       : { k: 'disp', label: 'Setting display', sub: (mon ? mon.label + ' is already primary' : 'Default display') + ' · skipped', skip: true });
-    steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
+    // Sound device and companion apps (steps only appear when the game uses them).
+    let dev = null, prevAudio = null;
+    if (g.audio) {
+      const devs = await audio.list().catch(() => []);
+      dev = devs.find(d => d.id === g.audio) || null;
+      prevAudio = (devs.find(d => d.def) || {}).id || null;
+      steps.push(dev && dev.id !== prevAudio
+        ? { k: 'audio', label: 'Setting sound', sub: dev.name }
+        : { k: 'audio', label: 'Setting sound', sub: (dev ? dev.name + ' is already in use' : "That sound device isn't connected") + ' · skipped', skip: true });
+    }
+    const apps = (g.apps || []).filter(a => a.path);
+    const toStart = [];
+    for (const a of apps) if (!(await isRunning(path.basename(a.path)))) toStart.push(a);
+    if (apps.length) steps.push(toStart.length
+      ? { k: 'apps', label: 'Starting companion apps', sub: toStart.map(a => path.basename(a.path, '.exe')).join(', ') }
+      : { k: 'apps', label: 'Companion apps', sub: 'Already running · skipped', skip: true });
+    const viaLauncher = g.steam && !!g.launcher;
+    steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: viaLauncher ? 'via ' + path.basename(g.launcher) + (g.opts ? ' ' + g.opts : '') : g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
 
     const s = session = {
       gid: id, appid: g.appid, steam: g.steam, steps, step: 0, running: false,
       monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
-      saved: null, runningAt: 0, timer: null,
+      saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [],
+      logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
     };
     emit(s);
     try {
@@ -92,7 +129,35 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
       if (session !== s) return { ok: false, cancelled: true };
       s.step++; emit(s);
 
-      if (g.steam) {
+      if (g.audio) {
+        if (dev && dev.id !== prevAudio) {
+          try { await audio.setDefault(dev.id); s.prevAudio = prevAudio; }
+          catch (e) { send('notice', { type: 'warning', title: "Couldn't switch the sound", msg: e.message }); }
+        }
+        s.step++; emit(s);
+      }
+      if (apps.length) {
+        for (const a of toStart) {
+          try {
+            const c = spawn(a.path, steam.splitArgs(a.args), { cwd: path.dirname(a.path), detached: true, stdio: 'ignore', windowsHide: false });
+            c.on('error', e => send('notice', { type: 'warning', title: "Couldn't start " + path.basename(a.path, '.exe'), msg: e.message }));
+            c.unref();
+            if (a.close) s.closeOnEnd.push(path.basename(a.path));
+          } catch (e) { send('notice', { type: 'warning', title: "Couldn't start " + path.basename(a.path, '.exe'), msg: e.message }); }
+        }
+        s.step++; emit(s);
+      }
+      if (session !== s) return { ok: false, cancelled: true };
+
+      if (viaLauncher) {
+        // A launcher such as Content Manager: start it instead of the game. Steam stays signed in,
+        // and the game is tracked through Steam's RunningAppID as usual once the launcher starts it.
+        const child = spawn(g.launcher, steam.splitArgs(g.opts), { cwd: path.dirname(g.launcher), detached: true, stdio: 'ignore', windowsHide: false });
+        child.on('error', e => { if (session === s) end('error', 'Couldn\'t start ' + path.basename(g.launcher) + ': ' + e.message); });
+        // Closing the launcher without ever starting the game ends the session.
+        child.on('exit', () => { if (session === s && !s.seenAt) end('exit'); });
+        child.unref();
+      } else if (g.steam) {
         steam.start(loc.exe, store.settings().steamArgs, ['-applaunch', String(g.appid), ...steam.splitArgs(g.opts)]);
       } else {
         const child = spawn(g.exe, steam.splitArgs(g.opts), { cwd: path.dirname(g.exe), detached: true, stdio: 'ignore', windowsHide: false });
@@ -112,9 +177,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
           if (session !== s) return clearInterval(s.timer);
           const r = await steam.readSteamReg().catch(() => null);
           if (!r) return;
-          if (String(r.runningAppId) === String(g.appid)) { seen = true; gone = 0; }
+          if (String(r.runningAppId) === String(g.appid)) { if (!seen) s.seenAt = Date.now(); seen = true; gone = 0; }
           else if (seen && ++gone >= 2) end('exit');
-          else if (!seen && Date.now() - startedAt > 180000) {
+          else if (!seen && !viaLauncher && Date.now() - startedAt > 180000) {
             // Never showed up (launcher-only game, or it failed to start). Stop watching; the user can press Stop.
             clearInterval(s.timer);
           }

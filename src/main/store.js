@@ -20,13 +20,17 @@ const DEFAULTS = {
     followTag: false,        // accent follows the running game's tag
     reduceMotion: false,
     startView: 'acc',        // acc | lib: the screen SwapDeck opens on
+    accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
+    tray: false,             // keep running in the tray when the window is closed
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, lastPlayed: 0, playMs: 0 }; // display.res = resolution profile id
+const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
+// display.res = resolution profile id · audio = playback device id · apps = companion apps [{ path, args, close }]
+// launcher = an .exe to start instead of the Steam game (e.g. Content Manager for Assetto Corsa)
 
 const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
@@ -67,7 +71,8 @@ function load() {
     customGames: data.customGames || [], // non-Steam games: { id, name, exe, img, iconMode }
     displaySaved: data.displaySaved || null, // monitor layout before SwapDeck changed it
     resProfiles: data.resProfiles || [], // user-made resolution profiles: { id, name, w, h, hz, stretch }
-    monPos: data.monPos || {},           // device name -> last normal-time { x, y, w, h, hz }
+    monPos: data.monPos || {},
+    playLog: data.playLog || {},         // account sid -> game id -> { ms, n, last }: sessions launched through SwapDeck           // device name -> last normal-time { x, y, w, h, hz }
   };
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
 }
@@ -131,6 +136,29 @@ const displaySaved = () => data.displaySaved;
 function setDisplaySaved(v) { data.displaySaved = v; save(); }
 const resProfiles = () => data.resProfiles;
 function setResProfiles(v) { data.resProfiles = v; save(); }
+const playLog = () => data.playLog;
+function addPlay(sid, gid, ms) {
+  if (!sid || !gid) return;
+  const a = data.playLog[sid] = data.playLog[sid] || {};
+  const e = a[gid] = a[gid] || { ms: 0, n: 0, last: 0 };
+  e.ms += Math.max(0, ms || 0); e.n++; e.last = Date.now();
+  save();
+}
+
+// Backup: everything except secrets (tokens and passwords stay in tokens.json / the vault).
+const BACKUP_KEYS = ['settings', 'meta', 'games', 'customGames', 'resProfiles', 'monPos', 'playLog'];
+function exportData() {
+  const out = { app: 'SwapDeck', kind: 'settings-backup', version: 1, exported: new Date().toISOString() };
+  for (const k of BACKUP_KEYS) out[k] = data[k];
+  return out;
+}
+function importData(b) {
+  if (!b || b.app !== 'SwapDeck' || b.kind !== 'settings-backup') throw new Error("That file isn't a SwapDeck backup.");
+  const keepExe = data.settings.steamExe; // the Steam path belongs to this PC
+  for (const k of BACKUP_KEYS) if (b[k] && typeof b[k] === 'object') data[k] = k === 'settings' ? { ...DEFAULTS.settings, ...b[k] } : b[k];
+  data.settings.steamExe = keepExe;
+  flush();
+}
 const monPos = () => data.monPos;
 function setMonPos(v) { data.monPos = v; save(); }
 
@@ -221,5 +249,5 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
-  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles,
+  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, exportData, importData,
 };

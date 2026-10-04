@@ -4,6 +4,7 @@
 import { html, render, Component } from './vendor/htm-preact.js';
 import { view } from './view.js';
 import { displayVals } from './displays.js';
+import { galleryEl } from './gallery.js';
 
 const api = window.api;
 
@@ -130,6 +131,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
+    audioDevs: [], playLog: {}, lsel: null,
   };
   _t = []; _tid = 0;
 
@@ -164,9 +166,11 @@ class App extends Component {
       }),
       api.on('launch', L => this.setState(s => ({ launch: { ...L, hidden: s.launch && s.launch.gid === L.gid ? s.launch.hidden : false } }))),
       api.on('launch-end', e => this.onLaunchEnd(e)),
+      api.on('notice', n => this.toast(n.type || 'info', n.title, n.msg)),
       api.on('display-changed', d => this.toast('info', 'Switched display' + (d.mode ? ' to ' + d.label : ''), [d.mode === 'only' ? 'Other monitors are off while you play.' : d.mode ? d.label + ' is primary while you play.' : null, d.res ? d.res + ' on ' + d.label + '.' : null].filter(Boolean).join(' '))),
     ];
     this._clock = setInterval(() => this.setState({}), 30000);
+    this._pad = setInterval(() => this.pollPad(), 50);
     const st = await this.reload();
     // Start on the screen picked in Settings → General.
     this.setState({ loaded: true, view: st && st.settings && st.settings.startView === 'lib' ? 'lib' : 'acc' });
@@ -177,6 +181,7 @@ class App extends Component {
     this._off.forEach(f => f());
     this._t.forEach(clearTimeout);
     clearInterval(this._clock);
+    clearInterval(this._pad);
   }
 
   async reload() {
@@ -185,7 +190,7 @@ class App extends Component {
     this.setState({
       locked: false, steam: st.steam, accounts: st.accounts, games: st.games, settings: st.settings, version: st.version, zoom: st.zoom,
       update: st.update, vault: st.vault, lib: st.lib || [], monitors: st.monitors || [], monPos: st.monPos || {}, resProfiles: st.resProfiles || [],
-      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null,
+      winAccent: st.winAccent, launch: st.session ? { ...st.session, hidden: true } : null, playLog: st.playLog || {},
     });
     return st;
   }
@@ -246,11 +251,61 @@ class App extends Component {
   selId() { const v = this.visible(); if (v.some(a => a.id === this.state.sel)) return this.state.sel; const c = v.find(a => a.current); return c ? c.id : (v[0] && v[0].id); }
 
   galRef = el => { this._gal = el; };
+  libGridRef = el => { this._lgrid = el; };
+  // Classic gallery: the mouse wheel scrolls the row sideways, smoothly.
+  galWheel = e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); chipScroll(el, e.deltaY * 1.6); } };
+  get gallery() { return this.state.settings.accountStyle === 'gallery'; }
+  libCols() { const g = this._lgrid; if (!g) return 1; const els = [...g.querySelectorAll('[data-gid]')]; if (!els.length) return 1; const t = els[0].offsetTop; return Math.max(1, els.filter(e => e.offsetTop === t).length); }
+  libStep(d) {
+    const v = this._libVis || []; if (!v.length) return;
+    const i = v.findIndex(g => g.id === this.state.lsel);
+    const id = v[i < 0 ? 0 : Math.max(0, Math.min(v.length - 1, i + d))].id;
+    this.setState({ lsel: id, kbd: true, hovG: null });
+    this.later(30, () => { const el = this._lgrid && this._lgrid.querySelector('[data-gid="' + id + '"]'); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+  }
+
+  // Controller: d-pad / left stick move, A opens or confirms, B goes back, X opens details, LB/RB switch Accounts and Library.
+  pollPad() {
+    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+    const p = pads[0]; if (!p || !document.hasFocus()) { this._padPrev = null; return; }
+    const ax = p.axes[0] || 0, ay = p.axes[1] || 0, btn = i => !!(p.buttons[i] && p.buttons[i].pressed);
+    const now = { up: btn(12) || ay < -.6, down: btn(13) || ay > .6, left: btn(14) || ax < -.6, right: btn(15) || ax > .6, a: btn(0), b: btn(1), x: btn(2), lb: btn(4), rb: btn(5) };
+    const prev = this._padPrev || {}, t = Date.now();
+    this._padPrev = now;
+    for (const k of Object.keys(now)) {
+      if (!now[k]) continue;
+      const first = !prev[k], dir = ['up', 'down', 'left', 'right'].includes(k);
+      // Directions repeat while held (after a short pause); buttons fire once per press.
+      if (first) this._padRep = t + 380; else if (!(dir && t >= this._padRep)) continue; else this._padRep = t + 110;
+      this.padPress(k);
+    }
+  }
+  padPress(k) {
+    const S = this.state;
+    if (S.locked) return;
+    const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
+    if (k === 'b') return this.onKey({ key: 'Escape', target: document.body });
+    if (S.gd) { if (k === 'a') this.play(S.gd); return; }
+    if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw) return;
+    if (S.launch && !S.launch.hidden) return;
+    if (k === 'lb' || k === 'rb') return this.setView(S.view === 'lib' ? 'acc' : 'lib');
+    if (S.view === 'lib') {
+      if (key) return this.libStep({ ArrowRight: 1, ArrowLeft: -1, ArrowDown: this.libCols(), ArrowUp: -this.libCols() }[key]);
+      const id = S.lsel || (this._libVis && this._libVis[0] && this._libVis[0].id);
+      if (id && (k === 'a' || k === 'x')) this.openGame(id);
+      return;
+    }
+    if (S.drawerId) return;
+    if (key) return this.onKey({ key, target: document.body, preventDefault() {} });
+    const id = this.selId();
+    if (id && k === 'a') this.switchTo(id);
+    if (id && k === 'x') this.openDetails(id);
+  }
   searchRef = el => { this._search = el; };
   libSearchRef = el => { this._lsearch = el; };
   settingsRef = el => { this._set = el; };
   imgRef = () => {};
-  cols() { const g = this._gal; if (!g) return 1; const els = [...g.querySelectorAll('[data-pid]')]; if (!els.length) return 1; const t = els[0].offsetTop; return Math.max(1, els.filter(e => e.offsetTop === t).length); }
+  cols() { const g = this._gal; if (!g || this.gallery) return 1; const els = [...g.querySelectorAll('[data-pid]')]; if (!els.length) return 1; const t = els[0].offsetTop; return Math.max(1, els.filter(e => e.offsetTop === t).length); }
   scrollToSel(id) {
     const g = this._gal; if (!g || !id) return;
     const el = g.querySelector('[data-pid="' + id + '"]'); if (!el) return;
@@ -317,7 +372,14 @@ class App extends Component {
       if (typing) e.target.blur();
       return;
     }
-    if (S.view === 'lib') { if (!typing && e.key === '/' && !S.gd && !S.ag && !S.setOpen && this._lsearch) { e.preventDefault(); this._lsearch.focus(); } return; }
+    if (S.view === 'lib') {
+      if (typing || S.gd || S.ag || S.setOpen || S.rmId) return;
+      if (e.key === '/' && this._lsearch) { e.preventDefault(); this._lsearch.focus(); return; }
+      const mv = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: this.libCols(), ArrowUp: -this.libCols() }[e.key];
+      if (mv) { e.preventDefault(); this.libStep(mv); }
+      else if (e.key === 'Enter' && S.lsel) this.openGame(S.lsel);
+      return;
+    }
     if (typing || S.sw || S.confirmId || S.unlinkId || S.setOpen || S.addOpen || S.link) return;
     if (e.key === '/') { e.preventDefault(); if (this._search) this._search.focus(); return; }
     if (S.drawerId) return;
@@ -526,7 +588,11 @@ class App extends Component {
     this.setState({ view: v, drawerId: null });
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
-  openGame(id) { this.setState({ gd: id, acctMenu: false }); this.reloadMonitors(); }
+  openGame(id) {
+    this.setState({ gd: id, acctMenu: false });
+    this.reloadMonitors();
+    api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
+  }
 
   async play(gid) {
     const g = this.gfind(gid), S = this.state; if (!g) return;
@@ -546,6 +612,7 @@ class App extends Component {
     const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon();
     this.setState({ launch: null });
     this.reloadLib();
+    api.playLog().then(playLog => playLog && this.setState({ playLog }));
     if (e.reason === 'error') this.toast('error', "Couldn't launch " + name, e.error || 'Something went wrong.');
     if (e.restoreErr) this.toast('error', "Couldn't restore the display", e.restoreErr, { label: 'Try again', fn: () => this.restoreNow() });
     else if (e.restored) this.toast('success', 'Display restored', 'Your monitors are back the way they were' + (nm ? ', ' + nm.label + ' primary.' : '.'));
@@ -720,6 +787,10 @@ class App extends Component {
       defName: dg ? dg.name : inst.length ? 'Pick a game' : 'No installed games', defBg: dg ? this.cardBg(dg) : 'rgba(var(--fg-rgb),.06)',
       defOpts: inst.map(g => ({ name: g.name, cover: this.cardBg(g), sel: !!dg && g.id === dg.id, bg: dg && g.id === dg.id ? 'rgba(var(--accent-rgb),.08)' : 'transparent', on: () => { this.setCfg({ defaultGame: String(g.appid) }); this.setState({ defMenu: false }); } })),
       startOpts: [['acc', 'Accounts'], ['lib', 'Library']].map(([k, l]) => { const on = (cfg.startView || 'acc') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ startView: k }) }; }),
+      styleOpts: [['grid', 'Grid'], ['gallery', 'Gallery']].map(([k, l]) => { const on = (cfg.accountStyle || 'grid') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ accountStyle: k }) }; }),
+      trBg: cfg.tray ? on : off, trX: cfg.tray ? 'translateX(18px)' : 'translateX(0px)', onTr: () => this.setCfg({ tray: !cfg.tray }),
+      onExport: async () => { const r = await api.exportBackup(); if (r.ok) this.toast('success', 'Backup saved', r.file + ' is in the folder you picked.'); else if (r.error) this.toast('error', "Couldn't save the backup", r.error); },
+      onImport: async () => { const r = await api.importBackup(); if (r.ok) { await this.reload(); this.toast('success', 'Backup restored', 'Settings from ' + r.file + ' are back.'); } else if (r.error) this.toast('error', "Couldn't restore", r.error); },
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),
       mpIsOff: !master && !M.form, mpIsForm: !!M.form, mpIsOn: master && !M.form, mpA: M.a, mpB: M.b, mpMismatch: M.mismatch, mpErr: M.err,
       mpOld: M.old, mpOldOn: M.form === 'change' || M.form === 'remove', mpNewOn: M.form === 'set' || M.form === 'change',
@@ -759,6 +830,7 @@ class App extends Component {
     const tags = [...new Set(games.flatMap(g => g.tags))];
     const libFilters = [chip('all', 'All', games.length), chip('steam', 'Steam', games.filter(g => g.steam).length), chip('nonsteam', 'Non-Steam', games.filter(g => !g.steam).length), ...tags.map(t => chip(t, t, games.filter(g => g.tags.includes(t)).length, tc(t)))];
     const libSorts = [['recent', 'Last played'], ['hours', 'Most played'], ['name', 'Name']].map(([k, l]) => ({ label: l, bg: S.ls === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: S.ls === k ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setState({ ls: k }) }));
+    this._libVis = vis;
     const cards = vis.map(g => {
       const a = g.steam && g.acct ? this.find(g.acct) : null, mon = this.monOf(g), hov = S.hovG === g.id, run = !!(L && L.gid === g.id), noArt = !this.coverOf(g);
       const exe = noArt && !g.steam && g.iconMode === 'exe';
@@ -772,7 +844,7 @@ class App extends Component {
         aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         hovOp: hov && !run ? 1 : 0, hovPe: hov && !run ? 'auto' : 'none', ty: hov ? 'translateY(-3px)' : 'none',
-        ring: run ? '0 0 0 2px #4ade80,0 0 30px rgba(74,222,128,.25)' : hov ? '0 0 0 2px rgba(var(--fg-rgb),.4),0 18px 40px rgba(0,0,0,.5)' : '0 0 0 1px rgba(var(--fg-rgb),.08)',
+        ring: run ? '0 0 0 2px #4ade80,0 0 30px rgba(74,222,128,.25)' : S.kbd && S.lsel === g.id ? '0 0 0 3px var(--background),0 0 0 5px var(--text)' : hov ? '0 0 0 2px rgba(var(--fg-rgb),.4),0 18px 40px rgba(0,0,0,.5)' : '0 0 0 1px rgba(var(--fg-rgb),.08)',
         onEnter: () => this.setState({ hovG: g.id }), onLeave: () => this.setState(s => s.hovG === g.id ? { hovG: null } : null),
         onClick: () => { clearTimeout(this._gclk); this._gclk = this.later(230, () => this.openGame(g.id)); },
         onDbl: e => { e.preventDefault(); clearTimeout(this._gclk); this.play(g.id); },
@@ -815,7 +887,7 @@ class App extends Component {
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
       gMeta: g.steam ? 'Steam · App ' + g.appid + (g.tags.length ? ' · ' + g.tags.join(', ') : '') : 'Non-Steam · ' + g.exe.split('\\').pop(),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
-      gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null].filter(Boolean).join(' · '),
+      gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false }),
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
@@ -844,8 +916,38 @@ class App extends Component {
       gShowRestore: !!mon || !!res,
       rsBg: g.display.restore ? 'var(--accent)' : 'rgba(var(--fg-rgb),.14)', rsX: g.display.restore ? 'translateX(18px)' : 'none', onRestoreT: () => this.setDisp(g.id, { restore: !g.display.restore }),
       rsSub: g.display.restore ? 'Back to ' + restoreTo + (res ? ' and your normal resolution' : '') + (mon && g.display.mode === 'only' ? ', all monitors on' : '') : 'Display stays as it is after you quit',
+      // Steam games can start another .exe instead (e.g. Content Manager) and keep their Steam art and playtime.
+      gLaunchCustom: !!g.launcher, gLaunchName: g.launcher ? g.launcher.split('\\').pop().replace(/\.exe$/i, '') : 'Steam',
+      gLaunchPath: g.launcher || 'steam://rungameid/' + g.appid, gLaunchPickLbl: g.launcher ? 'Change…' : 'Choose .exe…',
+      gLaunchBd: g.launcher ? 'rgba(var(--accent-rgb),.45)' : 'rgba(var(--fg-rgb),.1)', gLaunchBg: g.launcher ? 'rgba(var(--accent-rgb),.05)' : 'transparent',
+      gLaunchHint: g.launcher ? 'Play signs in to the right Steam account, then opens this instead of the game. Playtime is still tracked when it starts ' + g.name + '.' : 'Use a launcher such as Content Manager instead of starting the game directly.',
+      onGLaunchPick: async () => { const p = await api.libPickApp(); if (!p) return; this.gmut(g.id, { launcher: p }); this.gset(g.id, { launcher: p }); },
+      onGLaunchReset: () => { this.gmut(g.id, { launcher: null }); this.gset(g.id, { launcher: null }); },
+      cScheme: (S.settings.base || 'dark') === 'light' ? 'light' : 'dark',
+      gAudioOpts: [{ v: '', label: "Don't change", sel: !g.audio }, ...S.audioDevs.map(d => ({ v: d.id, label: d.name + (d.def ? '  (in use now)' : ''), sel: g.audio === d.id })),
+        ...(g.audio && !S.audioDevs.some(d => d.id === g.audio) ? [{ v: g.audio, label: S.audioDevs.length ? 'A device that isn’t connected' : 'Loading devices…', sel: true }] : [])],
+      onGAudio: e => { const v = e.target.value || null; this.gmut(g.id, { audio: v }); this.gset(g.id, { audio: v }); },
+      gAudioHint: g.audio ? 'Becomes the default sound device while ' + g.name + ' runs, then switches back.' : 'Pick a headset or speakers to switch to while this game runs.',
+      gApps: (g.apps || []).map((ap, i) => {
+        const upd = p => { const apps = g.apps.map((x, j) => j === i ? { ...x, ...p } : x); this.gmut(g.id, { apps }); return apps; };
+        return {
+          name: ap.path.split('\\').pop().replace(/\.exe$/i, ''), path: ap.path, args: ap.args || '', closeOn: ap.close !== false,
+          cbBg: ap.close !== false ? 'var(--accent)' : 'transparent', cbBd: ap.close !== false ? 'var(--accent)' : 'rgba(var(--fg-rgb),.3)',
+          onArgs: e => { const apps = upd({ args: e.target.value }); clearTimeout(this._appT); this._appT = setTimeout(() => api.libSet(g.id, { apps }), 400); },
+          onClose: () => this.gset(g.id, { apps: upd({ close: ap.close === false }) }),
+          onRemove: () => { const apps = g.apps.filter((_, j) => j !== i); this.gmut(g.id, { apps }); this.gset(g.id, { apps }); },
+        };
+      }),
+      onGAddApp: async () => {
+        const p = await api.libPickApp(); if (!p) return;
+        const cur = (this.gfind(g.id) || g).apps || [];
+        if (cur.some(x => x.path.toLowerCase() === p.toLowerCase())) return;
+        const apps = [...cur, { path: p, args: '', close: true }];
+        this.gmut(g.id, { apps }); this.gset(g.id, { apps });
+      },
+      gAppsHint: (g.apps || []).length ? 'Started before the game (unless already running). Ticked ones close when the game exits.' : 'E.g. SimHub, Crew Chief or your wheel software: started with the game, closed afterwards.',
       gOpts: g.opts, onGOpts: e => this.setOpts(g.id, e.target.value),
-      gOptsHint: g.steam ? "Passed to the game on launch, like Steam's own Launch Options." : 'Appended to the .exe command line.',
+      gOptsHint: g.launcher ? 'Passed to the launcher you picked above.' : g.steam ? "Passed to the game on launch, like Steam's own Launch Options." : 'Appended to the .exe command line.',
       gInfo: rows.map((r, i) => ({ label: r[0], val: r[1], mono: !!r[2], plain: !r[2], bd: i === rows.length - 1 ? 'transparent' : 'rgba(var(--fg-rgb),.06)' })),
       onShortcut: () => this.shortcut(g, a, mon),
       onGEdit: () => this.openEdit(g.id), onGRemove: () => this.setState({ rmId: g.id, acctMenu: false }),
@@ -961,6 +1063,11 @@ class App extends Component {
       prWins: !c ? '' : c.premier == null ? (c.vacBanned ? 'Account is VAC banned' : 'Win 10 Premier matches for a rating') : c.premierWins + ' wins',
       dGames: S.lib.filter(x => x.steam && x.acct === d.id).map(x => ({ name: x.name, bg: this.cardBg(x), iniTxt: this.coverOf(x) ? '' : iniOf(x), hasMon: !!x.display.mon, on: () => this.setState({ gd: x.id, drawerId: null }) })),
       dHasGames: S.lib.some(x => x.steam && x.acct === d.id), dNoGames: !S.lib.some(x => x.steam && x.acct === d.id),
+      ...(() => {
+        const log = S.playLog[d.sid] || {}, rows = Object.entries(log).map(([gid, e]) => ({ g: S.lib.find(x => x.id === gid), e })).filter(r => r.g && r.e.ms > 0).sort((x, y) => y.e.ms - x.e.ms);
+        const tot = rows.reduce((t, r) => t + r.e.ms, 0), hrs = ms => (ms / 3600000).toFixed(1) + ' h';
+        return { dPlayOn: rows.length > 0, dPlayTotal: hrs(tot) + ' total', dPlay: rows.map(r => ({ name: r.g.name, bg: this.cardBg(r.g), h: hrs(r.e.ms), sub: r.e.n + ' session' + (r.e.n === 1 ? '' : 's') + ' · last ' + rel(r.e.last) })) };
+      })(),
       onDManageLib: () => this.setState({ drawerId: null, view: 'lib', lq: '', lf: 'all' }),
       dAdvOpen: S.dAdv, dAdvRot: S.dAdv ? 'rotate(180deg)' : 'none', onDAdv: () => this.setState(s => ({ dAdv: !s.dAdv })),
       dLaunchMenu: S.dLaunchMenu, onDLaunchMenu: () => this.setState(s => ({ dLaunchMenu: !s.dLaunchMenu })), dLaunchBd: S.dLaunchMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)',
@@ -1072,7 +1179,8 @@ class App extends Component {
       chipRef: this.chipRef, onChipScroll: e => chipFade(e.currentTarget),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
-      showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib, showAcctLoading: false, showNoResults: b.showNoResults && !isLib, showEmpty: b.showEmpty && !isLib, stNFPanel: b.stNF && !isLib,
+      showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,
+      panelsEl: b.showGallery && !isLib && this.gallery ? galleryEl(this, this.tileVals().tiles, this.accts, this.selId()) : null, libGridRef: this.libGridRef, showAcctLoading: false, showNoResults: b.showNoResults && !isLib, showEmpty: b.showEmpty && !isLib, stNFPanel: b.stNF && !isLib,
       viewTabs: [vt('acc', 'Accounts', this.accts.length), vt('lib', 'Library', S.lib.length)],
       onGRunOpen: () => this.setState(s => ({ launch: s.launch && { ...s.launch, hidden: false } })), onGStop: e => { e.stopPropagation(); this.stopGame(); },
       rmOn: !!rmG, rmName: rmG ? rmG.name : '', onRmNo: () => this.setState({ rmId: null }), onRmYes: () => this.removeGame(),
