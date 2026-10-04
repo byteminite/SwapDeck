@@ -23,6 +23,14 @@ const PENALTY = {
   15: 'Kicked out of a match', 16: 'Skill group calibration', 19: 'Reports from other players',
 };
 
+// steam-user already expands img_icon_url into a full URL (older versions returned only the hash).
+// Accept either, and always rebuild on a CDN host the renderer's CSP allows.
+function iconUrl(appid, v) {
+  if (!v) return null;
+  const m = String(v).match(/([0-9a-f]{40})(?:\.jpg)?$/i);
+  return m ? `https://shared.fastly.steamstatic.com/community_assets/images/apps/${appid}/${m[1]}.jpg` : null;
+}
+
 class LinkError extends Error {
   constructor(msg, code) { super(msg); this.code = code; }
 }
@@ -212,7 +220,7 @@ async function fetchLinked(sid, refreshToken, onStep, onNewToken) {
       n: a.name || `App ${a.appid}`,
       h: Math.round((a.playtime_forever || 0) / 6) / 10,
       w: Math.round((a.playtime_2weeks || 0) / 6) / 10,
-      icon: a.img_icon_url ? `https://media.steampowered.com/steamcommunity/public/images/apps/${a.appid}/${a.img_icon_url}.jpg` : null,
+      icon: iconUrl(a.appid, a.img_icon_url),
     }));
     onStep(2);
 

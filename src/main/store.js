@@ -53,9 +53,30 @@ function save() {
 }
 function flush() {
   clearTimeout(saveTimer);
+  let json;
+  try {
+    json = JSON.stringify(data, null, 1);
+  } catch (e) {
+    logError('serialize', e);
+    return;
+  }
   const tmp = file + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 1));
-  fs.renameSync(tmp, file);
+  try {
+    fs.writeFileSync(tmp, json);
+    fs.renameSync(tmp, file);
+  } catch (e) {
+    // Atomic replace can fail on Windows (file briefly locked by AV/indexer). Fall back to a direct write.
+    logError('atomic-save', e);
+    try { fs.writeFileSync(file, json); } catch (e2) { logError('save', e2); }
+    try { fs.unlinkSync(tmp); } catch {}
+  }
+}
+
+function logError(where, e) {
+  try {
+    const line = `${new Date().toISOString()} [${where}] ${e && e.stack ? e.stack : e}\n`;
+    fs.appendFileSync(path.join(app.getPath('userData'), 'swapdeck-error.log'), line);
+  } catch {}
 }
 
 const windowState = () => data.window;
