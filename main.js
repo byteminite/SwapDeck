@@ -358,7 +358,7 @@ function ipc() {
     const monitors = await display.list().catch(() => []);
     rememberNormal(monitors);
     return {
-      steam: steamState(), accounts: accs, games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor,
+      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows() }, version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
       displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(),
     };
@@ -382,9 +382,10 @@ function ipc() {
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
+    if ('startup' in patch) { try { setStartWithWindows(patch.startup); } catch (e) { store.logError && store.logError('startup', e); } }
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
-    const s = store.setSettings(allowed);
+    const s = { ...store.setSettings(allowed), startup: startsWithWindows() };
     if ('uiScale' in allowed) applyZoom(false);
     if ('tray' in allowed) updateTray();
     return s;
@@ -581,6 +582,18 @@ function onLinked(sid) {
   send('account', oneAccount(sid));
 }
 
+// ---------- start with Windows ----------
+
+// Windows starts SwapDeck with --startup; the portable build registers its own .exe, not the unpacked temp copy.
+function loginOpts() {
+  const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  return { path: exe, args: [...(app.isPackaged ? [] : [app.getAppPath()]), '--startup'] };
+}
+const startsWithWindows = () => { try { return app.getLoginItemSettings(loginOpts()).openAtLogin; } catch { return false; } };
+function setStartWithWindows(on) { app.setLoginItemSettings({ openAtLogin: !!on, ...loginOpts() }); }
+// Started by Windows with the tray on: stay hidden in the tray instead of opening the window.
+const startHidden = () => process.argv.includes('--startup') && !!store.settings().tray;
+
 // ---------- tray ----------
 
 let tray = null, trayWin = null, quitting = false, trayHiddenAt = 0;
@@ -719,7 +732,7 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
     },
   });
-  win.once('ready-to-show', () => { if (b && b.maximized) win.maximize(); win.show(); });
+  win.once('ready-to-show', () => { if (startHidden()) return; if (b && b.maximized) win.maximize(); win.show(); });
   trackBounds();
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', e => e.preventDefault());
