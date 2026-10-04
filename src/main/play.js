@@ -224,7 +224,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     // Go back to the layout saved before the change; without one, fall back to the normal setup.
     const saved = store.displaySaved();
     try {
-      if (saved) await display.restore(saved); else await applyNormal();
+      // Layouts saved before 1.1.0 name monitors by DISPLAYn, which Windows may have renumbered since: use the normal setup instead.
+      if (saved && !/^\\\\\.\\/.test(saved)) await display.restore(saved); else await applyNormal();
       store.setDisplaySaved(null);
       if (session) session.saved = null;
       return { ok: true };

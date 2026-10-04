@@ -39,7 +39,18 @@ async function list() {
   return mons;
 }
 
-const serialize = raw => raw.map(m => [m.name, m.attached ? 1 : 0, m.primary ? 1 : 0, m.x, m.y, m.w, m.h, m.hz, m.fo == null ? -1 : m.fo].join('|')).join(';');
+// Saved layouts name each monitor by its hardware key, not DISPLAYn: Windows can renumber the outputs when
+// monitors are switched on and off (e.g. turning the sim rig monitor on for a game). Just before a layout is
+// applied, toNames() swaps each key for the monitor's current DISPLAYn name. Older saved layouts that still
+// use DISPLAYn names are matched by name.
+const serialize = raw => raw.map(m => [m.key || m.name, m.attached ? 1 : 0, m.primary ? 1 : 0, m.x, m.y, m.w, m.h, m.hz, m.fo == null ? -1 : m.fo].join('|')).join(';');
+function toNames(layout, raw) {
+  return layout.split(';').filter(Boolean).map(part => {
+    const f = part.split('|'), m = byId(raw, f[0]);
+    return m ? [m.name, ...f.slice(1)].join('|') : null; // a monitor that's been unplugged is skipped
+  }).filter(Boolean).join(';');
+}
+async function runLayout(layout) { return run('restore', toNames(layout, await rawList())); }
 
 async function check(out) {
   if (out !== 'ok') throw new Error('Windows refused the display change (' + out.replace(/^error:/, '') + ').');
@@ -74,15 +85,15 @@ async function apply(id, mode, res) {
   if (name) {
     // A failed change can leave some monitors already written: put the old layout back.
     try { await check(await run(mode === 'only' ? 'only' : 'primary', name)); }
-    catch (e) { await run('restore', before).catch(() => {}); throw e; }
+    catch (e) { await runLayout(before).catch(() => {}); throw e; }
   }
   if (res && res.w && res.h) {
     try {
       const raw = await rawList();
       const t = name ? raw.find(m => m.name === name) : raw.find(m => m.primary);
       if (!t) throw new Error("Couldn't find the monitor to change.");
-      await check(await run('restore', withResolution(raw, t.name, await pickMode(t, res))));
-    } catch (e) { await run('restore', before).catch(() => {}); throw e; }
+      await check(await runLayout(withResolution(raw, t.name, await pickMode(t, res))));
+    } catch (e) { await runLayout(before).catch(() => {}); throw e; }
   }
   return before;
 }
@@ -109,7 +120,7 @@ async function pickMode(t, res) {
 
 async function restore(saved) {
   if (!saved) throw new Error('Nothing to restore.');
-  await check(await run('restore', saved));
+  await check(await runLayout(saved));
 }
 
 // The user's normal setup as a layout string: monitors in normalOn switched on (at their remembered
@@ -134,11 +145,11 @@ function normalLayout(raw, onIds, primaryId, pos) {
 }
 
 async function applyNormal(onIds, primaryId, pos) {
-  await check(await run('restore', normalLayout(await rawList(), onIds, primaryId, pos)));
+  await check(await runLayout(normalLayout(await rawList(), onIds, primaryId, pos)));
 }
 
 async function makePrimary(id) {
   await check(await run('primary', nameOf(await rawList(), id)));
 }
 
-module.exports = { list, modes, apply, restore, applyNormal, normalLayout, withResolution, makePrimary, rawList, serialize };
+module.exports = { list, modes, apply, restore, applyNormal, normalLayout, withResolution, makePrimary, rawList, serialize, toNames };
