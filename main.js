@@ -24,7 +24,11 @@ let busy = null;            // 'switch' | 'close' | 'start' | 'add' | 'forget'
 let adding = null;          // { cancelled }
 const fetching = new Set(); // sids with a stats refresh in flight
 
-const send = (ch, ...args) => { if (win && !win.isDestroyed()) win.webContents.send(ch, ...args); };
+// Events go to the main window and, when it's open, the tray panel.
+const send = (ch, ...args) => {
+  if (win && !win.isDestroyed()) win.webContents.send(ch, ...args);
+  if (trayWin && !trayWin.isDestroyed()) trayWin.webContents.send(ch, ...args);
+};
 
 // ---------- state ----------
 
@@ -509,6 +513,21 @@ function ipc() {
   ipcMain.handle('display:list', () => display.list().catch(() => []));
   ipcMain.handle('audio:list', () => audio.list().catch(() => []));
   ipcMain.handle('play:log', () => store.playLog());
+  // ---- tray panel ----
+  ipcMain.handle('tray:data', () => {
+    const accs = accounts(), lib = library.build(loc.dir, accs), s = store.settings();
+    return {
+      steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
+      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
+      accounts: accs.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
+      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 5)
+        .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed })),
+    };
+  });
+  ipcMain.on('tray:size', (_, h) => { if (trayWin && !trayWin.isDestroyed() && trayWin.isVisible()) placeTrayPanel(Math.round(h)); });
+  ipcMain.on('tray:open', () => { hideTrayPanel(); showWin(); });
+  ipcMain.on('tray:hide', () => hideTrayPanel());
+  ipcMain.on('tray:quit', () => { quitting = true; app.quit(); });
   ipcMain.handle('lib:pickApp', async () => {
     const r = await dialog.showOpenDialog(win, { title: 'Choose an app to start with the game', properties: ['openFile'], filters: [{ name: 'Programs', extensions: ['exe'] }] });
     return r.canceled ? null : r.filePaths[0];
@@ -564,30 +583,53 @@ function onLinked(sid) {
 
 // ---------- tray ----------
 
-let tray = null, quitting = false;
+let tray = null, trayWin = null, quitting = false, trayHiddenAt = 0;
+const TRAY_W = 340;
+
+// The tray panel: a small frameless window styled like the app, shown above the tray icon.
+function trayPanel() {
+  if (trayWin && !trayWin.isDestroyed()) return trayWin;
+  trayWin = new BrowserWindow({
+    width: TRAY_W, height: 460, show: false, frame: false, resizable: false, movable: false, minimizable: false, maximizable: false,
+    fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, transparent: true, backgroundColor: '#00000000', title: 'SwapDeck',
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  trayWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  trayWin.webContents.on('will-navigate', e => e.preventDefault());
+  trayWin.on('blur', () => hideTrayPanel());
+  trayWin.on('closed', () => { trayWin = null; });
+  trayWin.loadFile(path.join(__dirname, 'src', 'renderer', 'tray.html'));
+  return trayWin;
+}
+function hideTrayPanel() {
+  if (trayWin && !trayWin.isDestroyed() && trayWin.isVisible()) { trayWin.hide(); trayHiddenAt = Date.now(); }
+}
+function placeTrayPanel(h) {
+  const w = trayPanel(), tb = tray ? tray.getBounds() : null;
+  const pt = tb ? { x: tb.x + tb.width / 2, y: tb.y + tb.height / 2 } : screen.getCursorScreenPoint();
+  const d = screen.getDisplayNearestPoint(pt), wa = d.workArea, H = Math.min(h || w.getBounds().height, wa.height - 16);
+  let x = Math.round(pt.x - TRAY_W / 2), y;
+  // Sit next to the taskbar, wherever it is.
+  if (pt.y > wa.y + wa.height) y = wa.y + wa.height - H - 8;
+  else if (pt.y < wa.y) y = wa.y + 8;
+  else { y = Math.round(pt.y - H / 2); x = pt.x < wa.x + wa.width / 2 ? wa.x + 8 : wa.x + wa.width - TRAY_W - 8; }
+  x = Math.max(wa.x + 8, Math.min(x, wa.x + wa.width - TRAY_W - 8));
+  y = Math.max(wa.y + 8, Math.min(y, wa.y + wa.height - H - 8));
+  w.setBounds({ x, y, width: TRAY_W, height: H });
+}
+function toggleTrayPanel() {
+  const w = trayPanel();
+  // A click on the tray icon blurs (and hides) the panel first; don't reopen it straight away.
+  if (w.isVisible() || Date.now() - trayHiddenAt < 250) { hideTrayPanel(); return; }
+  placeTrayPanel();
+  w.webContents.send('tray-show');
+  w.show(); w.focus();
+}
 
 function showWin() {
   if (!win) { createWindow(); return; }
   if (win.isMinimized()) win.restore();
   win.show(); win.focus();
-}
-
-function trayMenu() {
-  const s = steamState(), accs = accounts(), lib = library.build(loc.dir, accs), sess = player.current();
-  const recent = lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 8);
-  const sessGame = sess && lib.find(g => g.id === sess.gid);
-  return Menu.buildFromTemplate([
-    { label: 'Open SwapDeck', click: showWin },
-    { type: 'separator' },
-    { label: 'Switch account', enabled: s.found && !busy && accs.length > 0, submenu: accs.map(a => ({
-      label: a.name, type: 'radio', checked: s.running && a.sid === s.activeSid,
-      click: () => { if (!(s.running && a.sid === s.activeSid)) switchTo(a.sid); },
-    })) },
-    { label: 'Play', enabled: recent.length > 0 && !sess, submenu: recent.map(g => ({ label: g.name, click: () => player.play(g.id) })) },
-    ...(sessGame ? [{ label: 'Stop tracking ' + sessGame.name, click: () => player.stop() }] : []),
-    { type: 'separator' },
-    { label: 'Quit SwapDeck', click: () => { quitting = true; app.quit(); } },
-  ]);
 }
 
 // The tray icon exists only while "Keep running in the tray" is on.
@@ -596,9 +638,9 @@ function updateTray() {
   if (on && !tray) {
     tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 }));
     tray.setToolTip('SwapDeck');
-    tray.on('click', showWin);
-    tray.on('right-click', () => tray.popUpContextMenu(trayMenu()));
-  } else if (!on && tray) { tray.destroy(); tray = null; }
+    tray.on('click', toggleTrayPanel);
+    tray.on('right-click', toggleTrayPanel);
+  } else if (!on && tray) { tray.destroy(); tray = null; if (trayWin && !trayWin.isDestroyed()) trayWin.destroy(); }
 }
 
 // ---------- UI scale ----------

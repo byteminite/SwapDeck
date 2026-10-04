@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update', 'launch', 'launch-end', 'display-changed', 'notice'];
+const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update', 'launch', 'launch-end', 'display-changed', 'notice', 'tray-show'];
 
 contextBridge.exposeInMainWorld('api', {
   state: () => invoke('state'),
@@ -54,6 +54,11 @@ contextBridge.exposeInMainWorld('api', {
   playLog: () => invoke('play:log'),
   exportBackup: () => invoke('backup:export'),
   importBackup: () => invoke('backup:import'),
+  trayData: () => invoke('tray:data'),
+  traySize: h => ipcRenderer.send('tray:size', h),
+  trayOpen: () => ipcRenderer.send('tray:open'),
+  trayHide: () => ipcRenderer.send('tray:hide'),
+  trayQuit: () => ipcRenderer.send('tray:quit'),
   win: action => ipcRenderer.send('win', action),
   on: (ch, fn) => {
     if (!EVENTS.includes(ch)) throw new Error('Unknown channel ' + ch);

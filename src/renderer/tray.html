@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: sdimg: https://*.steamstatic.com https://media.steampowered.com https://*.akamaihd.net; connect-src sdimg:">
+  <title>SwapDeck</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body { background: transparent !important; overflow: hidden; }
+    .tp-row:hover { background: rgba(var(--fg-rgb), .06) !important; }
+    .tp-row:hover .tp-play { opacity: 1 !important; }
+    .tp-av:hover { transform: translateY(-2px); }
+    .tp-btn:hover { background: rgba(var(--fg-rgb), .1) !important; color: var(--text) !important; }
+    .tp-main:hover { background: var(--btn-hover) !important; }
+    .tp-stop:hover { background: rgba(248, 113, 113, .14) !important; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="tray.js"></script>
+</body>
+</html>
