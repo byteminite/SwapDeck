@@ -292,7 +292,25 @@ async function refreshStats(sid) {
   }
 }
 
-const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send });
+const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, applyNormal: () => applyNormal() });
+
+// First run: the current layout is the normal one. While no game profile is active, remember where
+// each switched-on monitor sits, so the normal setup can put monitors back in the same place.
+function rememberNormal(monitors) {
+  const s = store.settings();
+  if (!s.normalMon) { const p = monitors.find(x => x.primary); if (p) store.setSettings({ normalMon: p.id }); }
+  if (!s.normalOn && monitors.length) store.setSettings({ normalOn: monitors.filter(x => x.attached).map(x => x.id) });
+  if (store.displaySaved() || player.current()) return;
+  const pos = { ...store.monPos() };
+  let changed = false;
+  for (const m of monitors) if (m.attached) {
+    const p = { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz }, o = pos[m.id];
+    if (!o || o.x !== p.x || o.y !== p.y || o.w !== p.w || o.h !== p.h || o.hz !== p.hz) { pos[m.id] = p; changed = true; }
+  }
+  if (changed) store.setMonPos(pos);
+}
+
+const applyNormal = () => { const s = store.settings(); return display.applyNormal(s.normalOn || [], s.normalMon, store.monPos()); };
 
 function winAccent() {
   try { const c = systemPreferences.getAccentColor(); return c ? '#' + c.slice(0, 6) : null; } catch { return null; }
@@ -311,11 +329,11 @@ function ipc() {
     if (v.locked) return { locked: true, vault: v, version: app.getVersion(), zoom: zoomFactor };
     const accs = accounts();
     const monitors = await display.list().catch(() => []);
-    if (!store.settings().normalMon) { const p = monitors.find(x => x.primary); if (p) store.setSettings({ normalMon: p.id }); }
+    rememberNormal(monitors);
     return {
       steam: steamState(), accounts: accs, games, settings: store.settings(), version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
-      displaySaved: !!store.displaySaved(),
+      displaySaved: !!store.displaySaved(), monPos: store.monPos(),
     };
   });
   ipcMain.handle('switch', (_, sid) => switchTo(String(sid)));
@@ -334,6 +352,7 @@ function ipc() {
   ipcMain.handle('settings', (_, patch) => {
     const allowed = {};
     for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
+    if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
     const s = store.setSettings(allowed);
     if ('uiScale' in allowed) applyZoom(false);
@@ -456,6 +475,10 @@ function ipc() {
   ipcMain.handle('display:list', () => display.list().catch(() => []));
   ipcMain.handle('display:test', (_, id) => player.test(String(id)));
   ipcMain.handle('display:restore', () => player.restoreNow());
+  ipcMain.handle('display:normal', async () => {
+    try { await applyNormal(); store.setDisplaySaved(null); return { ok: true, monitors: await display.list() }; }
+    catch (e) { return { ok: false, error: e.message }; }
+  });
   ipcMain.on('win', (_, a) => {
     if (!win) return;
     if (a === 'min') win.minimize();

@@ -19,6 +19,7 @@ const DEFAULTS = {
     customAccent: '#c084fc',
     followTag: false,        // accent follows the running game's tag
     reduceMotion: false,
+    normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
@@ -52,6 +53,7 @@ function load() {
     games: data.games || {},             // gameId -> per-game settings (DEFAULT_GAME shape)
     customGames: data.customGames || [], // non-Steam games: { id, name, exe, img, iconMode }
     displaySaved: data.displaySaved || null, // monitor layout before SwapDeck changed it
+    monPos: data.monPos || {},           // device name -> last normal-time { x, y, w, h, hz }
   };
   try { tokens = JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { tokens = {}; }
 }
@@ -104,6 +106,8 @@ const customGames = () => data.customGames;
 function setCustomGames(list) { data.customGames = list; save(); }
 const displaySaved = () => data.displaySaved;
 function setDisplaySaved(v) { data.displaySaved = v; save(); }
+const monPos = () => data.monPos;
+function setMonPos(v) { data.monPos = v; save(); }
 
 const windowState = () => data.window;
 function setWindowState(w) { data.window = w; save(); }
@@ -192,5 +196,5 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
-  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved,
+  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos,
 };

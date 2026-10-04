@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('api', {
   displays: () => invoke('display:list'),
   testDisplay: id => invoke('display:test', id),
   restoreDisplay: () => invoke('display:restore'),
+  applyNormalDisplay: () => invoke('display:normal'),
   win: action => ipcRenderer.send('win', action),
   on: (ch, fn) => {
     if (!EVENTS.includes(ch)) throw new Error('Unknown channel ' + ch);

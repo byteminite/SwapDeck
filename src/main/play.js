@@ -10,7 +10,7 @@ const store = require('./store');
 const display = require('./display');
 const library = require('./library');
 
-function createPlayer({ getLoc, accounts, switchTo, send }) {
+function createPlayer({ getLoc, accounts, switchTo, send, applyNormal }) {
   let session = null; // { gid, appid, steam, saved, restore, mode, monId, runningAt, timer, child }
 
   const emit = s => send('launch', {
@@ -125,10 +125,10 @@ function createPlayer({ getLoc, accounts, switchTo, send }) {
   const stop = () => end('stopped');
 
   async function restoreNow() {
+    // Go back to the layout saved before the change; without one, fall back to the normal setup.
     const saved = store.displaySaved();
-    if (!saved) return { ok: false, error: 'There\'s no saved display layout to go back to.' };
     try {
-      await display.restore(saved);
+      if (saved) await display.restore(saved); else await applyNormal();
       store.setDisplaySaved(null);
       if (session) session.saved = null;
       return { ok: true };

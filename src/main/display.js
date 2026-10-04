@@ -82,8 +82,31 @@ async function restore(saved) {
   await check(await run('restore', saved));
 }
 
+// The user's normal setup as a layout string: monitors in normalOn switched on (at their remembered
+// position, or to the right of the others at their best mode), everything else off, normalMon primary at 0,0.
+function normalLayout(raw, onIds, primaryId, pos) {
+  const on = new Set(onIds);
+  if (primaryId) on.add(primaryId);
+  const ms = raw.map(m => {
+    if (!on.has(m.name)) return { ...m, attached: false, primary: false };
+    const p = pos[m.name] || (m.attached ? { x: m.x, y: m.y, w: m.w, h: m.h, hz: m.hz } : null);
+    return { ...m, attached: true, primary: m.name === primaryId, ...(p || { x: null, y: null, w: m.bw, h: m.bh, hz: m.bhz }) };
+  });
+  if (!ms.some(m => m.attached && m.w > 0)) throw new Error('Pick at least one monitor for your normal setup.');
+  if (!ms.some(m => m.primary)) { const f = ms.find(m => m.attached); f.primary = true; }
+  let right = Math.max(0, ...ms.filter(m => m.attached && m.x != null).map(m => m.x + m.w));
+  for (const m of ms) if (m.attached && m.x == null) { m.x = right; m.y = 0; right += m.w; }
+  const p = ms.find(m => m.primary), dx = p.x, dy = p.y;
+  for (const m of ms) if (m.attached) { m.x -= dx; m.y -= dy; }
+  return serialize(ms);
+}
+
+async function applyNormal(onIds, primaryId, pos) {
+  await check(await run('restore', normalLayout(await rawList(), onIds, primaryId, pos)));
+}
+
 async function makePrimary(id) {
   await check(await run('primary', id));
 }
 
-module.exports = { list, apply, restore, makePrimary, rawList, serialize };
+module.exports = { list, apply, restore, applyNormal, normalLayout, makePrimary, rawList, serialize };
