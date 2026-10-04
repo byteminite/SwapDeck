@@ -89,6 +89,12 @@ function themeTokens(baseKey, acc, still) {
   return out;
 }
 
+// Tag rows fade at an edge only while there is more to scroll that way, so the first and last tags are fully visible at the ends.
+function chipFade(el) {
+  const l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+  el.style.webkitMaskImage = !l && !r ? 'none' : 'linear-gradient(90deg,' + (l ? 'transparent,#000 24px' : '#000,#000') + ',' + (r ? '#000 calc(100% - 24px),transparent' : '#000') + ')';
+}
+
 const SCALE_OPTS = ['auto', 80, 90, 100, 110, 125, 150];
 const resSpec = p => p.w + '×' + p.h + (p.hz ? ' · ' + p.hz + ' Hz' : '') + (p.stretch ? ' · stretched' : '');
 
@@ -114,6 +120,8 @@ class App extends Component {
   async componentDidMount() {
     this._key = e => this.onKey(e);
     window.addEventListener('keydown', this._key);
+    this._rs = () => this._chips.forEach(chipFade);
+    window.addEventListener('resize', this._rs);
     this._off = [
       api.on('steam', steam => this.setState({ steam })),
       api.on('accounts', accounts => { this.setState({ accounts }); this.reloadLib(); }),
@@ -146,6 +154,7 @@ class App extends Component {
   }
   componentWillUnmount() {
     window.removeEventListener('keydown', this._key);
+    window.removeEventListener('resize', this._rs);
     this._off.forEach(f => f());
     this._t.forEach(clearTimeout);
     clearInterval(this._clock);
@@ -182,8 +191,13 @@ class App extends Component {
     document.body.style.background = t.background;
   }
   rootRef = el => { this._root = el; if (el) this.applyTheme(); };
-  componentDidUpdate() { this.applyTheme(); }
+  componentDidUpdate() {
+    this.applyTheme();
+    for (const el of this._chips) { if (el.isConnected) chipFade(el); else this._chips.delete(el); }
+  }
   colorRef = el => { this._color = el; };
+  chipRef = el => { if (el) { this._chips.add(el); requestAnimationFrame(() => chipFade(el)); } };
+  _chips = new Set();
 
   // ---------- accounts ----------
   get steamState() { const s = this.state.steam; return !s.found ? 'not-found' : s.running ? 'running' : 'closed'; }
@@ -1033,6 +1047,7 @@ class App extends Component {
       ...this.settingsVals(), ...this.themeVals(), ...dv,
       // Tag rows scroll sideways with the normal mouse wheel.
       onChipWheel: e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { e.preventDefault(); el.scrollLeft += e.deltaY; } },
+      chipRef: this.chipRef, onChipScroll: e => chipFade(e.currentTarget),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib, showAcctLoading: false, showNoResults: b.showNoResults && !isLib, showEmpty: b.showEmpty && !isLib, stNFPanel: b.stNF && !isLib,
