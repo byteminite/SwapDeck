@@ -70,7 +70,7 @@ public static class SDDisplay
     {
         try
         {
-            // \\?\DISPLAY#GSM76FE#7&1e010a3f&1&UID520#{guid}  ->  Enum\DISPLAY\GSM76FE\7&1e010a3f&1&UID520
+            // \\?\DISPLAY#ABC1234#5&12ab34cd&0&UID256#{guid}  ->  Enum\DISPLAY\ABC1234\5&12ab34cd&0&UID256
             var p = iface.Split('#');
             if (p.Length < 3) return "";
             var path = "SYSTEM\\CurrentControlSet\\Enum\\DISPLAY\\" + p[1] + "\\" + p[2] + "\\Device Parameters";
