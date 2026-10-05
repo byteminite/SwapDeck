@@ -15,35 +15,129 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 
 </div>
 
-## Screenshots
+## Why SwapDeck
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="docs/screenshots/04-library.png" alt="Library"><br><b>Library</b><br><sub>Your Steam games with their own art, plus any .exe</sub></td>
-    <td width="50%" valign="top"><img src="docs/screenshots/05-game-cs2.png" alt="Per-game setup"><br><b>Per-game setup</b><br><sub>Account, monitor and a stretched resolution for CS2</sub></td>
+    <td width="25%" valign="top" align="center"><h3>🔁</h3><b>One click to switch</b><br><sub>Every account saved in Steam. No retyping passwords, no Steam Guard codes.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>🎮</h3><b>Play does the setup</b><br><sub>The right account, monitor, resolution, sound and apps, then the game.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>↩️</h3><b>Everything goes back</b><br><sub>Your normal setup returns when the game exits. Stop never closes your game.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>🔒</h3><b>Stays on your PC</b><br><sub>No sign-up, no telemetry. Stats are optional and encrypted by Windows.</sub></td>
   </tr>
-  <tr>
-    <td width="50%" valign="top"><img src="docs/screenshots/06-game-ac.png" alt="Sim racing"><br><b>Sim racing</b><br><sub>SimHub starts with the game and closes after it</sub></td>
-    <td width="50%" valign="top"><img src="docs/screenshots/07-settings-displays.png" alt="Displays"><br><b>Displays</b><br><sub>Your normal setup, drawn to scale, even monitors that are off</sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><img src="docs/screenshots/02-account-details.png" alt="Account details"><br><b>Account details</b><br><sub>Tags, notes and the games that use the account</sub></td>
-    <td width="50%" valign="top"><img src="docs/screenshots/03-account-cs2.png" alt="CS2 stats"><br><b>CS2 stats</b><br><sub>Premier, ranks, level and medals (optional)</sub></td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top"><img src="docs/screenshots/09-accounts-gallery.png" alt="Gallery layout"><br><b>Gallery layout</b><br><sub>The classic sideways panels, if you prefer them</sub></td>
-    <td width="50%" valign="top"><img src="docs/screenshots/10-accounts-light.png" alt="Themes"><br><b>Themes</b><br><sub>Dark, OLED Black or Light, with any accent colour</sub></td>
-  </tr>
+</table>
+
+## Features
+
+<table>
+<tr>
+<td width="55%"><img src="docs/screenshots/02-account-details.png" alt="Accounts, sorted your way"></td>
+<td width="45%" valign="middle">
+<h3>👥 Accounts, sorted your way</h3>
+<ul>
+<li>One-click switching from a <b>"Who's playing?"</b> picker or the classic sideways gallery</li>
+<li><b>Tags, notes and pins</b>, with search, tag filters and sorting</li>
+<li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
+<li><b>Playtime per account</b> for everything you launch through SwapDeck</li>
+<li>Add and forget accounts without digging through Steam</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="45%" valign="middle">
+<h3>📚 One library for everything</h3>
+<ul>
+<li>Your installed <b>Steam games</b> with their own Steam artwork</li>
+<li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
+<li>Each game remembers <b>which account</b> plays it, so Play switches for you</li>
+<li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/04-library.png" alt="One library for everything"></td>
+</tr>
+<tr>
+<td width="55%"><img src="docs/screenshots/05-game-cs2.png" alt="Per-game setup"></td>
+<td width="45%" valign="middle">
+<h3>🎯 Per-game setup</h3>
+<ul>
+<li><b>Display</b>: make a monitor primary, or use only that one (even if it's off in Windows)</li>
+<li><b>Resolution profiles</b> you make yourself, like 1280 × 960 stretched for CS2</li>
+<li><b>Sound device</b> per game, e.g. your headset</li>
+<li><b>Launch options</b>, or import the ones you already set in Steam</li>
+<li>Everything is <b>put back</b> when the game exits</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="45%" valign="middle">
+<h3>🏁 Made for sim racing</h3>
+<ul>
+<li><b>Companion apps</b> start with the game: SimHub, Crew Chief, wheel software…</li>
+<li>Tick <b>"Close when the game exits"</b> for the ones that should go with it</li>
+<li>Start a <b>custom launcher</b> such as Content Manager, and keep the Steam art and tracking</li>
+<li>Put the game on your <b>ultrawide only</b>, then get your normal desk back afterwards</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/06-game-ac.png" alt="Made for sim racing"></td>
+</tr>
+<tr>
+<td width="55%"><img src="docs/screenshots/07-settings-displays.png" alt="Your monitors, drawn to scale"></td>
+<td width="45%" valign="middle">
+<h3>🖥️ Your monitors, drawn to scale</h3>
+<ul>
+<li>Every monitor that's plugged in, <b>including ones switched off</b> in Windows</li>
+<li>Pick the ones you use day to day and your main one</li>
+<li>Windows' own layout is saved and restored, <b>rotation included</b></li>
+<li><b>Restore display now</b> if a game ever crashes</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="45%" valign="middle">
+<h3>📊 Stats, if you want them</h3>
+<ul>
+<li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
+<li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals</li>
+<li>Games and hours, Steam level, wallet balance and friends</li>
+<li>Completely optional. Switching works without it</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/03-account-cs2.png" alt="Stats, if you want them"></td>
+</tr>
+<tr>
+<td width="55%"><img src="docs/screenshots/09-accounts-gallery.png" alt="Make it yours"></td>
+<td width="45%" valign="middle">
+<h3>🎨 Make it yours</h3>
+<ul>
+<li><b>Dark, OLED Black or Light</b>, with accent colours or your Windows accent</li>
+<li>The accent can <b>follow the running game's tag</b></li>
+<li>Choose the <b>grid or gallery</b> accounts layout, and whether SwapDeck opens on Accounts or Library</li>
+<li>UI scale from 80% to 150%, or automatic</li>
+</ul>
+</td>
+</tr>
 </table>
 
 <sub>Screenshots use made-up demo accounts.</sub>
 
-## Why SwapDeck
+### And a lot more
 
-- 🔁 **One click to switch** between every account saved in Steam. No retyping passwords, no Steam Guard codes.
-- 🎮 **Play does the setup.** Pick a game and SwapDeck signs in the right account, sets your monitor, resolution and sound, starts your companion apps, then launches it.
-- ↩️ **Everything goes back** when the game exits. Stop never closes your game.
-- 🔒 **Stays on your PC.** No accounts, no telemetry. Stats are optional.
+<table>
+  <tr>
+    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar</sub></td>
+    <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
+    <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X, and LB / RB to change tabs</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">💾 <b>Backup & restore</b><br><sub>Tags, notes, games and profiles. Never sign-ins</sub></td>
+    <td width="33%" valign="top">🔐 <b>Master password</b><br><sub>A lock screen on top of Windows' encryption</sub></td>
+    <td width="33%" valign="top">🕹️ <b>Per-account CS2 configs</b><br><sub>Copy settings between accounts, plus an autoexec each</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">🕓 <b>Session history</b><br><sub>Who played what, when, and for how long</sub></td>
+    <td width="33%" valign="top">✨ <b>Updates itself</b><br><sub>Quietly, with a What's new after each update</sub></td>
+    <td width="33%" valign="top">⌨️ <b>Keyboard friendly</b><br><sub>Arrows, Enter and <code>/</code> to search</sub></td>
+  </tr>
+</table>
 
 ## Install
 
@@ -54,49 +148,6 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 
 > [!NOTE]
 > The app isn't code-signed yet, so Windows may show a SmartScreen warning the first time. Click **More info → Run anyway**.
-
-## Features
-
-<details open>
-<summary><b>Accounts</b></summary>
-
-- **One-click switching**: a "Who's playing?" picker, or the classic sideways gallery
-- **Tags, notes and pins**, plus search, tag filters and sorting
-- **Status at a glance**: online / in-game, VAC and trade bans, limited account
-- **Optional stats** ("Connect for stats"): games and hours, Steam level, wallet, CS2 Premier rating, ranks and medals
-- **Playtime per account** for games you launch through SwapDeck
-- **Add and forget accounts** without digging through Steam
-
-</details>
-
-<details open>
-<summary><b>Library</b></summary>
-
-- Your installed **Steam games**, with their Steam artwork, plus any **non-Steam game** (anything with an `.exe`)
-- Each game can have its own:
-  - **Steam account**: Play switches to it first
-  - **Display**: make a monitor primary, or use only that monitor (it can even be switched off in Windows)
-  - **Resolution profile** you make yourself, e.g. 1280 × 960 stretched for CS2
-  - **Sound device**: e.g. your headset for sim racing
-  - **Companion apps** started with the game (SimHub, Crew Chief, wheel software…) and optionally closed afterwards
-  - **Launcher**: start a tool such as Content Manager instead of the game, and keep the Steam art and tracking
-  - **Launch options**, or import the ones you already set in Steam
-- **Desktop shortcuts** that launch a game through SwapDeck with all of the above
-
-</details>
-
-<details open>
-<summary><b>App</b></summary>
-
-- **Themes**: Dark, OLED Black, Light, with accent colours (or your Windows accent)
-- **Tray mode** with a quick panel to switch accounts or start a recent game, and **Start with Windows**
-- **Displays**: your normal monitor setup, drawn to scale, with "Restore display now" if a game ever crashes
-- **Backup and restore** of your settings (never sign-ins)
-- **Keyboard and controller** navigation
-- **Optional master password** with a lock screen
-- **What's new** after every update, and the full changelog in Settings → About
-
-</details>
 
 ## Using it
 
