@@ -11,7 +11,12 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 
 ### [⬇ Download the latest release](https://github.com/byteminite/SwapDeck/releases/latest)
 
-<img src="docs/screenshots/01-accounts.png" width="860" alt="SwapDeck: the Who's playing? account picker">
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
+  <img src="docs/demo-dark.webp" width="860" alt="SwapDeck switching to another account, then launching Assetto Corsa: it switches account, display and sound, starts SimHub and Content Manager">
+</picture>
+
+<sub>Switch account in one click · Play sets up the account, monitor, sound and apps for you</sub>
 
 </div>
 
@@ -170,6 +175,46 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 - Disconnecting deletes the token. You can also revoke the "SwapDeck" device in your Steam account settings.
 - Backups contain your tags, notes, games and profiles, never sign-ins or passwords.
 
+## FAQ
+
+<details>
+<summary><b>Can SwapDeck get me VAC banned?</b></summary>
+
+No. SwapDeck never touches a running game: it doesn't inject anything, read game memory or change game files while you play.
+Switching only changes which saved login Steam starts with, the same as picking an account in Steam yourself.
+The only game files it ever writes are CS2 config files, and only when you ask: your per-account autoexec, or copying settings from one account to another.
+
+</details>
+
+<details>
+<summary><b>Does it close my game when I press Stop?</b></summary>
+
+Never. Stop puts your display and sound back and stops tracking playtime. The game keeps running.
+
+</details>
+
+<details>
+<summary><b>Where are my logins kept?</b></summary>
+
+Steam keeps them, like it always does. SwapDeck only tells Steam which saved account to start with.
+If you connect an account for stats, Steam's sign-in token is stored encrypted by Windows. See [Privacy](#privacy).
+
+</details>
+
+<details>
+<summary><b>Why does Windows warn me when I run the installer?</b></summary>
+
+The app isn't code-signed yet, so SmartScreen doesn't recognise it. Click <b>More info → Run anyway</b>. The full source is right here.
+
+</details>
+
+<details>
+<summary><b>My screens are wrong after a game crashed. How do I fix them?</b></summary>
+
+Open Settings → Displays → <b>Restore display now</b>. If you can't see SwapDeck, press <code>Win + P</code> → Extend first.
+
+</details>
+
 ## Good to know
 
 - Steam's **"Ask which account to use each time Steam starts"** blocks automatic sign-in, so SwapDeck turns it off when you switch.
@@ -179,7 +224,6 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 - **Resolution profiles** can only use sizes your graphics driver offers. For stretched 4:3, add the resolution as a custom
   resolution in AMD Software or the NVIDIA Control Panel, and set scaling to Full panel / Full-screen. The **Test** button
   in Settings → Displays tells you if Windows accepts it.
-- If your screens ever end up wrong after a crash, use **Restore display now** in Settings → Displays, or press `Win + P` → Extend.
 
 ## Development
 
