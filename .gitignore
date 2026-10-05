@@ -11,3 +11,6 @@ Music/
 
 # Promo video renders (uploaded to GitHub/socials, too big for the repo)
 docs/*.mp4
+
+# Local Claude Code config
+.claude/
