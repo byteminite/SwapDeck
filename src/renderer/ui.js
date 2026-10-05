@@ -1209,7 +1209,7 @@ class App extends Component {
       onClearFilters: () => this.setState({ q: '', tagF: null }), showEmpty: !nf && !has,
       retrying: S.retrying, notRetrying: !S.retrying, onRetry: () => this.retry(), onBrowse: () => this.browse(),
       counter: (idx + 1) + ' / ' + vis.length, onPrev: () => this.step(-1), onNext: () => this.step(1),
-      swOn: !!sw, swName: sw ? sw.name : '', swIni: sw ? sw.ini : '', swBg: sw ? (sw.avatar ? 'url("' + sw.avatar + '") center/cover' : 'radial-gradient(120% 90% at 20% 0%,rgba(var(--fg-rgb),.25),transparent 60%),' + sw.grad) : '',
+      swOn: !!sw, swName: sw ? sw.name : '', swAvIni: sw && !sw.avatar ? sw.ini : '', swAvBg: sw ? (sw.avatar ? 'url("' + sw.avatar + '") center/cover' : 'radial-gradient(120% 90% at 20% 0%,rgba(var(--fg-rgb),.25),transparent 60%),' + sw.grad) : '',
       swText: sw ? sw.steps[sw.step] || '' : '', swPct: sw ? Math.round(((sw.step + 1) / sw.steps.length) * 100) + '%' : '0%', swSteps,
       swMeta: sw ? 'steam.exe ' + (cfg.steamArgs || '') + (sw.game ? ' · then ' + sw.game : '') : '',
       confirmOn: !!confirmAcc, confirmName: confirmAcc ? confirmAcc.name : '', confirmWarn: !!(confirmAcc && confirmAcc.current && running), confirmRunning: running,
