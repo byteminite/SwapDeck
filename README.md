@@ -7,7 +7,7 @@
 **Switch Steam accounts in one click, and launch every game with the right account, monitor, resolution and sound.**<br>
 Built for people who keep separate FPS, sim racing and horror accounts.
 
-[![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made)
+[![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made) [![Made in Munder Difflin](https://img.shields.io/badge/made%20in-Munder%20Difflin-f5b942?style=flat-square)](https://munderdiffl.in/)
 
 ### [⬇ Download the latest release](https://github.com/byteminite/SwapDeck/releases/latest) · [▶ Try it in your browser](https://byteminite.github.io/SwapDeck/)
 
@@ -246,7 +246,8 @@ Installed copies pick it up automatically. Drafts are ignored.
 ## How it's made
 
 SwapDeck is vibe coded: it was designed, directed and tested by me ([@byteminite](https://github.com/byteminite)), and the code was
-written by **Claude**, Anthropic's AI, using [Claude Code](https://claude.com/claude-code). That includes the app, the native display
+written by **Claude**, Anthropic's AI, using [Claude Code](https://claude.com/claude-code) running in
+[Munder Difflin](https://munderdiffl.in/), a free, open source multi-agent harness. That includes the app, the native display
 and sound helpers, the browser demo, this README and the promo video. Every feature was tried on a real setup (multiple
 accounts, three monitors, sim racing gear) before it shipped, and the full source is here for anyone to read.
 
