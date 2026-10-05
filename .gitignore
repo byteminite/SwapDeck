@@ -4,3 +4,10 @@ dist/
 
 # Design export (contains sample data, not needed to build)
 SwapDeck v2 - Steam Account Switcher.html
+_site/
+
+# Music for the promo video (third-party tracks, not redistributed)
+Music/
+
+# Promo video renders (uploaded to GitHub/socials, too big for the repo)
+docs/*.mp4

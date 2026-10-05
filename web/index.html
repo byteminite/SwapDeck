@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwapDeck Live Demo</title>
+<meta name="description" content="Try SwapDeck, the Steam account switcher, right in your browser. Made-up accounts; nothing here touches Steam or your PC.">
+<meta property="og:title" content="SwapDeck: try it in your browser">
+<meta property="og:description" content="Switch Steam accounts in one click, and launch every game with the right account, monitor, resolution and sound.">
+<meta property="og:image" content="https://raw.githubusercontent.com/byteminite/SwapDeck/main/docs/social-preview.png">
+<link rel="icon" href="icon.png">
+<script src="demo-backend.js"></script>
+<style>
+  @font-face { font-family: Geist; src: url(app/fonts/geist-latin.woff2) format('woff2'); font-weight: 100 900; }
+  @font-face { font-family: 'Geist Mono'; src: url(app/fonts/geist-mono-latin.woff2) format('woff2'); font-weight: 100 900; }
+  :root { --bg: #07080b; --text: #f4f4f5; --muted: #a1a1aa; --line: rgba(255,255,255,.09); --accent: #22d3ee; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.5 Geist, system-ui, sans-serif; }
+  body { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    background: radial-gradient(50% 50% at 10% 0%, rgba(34,211,238,.12), transparent 70%), radial-gradient(40% 50% at 100% 100%, rgba(167,139,250,.12), transparent 70%), var(--bg); }
+  header { width: 100%; max-width: 1312px; padding: 18px 16px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header img { width: 36px; height: 36px; }
+  header h1 { font: 700 20px Geist, sans-serif; margin: 0; letter-spacing: -.01em; }
+  header .tag { font: 600 11px 'Geist Mono', monospace; letter-spacing: .08em; color: var(--accent); border: 1px solid rgba(34,211,238,.35); padding: 3px 9px; border-radius: 99px; }
+  header .sp { flex: 1; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 11px; font: 600 14px Geist, sans-serif; text-decoration: none; border: 1px solid var(--line); color: var(--text); background: rgba(255,255,255,.04); }
+  .btn:hover { background: rgba(255,255,255,.09); }
+  .btn.primary { background: #fff; color: #0a0a0c; border-color: #fff; }
+  .btn.primary:hover { background: #a5f3fc; border-color: #a5f3fc; }
+  .note { width: 100%; max-width: 1312px; padding: 0 16px 14px; color: var(--muted); font-size: 13.5px; }
+  .note b { color: var(--text); font-weight: 600; }
+  #stage { width: 100%; max-width: 1312px; padding: 0 16px; }
+  #screen { position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 14px 14px 0 0;
+    background: radial-gradient(70% 90% at 20% 10%, #12345a, transparent 60%), radial-gradient(60% 80% at 90% 90%, #3b1d5e, transparent 60%), #0b1020;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px var(--line); }
+  #app { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #0a0a0c; transition: opacity .2s; }
+  #app.hidden { opacity: 0; pointer-events: none; }
+  #tray { position: absolute; right: 12px; bottom: 10px; width: 340px; height: 460px; border: 0; transform-origin: 100% 100%; background: transparent; color-scheme: normal;
+    opacity: 0; pointer-events: none; transition: opacity .15s, translate .15s; translate: 0 8px; }
+  #tray.open { opacity: 1; pointer-events: auto; translate: 0 0; }
+  #closed { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; color: #d4d4d8; padding: 20px; }
+  #closed.show { display: flex; }
+  #closed div { max-width: 420px; background: rgba(10,10,12,.7); border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; backdrop-filter: blur(10px); }
+  #closed b { color: #fff; }
+  #taskbar { height: 46px; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: rgba(18,20,28,.92); border-radius: 0 0 14px 14px;
+    border: 1px solid var(--line); border-top: 0; backdrop-filter: blur(20px); }
+  #taskbar .mid { flex: 1; display: flex; justify-content: center; gap: 4px; }
+  .tb { width: 38px; height: 34px; display: grid; place-items: center; border-radius: 7px; border: 0; background: transparent; color: #e4e4e7; cursor: pointer; position: relative; }
+  .tb:hover { background: rgba(255,255,255,.08); }
+  .tb img { width: 20px; height: 20px; }
+  .tb.on::after { content: ''; position: absolute; bottom: 2px; left: 50%; translate: -50% 0; width: 14px; height: 3px; border-radius: 3px; background: var(--accent); }
+  #trayIcon { width: 30px; }
+  #trayIcon img { width: 18px; height: 18px; }
+  #hint { position: absolute; right: 150px; bottom: 9px; font: 500 12.5px Geist, sans-serif; background: #fff; color: #0a0a0c; padding: 6px 11px; border-radius: 9px; pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4); animation: bob 1.6s ease-in-out infinite; }
+  #hint::after { content: ''; position: absolute; right: -4px; top: 50%; margin-top: -5px; width: 10px; height: 10px; background: #fff; rotate: 45deg; }
+  #hint.gone { display: none; }
+  @keyframes bob { 50% { translate: 4px 0; } }
+  .clock { font: 500 12px Geist, sans-serif; color: #e4e4e7; text-align: right; line-height: 1.25; padding: 0 6px; }
+  .sys { color: #a1a1aa; display: flex; gap: 10px; padding: 0 8px; }
+  #taskWrap { position: relative; }
+  footer { width: 100%; max-width: 1312px; padding: 18px 16px 30px; color: var(--muted); font-size: 13px; display: flex; gap: 18px; flex-wrap: wrap; }
+  footer a { color: var(--muted); }
+  #small { display: none; margin: 0 16px 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(251,191,36,.35); color: #fcd34d; font-size: 13.5px; background: rgba(251,191,36,.08); }
+  @media (max-width: 760px) { #small { display: block; } header .tag { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <img src="icon.png" alt="">
+  <h1>SwapDeck</h1>
+  <span class="tag">LIVE DEMO</span>
+  <span class="sp"></span>
+  <a class="btn" href="https://github.com/byteminite/SwapDeck">GitHub</a>
+  <a class="btn primary" href="https://github.com/byteminite/SwapDeck/releases/latest">Download for Windows</a>
+</header>
+<p class="note">This is the real SwapDeck interface with <b>made-up accounts</b>. Click around: switch accounts, open the Library, set up a game and press Play.
+  It's all pretend: nothing here touches Steam or your PC, and nothing leaves your browser.</p>
+<div id="small">SwapDeck is a desktop app, so this demo works best on a computer.</div>
+<div id="stage">
+  <div id="screen">
+    <iframe id="app" src="app/index.html" title="SwapDeck"></iframe>
+    <div id="closed"><div><b>SwapDeck is still running in the tray.</b><br>Click its icon in the bottom-right corner to switch accounts or start a recent game, or reopen the window from there.</div></div>
+    <iframe id="tray" src="app/tray.html" title="SwapDeck tray panel"></iframe>
+  </div>
+  <div id="taskWrap">
+    <div id="taskbar">
+      <span style="width:120px"></span>
+      <div class="mid">
+        <button class="tb" title="Start" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="#60a5fa"><path d="M3 3h8.5v8.5H3zM12.5 3H21v8.5h-8.5zM3 12.5h8.5V21H3zM12.5 12.5H21V21h-8.5z"/></svg></button>
+        <button class="tb on" id="taskApp" title="SwapDeck"><img src="icon.png" alt=""></button>
+      </div>
+      <div class="sys"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
+      <button class="tb" id="trayIcon" title="SwapDeck"><img src="icon.png" alt="SwapDeck tray icon"></button>
+      <div class="clock" id="clock"></div>
+    </div>
+    <div id="hint">Try the tray panel</div>
+  </div>
+</div>
+<footer>
+  <span>Screenshots and accounts are made up. Game art comes from Steam's public store pages.</span>
+  <a href="https://github.com/byteminite/SwapDeck#faq">FAQ</a>
+  <a href="https://github.com/byteminite/SwapDeck/blob/main/LICENSE">MIT license</a>
+</footer>
+<script>
+(() => {
+  const screenEl = document.getElementById('screen'), app = document.getElementById('app'), tray = document.getElementById('tray');
+  const closed = document.getElementById('closed'), hint = document.getElementById('hint'), taskApp = document.getElementById('taskApp');
+  const W = 1280, H = 800;               // the pretend window, in screen pixels
+  let scale = 1.25;                       // SwapDeck's UI scale (like Ctrl +/−)
+  const k = () => screenEl.clientWidth / W;
+  // Same rule as the app's auto scale for a 1280 × 800 window.
+  const autoScale = () => Math.round(Math.min(Math.max(.8, Math.min(W / 900, H / 640)) * .9, W / 900, H / 640) / .9 * 100) / 100;
+  function layout() {
+    const z = Math.min(scale * .9, W / 900, H / 640);
+    app.style.width = (W / z) + 'px'; app.style.height = (H / z) + 'px';
+    app.style.transform = 'scale(' + (z * k()) + ')';
+    tray.style.transform = 'scale(' + Math.max(.75, k()) + ')'; fitTray();
+  }
+  let trayH = 460;
+  // Like Windows does with the real panel: never taller than the screen, it scrolls instead.
+  const fitTray = () => { const s = Math.max(.75, k()); tray.style.height = Math.round(Math.min(trayH, (screenEl.clientHeight - 20) / s)) + 'px'; };
+  const hideTray = () => tray.classList.remove('open');
+  const showApp = on => { app.classList.toggle('hidden', !on); closed.classList.toggle('show', !on); taskApp.classList.toggle('on', on); };
+  window.SDDemoUI = {
+    autoScale, setScale: f => { scale = f; layout(); },
+    traySize: h => { trayH = h; fitTray(); },
+    trayHide: hideTray,
+    trayOpen: () => { hideTray(); showApp(true); },
+    win: a => { if (a === 'close' || a === 'min') { showApp(false); hint.classList.remove('gone'); } },
+  };
+  document.getElementById('trayIcon').addEventListener('click', e => {
+    e.stopPropagation(); hint.classList.add('gone');
+    if (tray.classList.contains('open')) return hideTray();
+    SDDemo.showTray(); tray.classList.add('open');
+  });
+  taskApp.addEventListener('click', () => showApp(app.classList.contains('hidden')));
+  // Clicking anywhere else closes the tray panel, like a Windows flyout.
+  document.addEventListener('mousedown', e => { if (!tray.contains(e.target) && e.target.id !== 'trayIcon') hideTray(); });
+  app.addEventListener('load', () => { try { app.contentWindow.document.addEventListener('mousedown', hideTray); } catch {} });
+  addEventListener('resize', layout);
+  new ResizeObserver(layout).observe(screenEl);
+  layout(); SDDemo.setZoom('auto', false);
+  const clock = document.getElementById('clock');
+  const tick = () => { const d = new Date(); clock.innerHTML = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '<br>' + d.toLocaleDateString(); };
+  tick(); setInterval(tick, 15000);
+})();
+</script>
+</body>
+</html>
