@@ -11,14 +11,9 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 
 ### [⬇ Download the latest release](https://github.com/byteminite/SwapDeck/releases/latest) · [▶ Try it in your browser](https://byteminite.github.io/SwapDeck/)
 
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
-  <img src="docs/demo-dark.webp" width="860" alt="SwapDeck switching to another account, then launching Assetto Corsa: it switches account, display and sound, starts SimHub and Content Manager">
-</picture>
-
-<sub>Switch account in one click · Play sets up the account, monitor, sound and apps for you</sub>
-
 </div>
+
+https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 
 ## Why SwapDeck
 
@@ -32,6 +27,17 @@ Built for people who keep separate FPS, sim racing and horror accounts.
 </table>
 
 ## Features
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
+  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck switching to another account, then launching Assetto Corsa: it switches account, display and sound, starts SimHub and Content Manager">
+</picture>
+
+<sub>The real app: switch account in one click, then Play sets up the account, monitor, sound and apps</sub>
+
+</div>
 
 <table>
 <tr>
