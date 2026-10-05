@@ -21,7 +21,7 @@ async function closeApp(name) {
   if (await isRunning(name)) await ex('taskkill', ['/IM', name, '/T', '/F']);
 }
 
-function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLaunch, steamArgs }) {
+function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLaunch }) {
   let session = null; // { gid, appid, steam, saved, restore, mode, monId, runningAt, timer, child }
   let starting = false, testing = false; // a Play still preparing, a display test in progress
 
@@ -176,7 +176,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
         child.on('exit', () => { if (session === s && !s.seenAt && Date.now() - launchedAt > 10000) end('exit'); });
         child.unref();
       } else if (g.steam) {
-        steam.start(loc.exe, steamArgs ? steamArgs() : store.settings().steamArgs, ['-applaunch', String(g.appid), ...steam.splitArgs(g.opts)]);
+        steam.start(loc.exe, store.settings().steamArgs, ['-applaunch', String(g.appid), ...steam.splitArgs(g.opts)]);
       } else {
         const child = spawn(g.exe, steam.splitArgs(g.opts), { cwd: path.dirname(g.exe), detached: true, stdio: 'ignore', windowsHide: false });
         child.on('error', e => { if (session === s) end('error', 'Couldn\'t start the game: ' + e.message); });

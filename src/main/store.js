@@ -13,7 +13,6 @@ const DEFAULTS = {
     defaultGame: null,
     closeAfter: false,
     steamArgs: '',
-    steamSilent: true,       // start Steam in the tray (-silent) when switching accounts or launching a game
     uiScale: 'auto',
     base: 'dark',            // dark | oled | light
     accent: 'cyan',          // cyan | violet | amber | red | green | pink | windows | custom

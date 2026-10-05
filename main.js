@@ -160,7 +160,7 @@ function switchTo(sid, opts = {}) {
     await steam.regSet('AutoLoginUser', 'REG_SZ', acc.login);
     await steam.regSet('RememberPassword', 'REG_DWORD', 1);
     steam.markMostRecent(loc.dir, sid);
-    steam.start(loc.exe, steamArgs(true));
+    steam.start(loc.exe, store.settings().steamArgs);
     i++; progress();
 
     const target = String(steam.accountIdFromSid(sid));
@@ -191,13 +191,6 @@ function closeSteam() {
     send('steam', steamState());
     await steam.shutdown(loc.exe);
   });
-}
-
-// Steam's start options: the user's own, plus -silent (straight to the tray) where SwapDeck starts Steam
-// on its own (switching, game launches). Not when adding an account or for "Start Steam": those want the window.
-function steamArgs(silent) {
-  const s = store.settings(), own = s.steamArgs || '';
-  return silent && s.steamSilent !== false && !/(^|\s)-silent(\s|$)/i.test(own) ? (own + ' -silent').trim() : own;
 }
 
 function startSteam() {
@@ -252,7 +245,7 @@ function forget(sid) {
     store.removeToken(sid);
     store.removeCredentials(sid);
     const restarted = st.running && st.activeSid && st.activeSid !== sid;
-    if (restarted) steam.start(loc.exe, steamArgs(true));
+    if (restarted) steam.start(loc.exe, store.settings().steamArgs);
     return { restarted, wasCurrent: st.activeSid === sid };
   });
 }
@@ -315,7 +308,7 @@ function cleanProfile(p) {
 }
 const validRes = id => store.resProfiles().some(p => p.id === id) ? id : null;
 
-const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, steamArgs: () => steamArgs(true), applyNormal: () => applyNormal(), beforeLaunch: (g, sid) => { if (String(g.appid) === '730') applyCs2Autoexec(sid); } });
+const player = createPlayer({ getLoc: () => loc, accounts, switchTo, send, applyNormal: () => applyNormal(), beforeLaunch: (g, sid) => { if (String(g.appid) === '730') applyCs2Autoexec(sid); } });
 
 // First run: the current layout is the normal one. While no game profile is active, remember where
 // each switched-on monitor sits, so the normal setup can put monitors back in the same place.
@@ -388,7 +381,7 @@ function ipc() {
   });
   ipcMain.handle('settings', (_, patch) => {
     const allowed = {};
-    for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'steamSilent', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
