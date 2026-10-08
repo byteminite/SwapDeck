@@ -57,15 +57,19 @@ function init(onState) {
 
 function check(isManual) {
   if (!autoUpdater) return state;
-  if (state.state === 'downloading' || state.state === 'ready') return state;
+  if (state.state === 'downloading' || state.state === 'ready' || state.state === 'installing') return state;
   manual = !!isManual;
   autoUpdater.checkForUpdates().catch(() => {});
   return state;
 }
 
+const NOTICE_MS = 1500;
 function install() {
+  if (!autoUpdater || state.state !== 'ready') return;
+  // The silent install closes the window at once, which looks like a crash: show "Installing update" first.
+  set({ state: 'installing', version: state.version, notes: state.notes });
   // Silent install (no installer window), then SwapDeck reopens on the new version.
-  if (autoUpdater && state.state === 'ready') autoUpdater.quitAndInstall(true, true);
+  setTimeout(() => autoUpdater.quitAndInstall(true, true), NOTICE_MS);
 }
 
 const current = () => state;

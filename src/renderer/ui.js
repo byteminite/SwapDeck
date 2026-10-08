@@ -896,6 +896,7 @@ class App extends Component {
     const idleText = upd === 'unsupported' ? (u.portable ? 'Portable version: download new versions from GitHub' : 'Development build: updates only work in the installed app')
       : upd === 'error' ? 'Update check failed: ' + (u.error || 'unknown error')
       : upd === 'none' ? 'Up to date' + (u.checkedAt ? ' · checked ' + rel(u.checkedAt) : '')
+      : upd === 'installing' ? 'Installing v' + u.version + '…'
       : 'Checks at startup and every 6 hours';
     const P = S.rp, rpOn = !!(P && P.stretch);
     return {
@@ -1310,6 +1311,7 @@ class App extends Component {
       onClearFilters: () => this.setState({ q: '', accTags: [] }), showEmpty: !nf && !has,
       retrying: S.retrying, notRetrying: !S.retrying, onRetry: () => this.retry(), onBrowse: () => this.browse(),
       counter: (idx + 1) + ' / ' + vis.length, onPrev: () => this.step(-1), onNext: () => this.step(1),
+      updInstalling: !!S.update && S.update.state === 'installing', updFromTo: S.update && S.update.version ? 'v' + (S.update.current || S.version) + ' → v' + S.update.version : '',
       swOn: !!sw, swName: sw ? sw.name : '', swAvIni: sw && !sw.avatar ? sw.ini : '', swAvBg: sw ? (sw.avatar ? 'url("' + sw.avatar + '") center/cover' : 'radial-gradient(120% 90% at 20% 0%,rgba(var(--fg-rgb),.25),transparent 60%),' + sw.grad) : '',
       swText: sw ? sw.steps[sw.step] || '' : '', swPct: sw ? Math.round(((sw.step + 1) / sw.steps.length) * 100) + '%' : '0%', swSteps,
       swMeta: sw ? 'steam.exe ' + (cfg.steamArgs || '') + (sw.game ? ' · then ' + sw.game : '') : '',
