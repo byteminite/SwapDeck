@@ -134,7 +134,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 
 <table>
   <tr>
-    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar</sub></td>
+    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, or open it from any app with an optional shortcut (off by default, key of your choice)</sub></td>
     <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
     <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X, and LB / RB to change tabs</sub></td>
   </tr>

@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', tray: true, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -251,6 +251,8 @@
     setSettings: async patch => {
       for (const k of Object.keys(patch)) if (k !== 'uiScale') settings[k] = patch[k];
       if ('uiScale' in patch) { settings.uiScale = patch.uiScale; setZoom(patch.uiScale, true); }
+      // A web page can't listen for keys outside its tab, so the demo only remembers the choice.
+      if (patch.hotkeyOn) notice('Shortcut', 'In the app, these keys open the tray panel from any program. The demo only remembers your choice.');
       return { ...settings };
     },
     browseSteam: async () => ({ ok: true }),
