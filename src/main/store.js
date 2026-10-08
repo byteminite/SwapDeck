@@ -25,13 +25,14 @@ const DEFAULTS = {
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)
     hotkey: require('./hotkey').DEFAULT_KEY, // Electron accelerator, checked by hotkey.isValidKey
     lastSeenVersion: null,   // the version whose What's new was last shown
+    tagList: [],             // every tag used on a game or account, in first-used order (keeps tag order stable)
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
+const DEFAULT_GAME = { acct: null, tags: [], opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
 // display.res = resolution profile id · audio = playback device id · apps = companion apps [{ path, args, close }]
 // launcher = an .exe to start instead of the Steam game (e.g. Content Manager for Assetto Corsa)
 
@@ -178,7 +179,8 @@ function importData(b) {
     for (const [k, def] of Object.entries(DEFAULTS.settings)) {
       const v = b.settings[k];
       if (v === undefined) continue;
-      if (k === 'normalOn') { if (v === null || (Array.isArray(v) && v.every(x => typeof x === 'string'))) next[k] = v; }
+      if (k === 'tagList') { if (Array.isArray(v)) next[k] = v.filter(x => typeof x === 'string').slice(-200); }
+      else if (k === 'normalOn') { if (v === null || (Array.isArray(v) && v.every(x => typeof x === 'string'))) next[k] = v; }
       else if (k === 'uiScale') { if (v === 'auto' || SCALES.includes(v)) next[k] = v; }
       else if (def === null ? (v === null || typeof v === 'string') : typeof v === typeof def) next[k] = v;
     }

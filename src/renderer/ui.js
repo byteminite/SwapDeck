@@ -607,10 +607,21 @@ class App extends Component {
     if (g) this.setState(s => ({ lib: s.lib.map(x => x.id === id ? g : x) }));
   }
   setAcct(id, acct) {
-    const a = acct ? this.find(acct) : null;
-    this.gmut(id, { acct, tags: a ? a.tags : [] });
+    this.gmut(id, { acct });
     this.setState({ acctMenu: false });
     this.gset(id, { acct });
+  }
+  // Ready-made tags first, then the order tags were first used. Unused tags drop out, except ones touched in the open game.
+  tagOrder(keep = []) {
+    const S = this.state, used = [...this.accts.flatMap(a => a.tags), ...S.lib.flatMap(g => g.tags)];
+    return [...new Set([...KNOWN, ...(S.settings.tagList || []), ...used, ...keep])].filter(t => KNOWN.includes(t) || used.includes(t) || keep.includes(t));
+  }
+  setGameTags(id, tags) {
+    const g = this.gfind(id), keep = [...new Set([...(this.state.gdKeep || []), ...g.tags, ...tags])];
+    const sorted = this.tagOrder(keep).filter(t => tags.includes(t)).slice(0, 12);
+    this.setState({ gdKeep: keep });
+    this.gmut(id, { tags: sorted });
+    this.gset(id, { tags: sorted });
   }
   setDisp(id, p) { this.gmut(id, g => ({ display: { ...g.display, ...p } })); this.gset(id, { display: p }); }
   setOpts(id, v) {
@@ -637,7 +648,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, acctMenu: false });
+    this.setState({ gd: id, acctMenu: false, gdKeep: [], gTagDraft: '' });
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
@@ -942,7 +953,10 @@ class App extends Component {
       onLogoErr: logoFail,
       gTypeLbl: g.steam ? 'STEAM' : 'NON-STEAM', gTypeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', gTypeBd: g.steam ? 'rgba(var(--fg-rgb),.25)' : 'rgba(251,191,36,.45)',
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
-      gMeta: g.steam ? 'Steam · App ' + g.appid + (g.tags.length ? ' · ' + g.tags.join(', ') : '') : 'Non-Steam · ' + g.exe.split('\\').pop(),
+      gMeta: g.steam ? 'Steam · App ' + g.appid : 'Non-Steam · ' + g.exe.split('\\').pop(),
+      gTagOpts: this.tagOrder(S.gdKeep || []).map(t => { const on = g.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => this.setGameTags(g.id, on ? g.tags.filter(x => x !== t) : [...g.tags, t]) }; }),
+      gTagN: g.tags.length ? g.tags.length + ' selected' : '', gTagDraft: S.gTagDraft || '', onGTagDraft: e => this.setState({ gTagDraft: e.target.value }),
+      onGTagKey: e => { if (e.key !== 'Enter') return; const t = (S.gTagDraft || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16); if (t && !g.tags.includes(t)) this.setGameTags(g.id, [...g.tags, t]); this.setState({ gTagDraft: '' }); },
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null }),

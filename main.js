@@ -35,6 +35,18 @@ const send = (ch, ...args) => {
   if (trayWin && !trayWin.isDestroyed()) trayWin.webContents.send(ch, ...args);
 };
 
+// ---------- tags ----------
+
+// Same shape as the tag inputs make: lowercase, dashes for spaces, at most 16 characters, 12 per game or account.
+const cleanTags = list => Array.isArray(list)
+  ? [...new Set(list.map(t => String(t).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16)).filter(Boolean))].slice(0, 12)
+  : [];
+// Tags are listed in first-used order, so a tag never jumps around when it is ticked or unticked.
+function rememberTags(tags) {
+  const known = store.settings().tagList || [], fresh = tags.filter(t => !known.includes(t));
+  if (fresh.length) store.setSettings({ tagList: [...known, ...fresh].slice(-200) });
+}
+
 // ---------- state ----------
 
 function account(a) {
@@ -367,7 +379,7 @@ function ipc() {
     rememberNormal(monitors);
     return {
       steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error(), hotkeyDefault: hotkey.DEFAULT_KEY }, version: app.getVersion(), busy, zoom: zoomFactor,
-      update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
+      update: updater.current(), vault: v, lib: library.build(loc.dir), monitors, winAccent: winAccent(), session: player.current(),
       displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(), newInstall: !store.existedBefore(),
     };
   });
@@ -379,7 +391,8 @@ function ipc() {
   ipcMain.handle('forget', (_, sid) => player.current() ? { ok: false, code: 'RUNNING', error: 'A game SwapDeck launched is still running. Restarting Steam now would close it, so quit the game (or press Stop) first.' } : forget(String(sid)));
   ipcMain.handle('meta', (_, sid, patch) => {
     const allowed = {};
-    for (const k of ['tags', 'note', 'pinned', 'launch']) if (k in patch) allowed[k] = patch[k];
+    for (const k of ['note', 'pinned', 'launch']) if (k in patch) allowed[k] = patch[k];
+    if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
     if (allowed.note != null) allowed.note = String(allowed.note).slice(0, 140);
     store.setMeta(String(sid), allowed);
     return oneAccount(String(sid));
@@ -459,12 +472,13 @@ function ipc() {
   });
 
   // ---- library ----
-  const findGame = id => library.build(loc.dir, accounts()).find(g => g.id === id);
-  ipcMain.handle('lib:list', () => library.build(loc.dir, accounts()));
+  const findGame = id => library.build(loc.dir).find(g => g.id === id);
+  ipcMain.handle('lib:list', () => library.build(loc.dir));
   ipcMain.handle('lib:set', (_, id, patch) => {
     const g = findGame(String(id)); if (!g) return null;
     const allowed = {};
     if ('acct' in patch) allowed.acct = patch.acct || null;
+    if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
@@ -560,7 +574,7 @@ function ipc() {
   });
   // ---- tray panel ----
   ipcMain.handle('tray:data', () => {
-    const accs = accounts(), lib = library.build(loc.dir, accs), s = store.settings();
+    const accs = accounts(), lib = library.build(loc.dir), s = store.settings();
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },

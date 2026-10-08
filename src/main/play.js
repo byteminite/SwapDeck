@@ -63,7 +63,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
   async function start(id) {
     const loc = getLoc();
-    const lib = library.build(loc.dir, accounts());
+    const lib = library.build(loc.dir);
     const g = lib.find(x => x.id === id);
     if (!g) return { ok: false, error: 'That game is no longer in your library.' };
     if (g.steam && !g.installed) { await shell.openExternal('steam://install/' + g.appid); return { ok: true, install: true }; }
