@@ -366,7 +366,7 @@ function ipc() {
     const monitors = await display.list().catch(() => []);
     rememberNormal(monitors);
     return {
-      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error() }, version: app.getVersion(), busy, zoom: zoomFactor,
+      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error(), hotkeyDefault: hotkey.DEFAULT_KEY }, version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
       displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(), newInstall: !store.existedBefore(),
     };
@@ -395,9 +395,8 @@ function ipc() {
     let keyError = null;
     // A new key is only saved once Windows has accepted it, so a refused key leaves the old one in place.
     if ('hotkey' in patch) {
-      const key = String(patch.hotkey);
-      if (!hotkey.isValidKey(key)) keyError = 'Use Ctrl or Alt with a letter, a number or F1 to F12.';
-      else if (hotkey.apply({ ...store.settings(), ...allowed, hotkey: key }).ok) allowed.hotkey = key;
+      const key = String(patch.hotkey), r = hotkey.keyProblem(key) ? { ok: false, error: hotkey.keyProblem(key) } : hotkey.apply({ ...store.settings(), ...allowed, hotkey: key });
+      if (r.ok) allowed.hotkey = key; else keyError = r.error;
     }
     if ('startup' in patch) { try { setStartWithWindows(patch.startup); } catch (e) { store.logError && store.logError('startup', e); } }
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
@@ -406,7 +405,7 @@ function ipc() {
     if ('uiScale' in allowed) applyZoom(false);
     if ('tray' in allowed) updateTray();
     if ('tray' in allowed || 'hotkeyOn' in allowed) hotkey.apply(store.settings());
-    return { ...s, hotkeyError: keyError || hotkey.error() };
+    return { ...s, hotkeyError: keyError || hotkey.error(), hotkeyDefault: hotkey.DEFAULT_KEY };
   });
   ipcMain.handle('steam:browse', async () => {
     const r = await dialog.showOpenDialog(win, {
@@ -729,7 +728,8 @@ function updateTray() {
   } else if (!on && tray) { tray.destroy(); tray = null; if (trayWin && !trayWin.isDestroyed()) trayWin.destroy(); }
 }
 
-// A backup from another PC can carry a key that is malformed or taken here; fall back and report it in Settings.
+// A backup from another PC can carry a malformed key (reset to the default) or one another program owns
+// here (reported in Settings by hotkey.error()).
 function applyHotkey() {
   if (!hotkey.isValidKey(store.settings().hotkey)) store.setSettings({ hotkey: hotkey.DEFAULT_KEY });
   hotkey.apply(store.settings());

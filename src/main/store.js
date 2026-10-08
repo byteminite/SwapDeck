@@ -23,7 +23,7 @@ const DEFAULTS = {
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)
-    hotkey: 'Ctrl+Alt+S',    // Electron accelerator, checked by hotkey.isValidKey
+    hotkey: require('./hotkey').DEFAULT_KEY, // Electron accelerator, checked by hotkey.isValidKey
     lastSeenVersion: null,   // the version whose What's new was last shown
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)

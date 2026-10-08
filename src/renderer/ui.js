@@ -295,7 +295,7 @@ class App extends Component {
     const S = this.state;
     if (S.locked) return;
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
-    if (k === 'b') return this.onKey({ key: 'Escape', target: document.body });
+    if (k === 'b') return this.onKey({ key: 'Escape', target: document.body, preventDefault() {} });
     if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw || S.acctMenu) return;
     if (S.gd) { if (k === 'a') this.play(S.gd); return; }
     if (S.launch && !S.launch.hidden) return;
@@ -358,15 +358,22 @@ class App extends Component {
 
   // Settings > General shortcut recorder: the next real key pressed with Ctrl or Alt becomes the shortcut.
   recordHotkey(e) {
+    // Let keyboard users reach and press Cancel.
+    if (e.key === 'Tab' || ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.tagName === 'BUTTON')) return;
     e.preventDefault();
     if (e.key === 'Escape') return this.setState({ hkRec: false });
     if (['Control', 'Alt', 'Shift', 'Meta', 'AltGraph'].includes(e.key)) return;
-    const key = /^F([1-9]|1[0-2])$/.test(e.key) ? e.key : /^(Key[A-Z]|Digit\d)$/.test(e.code) ? e.code.slice(-1) : null;
-    const err = e.metaKey ? 'The Windows key is reserved by Windows. Use Ctrl or Alt instead.'
+    // keyCode follows the keyboard layout like Windows does (e.code is the QWERTY position: Z would save as Y on German keyboards).
+    const kc = e.keyCode, key = /^F([1-9]|1[0-2])$/.test(e.key) ? e.key : (kc >= 65 && kc <= 90) || (kc >= 48 && kc <= 57) ? String.fromCharCode(kc) : null;
+    const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift'].filter(Boolean), combo = mods.concat(key).join(' + ');
+    // Ctrl + Alt is AltGr on many layouts: if the keys type a character here, taking them would stop that character everywhere.
+    const types = e.ctrlKey && e.altKey && !e.shiftKey && key && e.key.length === 1 && e.key.toUpperCase() !== key;
+    const err = e.metaKey ? 'The Windows key is reserved by Windows. Use Ctrl, Alt or Shift instead.'
       : !key ? 'Use a letter, a number or F1 to F12 as the last key.'
-      : !e.ctrlKey && !e.altKey ? "Add Ctrl or Alt, so the shortcut can't fire while you type or play." : '';
+      : mods.length < 2 ? "Use two of Ctrl, Alt and Shift, so the shortcut can't take over keys like Ctrl + C."
+      : types ? combo + ' types "' + e.key + '" on your keyboard. Add Shift, or pick another key.' : '';
     if (err) return this.setState(s => ({ hkRec: false, hkOk: '', settings: { ...s.settings, hotkeyError: err } }));
-    this.saveHotkey([e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', key].filter(Boolean).join('+'));
+    this.saveHotkey(mods.concat(key).join('+'));
   }
 
   async saveHotkey(key) {
@@ -376,7 +383,7 @@ class App extends Component {
   }
 
   openSettings(sec) {
-    this.setState({ setOpen: true, setSec: sec || this.state.setSec || 'general', defMenu: false });
+    this.setState({ setOpen: true, setSec: sec || this.state.setSec || 'general', defMenu: false, hkRec: false });
     if (sec === 'displays') this.reloadMonitors();
     this.later(0, () => { if (this._set) this._set.scrollTop = 0; });
   }
@@ -384,7 +391,7 @@ class App extends Component {
   onKey(e) {
     const S = this.state, tag = (e.target && e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if (S.locked) return;
-    if (S.hkRec && S.setOpen && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
+    if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
       if (S.defMenu) return this.setState({ defMenu: false });
       if (S.rmId) return this.setState({ rmId: null });
@@ -815,7 +822,7 @@ class App extends Component {
     const tg = v => [v ? on : off, v ? 'translateX(18px)' : 'translateX(0px)'];
     const inst = S.lib.filter(g => g.steam && g.installed), dg = inst.find(g => String(g.appid) === String(cfg.defaultGame)) || null;
     const M = S.mp, v = S.vault || { mode: 'dpapi' }, master = v.mode === 'master', u = S.update || { state: 'idle' };
-    const [lgBg, lgX] = tg(!!cfg.launchAfter), [ftBg, ftX] = tg(!!cfg.followTag), [rdBg, rdX] = tg(!!cfg.reduceMotion), [mpAutoBg, mpAutoX] = tg(!!v.autoUnlock), [hkBg, hkX] = tg(!!cfg.hotkeyOn);
+    const [lgBg, lgX] = tg(!!cfg.launchAfter), [ftBg, ftX] = tg(!!cfg.followTag), [rdBg, rdX] = tg(!!cfg.reduceMotion), [mpAutoBg, mpAutoX] = tg(!!v.autoUnlock), [hkBg, hkX] = tg(!!cfg.hotkeyOn), hkDef = cfg.hotkeyDefault || 'Ctrl+Alt+S';
     const onLg = () => { const patch = { launchAfter: !cfg.launchAfter }; if (!cfg.defaultGame && inst.length) patch.defaultGame = String((inst.find(g => String(g.appid) === '730') || inst[0]).appid); this.setCfg(patch); };
     const upd = u.state, dl = upd === 'downloading';
     const idleText = upd === 'unsupported' ? (u.portable ? 'Portable version: download new versions from GitHub' : 'Development build: updates only work in the installed app')
@@ -834,9 +841,9 @@ class App extends Component {
       swSub: cfg.tray ? 'Opens quietly in the tray when you sign in to Windows.' : 'Opens SwapDeck when you sign in to Windows. Turn on the tray option above to start it hidden.',
       trBg: cfg.tray ? on : off, trX: cfg.tray ? 'translateX(18px)' : 'translateX(0px)', onTr: () => this.setCfg({ tray: !cfg.tray }),
       hkShow: !!cfg.tray, hkOn: !!cfg.hotkeyOn, hkBg, hkX, onHk: () => this.setCfg({ hotkeyOn: !cfg.hotkeyOn }),
-      hkKeys: (cfg.hotkey || 'Ctrl+Alt+S').split('+'), hkErr: cfg.hotkeyError || '', hkOk: S.hkOk || '', hkRec: !!S.hkRec,
+      hkKeys: (cfg.hotkey || hkDef).split('+'), hkErr: cfg.hotkeyError || '', hkOk: S.hkOk || '', hkRec: !!S.hkRec,
       onHkRec: () => this.setState(s => ({ hkRec: true, hkOk: '', settings: { ...s.settings, hotkeyError: '' } })), onHkCancel: () => this.setState({ hkRec: false }),
-      hkCanReset: (cfg.hotkey || 'Ctrl+Alt+S') !== 'Ctrl+Alt+S', onHkReset: () => this.saveHotkey('Ctrl+Alt+S'),
+      hkCanReset: (cfg.hotkey || hkDef) !== hkDef, onHkReset: () => this.saveHotkey(hkDef), hkDefLabel: hkDef.split('+').join(' + '),
       onExport: async () => { const r = await api.exportBackup(); if (r.ok) this.toast('success', 'Backup saved', r.file + ' is in the folder you picked.'); else if (r.error) this.toast('error', "Couldn't save the backup", r.error); },
       onImport: async () => { const r = await api.importBackup(); if (r.ok) { await this.reload(); this.toast('success', 'Backup restored', 'Settings from ' + r.file + ' are back.'); } else if (r.error) this.toast('error', "Couldn't restore", r.error); },
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),
@@ -1239,7 +1246,7 @@ class App extends Component {
       confirmOn: !!confirmAcc, confirmName: confirmAcc ? confirmAcc.name : '', confirmWarn: !!(confirmAcc && confirmAcc.current && running), confirmRunning: running,
       onConfirmNo: () => this.setState({ confirmId: null }), onConfirmYes: () => this.forget(),
       unlinkOn: !!unlinkAcc, unlinkName: unlinkAcc ? unlinkAcc.name : '', onUnlinkNo: () => this.setState({ unlinkId: null }), onUnlinkYes: () => this.unlink(),
-      setOpen: S.setOpen, onSetClose: () => this.setState({ setOpen: false, rp: null }), stop: e => e.stopPropagation(),
+      setOpen: S.setOpen, onSetClose: () => this.setState({ setOpen: false, rp: null, hkRec: false }), stop: e => e.stopPropagation(),
       clBg: cfg.closeAfter ? onBg : offBg, clX: cfg.closeAfter ? 'translateX(18px)' : 'translateX(0px)', onCl: () => this.setCfg({ closeAfter: !cfg.closeAfter }),
       cfgOpts: cfg.steamArgs || '', onOpts: e => { const v = e.target.value; this.setState(s => ({ settings: { ...s.settings, steamArgs: v } })); clearTimeout(this._argT); this._argT = setTimeout(() => api.setSettings({ steamArgs: v }), 400); },
       pathText: nf ? 'Not found — browse to steam.exe' : S.steam.exe || '', pathFg: nf ? 'var(--bad-fg)' : 'var(--text-soft)', pathBd: nf ? 'rgba(248,113,113,.4)' : 'rgba(var(--fg-rgb),.1)',
