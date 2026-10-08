@@ -1,7 +1,7 @@
 {
   "name": "swapdeck",
   "productName": "SwapDeck",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Steam account switcher",
   "main": "main.js",
   "private": true,

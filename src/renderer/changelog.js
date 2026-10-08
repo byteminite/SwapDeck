@@ -3,6 +3,50 @@
 
 export const CHANGELOG = [
   {
+    v: '1.2.0', date: '8 Oct 2026',
+    title: 'Tags, favourites and a quick shortcut',
+    intro: 'Tag and star your games, filter by several tags at once, and open SwapDeck from anywhere.',
+    highlights: [
+      ['Game tags', 'Tag each game in its details, with your own tags and colours. Accounts use the same tags.'],
+      ['Favourites', 'Star games and accounts, and they come first.'],
+      ['New Tags filter', 'Tick as many tags as you like on Accounts and Library. No more scrolling sideways.'],
+      ['Shortcut', 'Optionally open the tray panel from any app (Ctrl + Alt + S by default, changeable in Settings).'],
+      ['Smoother updates', '"Restart now" shows "Installing update" instead of just closing.'],
+    ],
+    sections: [
+      ['Tags', [
+        'Games have their own tags: tag them in their details, with the ready-made fps, racing and horror tags or your own',
+        'Accounts use the same tag editor, and tags made on games can be used on accounts and the other way round',
+        'Tag colours: click a tag\'s dot to pick one of 8 colours or any custom colour. A tag looks the same everywhere',
+        'Tags keep their place: ticking or unticking a tag never moves it around',
+      ]],
+      ['Favourites', [
+        'Star games on their cover or in their details. Starred games come first in the Library, whatever the sort',
+        'The account Pin is now called Favourite, and pinned accounts stay starred',
+      ]],
+      ['Tags filter', [
+        'One Tags button on Accounts and Library replaces the sideways-scrolling row',
+        'Tick as many tags as you like, plus Favourites, and anything with any of them shows',
+        'Ticked tags show as chips you can remove, with Clear',
+        'In the Library, All / Steam / Non-Steam is now its own switch',
+      ]],
+      ['Tray panel shortcut', [
+        'Optionally open the tray panel from any app with Ctrl + Alt + S. Off by default: Settings > General, under "Keep running in the tray"',
+        'Change the key to two of Ctrl, Alt and Shift plus a key. SwapDeck tells you if another program already uses it, and refuses keys that would block typing (like AltGr characters)',
+      ]],
+      ['App', [
+        '"Restart now" shows "Installing update, SwapDeck reopens in a few seconds" instead of just closing',
+        'It waits while a game you launched through SwapDeck is still running, so your display and sound are put back first',
+        'The switching screen shows the account\'s avatar',
+        'Backups are checked more carefully when restoring',
+      ]],
+      ['Good to know', [
+        'Games no longer show the tags of the account they launch with, so tag them in their details',
+        '"Accent follows the running game\'s tag" now uses those game tags',
+      ]],
+    ],
+  },
+  {
     v: '1.1.0', date: '5 Oct 2026',
     title: 'SwapDeck now launches your games',
     intro: 'Every game can bring its own account, monitor, resolution, sound and helper apps, and everything is put back when you quit.',
