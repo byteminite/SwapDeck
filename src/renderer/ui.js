@@ -795,7 +795,7 @@ class App extends Component {
     const tg = v => [v ? on : off, v ? 'translateX(18px)' : 'translateX(0px)'];
     const inst = S.lib.filter(g => g.steam && g.installed), dg = inst.find(g => String(g.appid) === String(cfg.defaultGame)) || null;
     const M = S.mp, v = S.vault || { mode: 'dpapi' }, master = v.mode === 'master', u = S.update || { state: 'idle' };
-    const [lgBg, lgX] = tg(!!cfg.launchAfter), [ftBg, ftX] = tg(!!cfg.followTag), [rdBg, rdX] = tg(!!cfg.reduceMotion), [mpAutoBg, mpAutoX] = tg(!!v.autoUnlock);
+    const [lgBg, lgX] = tg(!!cfg.launchAfter), [ftBg, ftX] = tg(!!cfg.followTag), [rdBg, rdX] = tg(!!cfg.reduceMotion), [mpAutoBg, mpAutoX] = tg(!!v.autoUnlock), [hkBg, hkX] = tg(!!cfg.hotkeyOn);
     const onLg = () => { const patch = { launchAfter: !cfg.launchAfter }; if (!cfg.defaultGame && inst.length) patch.defaultGame = String((inst.find(g => String(g.appid) === '730') || inst[0]).appid); this.setCfg(patch); };
     const upd = u.state, dl = upd === 'downloading';
     const idleText = upd === 'unsupported' ? (u.portable ? 'Portable version: download new versions from GitHub' : 'Development build: updates only work in the installed app')
@@ -813,6 +813,8 @@ class App extends Component {
       swBg: cfg.startup ? on : off, swX: cfg.startup ? 'translateX(18px)' : 'translateX(0px)', onSw: () => this.setCfg({ startup: !cfg.startup }),
       swSub: cfg.tray ? 'Opens quietly in the tray when you sign in to Windows.' : 'Opens SwapDeck when you sign in to Windows. Turn on the tray option above to start it hidden.',
       trBg: cfg.tray ? on : off, trX: cfg.tray ? 'translateX(18px)' : 'translateX(0px)', onTr: () => this.setCfg({ tray: !cfg.tray }),
+      hkShow: !!cfg.tray, hkOn: !!cfg.hotkeyOn, hkBg, hkX, onHk: () => this.setCfg({ hotkeyOn: !cfg.hotkeyOn }),
+      hkKeys: (cfg.hotkey || 'Ctrl+Alt+S').split('+'), hkErr: cfg.hotkeyError || '',
       onExport: async () => { const r = await api.exportBackup(); if (r.ok) this.toast('success', 'Backup saved', r.file + ' is in the folder you picked.'); else if (r.error) this.toast('error', "Couldn't save the backup", r.error); },
       onImport: async () => { const r = await api.importBackup(); if (r.ok) { await this.reload(); this.toast('success', 'Backup restored', 'Settings from ' + r.file + ' are back.'); } else if (r.error) this.toast('error', "Couldn't restore", r.error); },
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),

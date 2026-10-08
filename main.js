@@ -16,6 +16,7 @@ const library = require('./src/main/library');
 const display = require('./src/main/display');
 const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
+const hotkey = require('./src/main/hotkey');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
 protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -365,7 +366,7 @@ function ipc() {
     const monitors = await display.list().catch(() => []);
     rememberNormal(monitors);
     return {
-      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows() }, version: app.getVersion(), busy, zoom: zoomFactor,
+      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error() }, version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir, accs), monitors, winAccent: winAccent(), session: player.current(),
       displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(), newInstall: !store.existedBefore(),
     };
@@ -390,13 +391,15 @@ function ipc() {
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
+    if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
     if ('startup' in patch) { try { setStartWithWindows(patch.startup); } catch (e) { store.logError && store.logError('startup', e); } }
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
     const s = { ...store.setSettings(allowed), startup: startsWithWindows() };
     if ('uiScale' in allowed) applyZoom(false);
     if ('tray' in allowed) updateTray();
-    return s;
+    if ('tray' in allowed || 'hotkeyOn' in allowed) hotkey.apply(store.settings());
+    return { ...s, hotkeyError: hotkey.error() };
   });
   ipcMain.handle('steam:browse', async () => {
     const r = await dialog.showOpenDialog(win, {
@@ -578,7 +581,7 @@ function ipc() {
   ipcMain.handle('backup:import', async () => {
     const r = await dialog.showOpenDialog(win, { title: 'Restore a SwapDeck backup', properties: ['openFile'], filters: [{ name: 'SwapDeck backup', extensions: ['json'] }] });
     if (r.canceled || !r.filePaths[0]) return { ok: false };
-    try { store.importData(JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))); applyZoom(false); updateTray(); return { ok: true, file: path.basename(r.filePaths[0]) }; }
+    try { store.importData(JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))); applyZoom(false); updateTray(); applyHotkey(); return { ok: true, file: path.basename(r.filePaths[0]) }; }
     catch (e) { return { ok: false, error: e instanceof SyntaxError ? "That file isn't a SwapDeck backup." : e.message }; }
   });
   ipcMain.handle('display:modes', (_, id) => display.modes(String(id)).catch(() => []));
@@ -719,6 +722,12 @@ function updateTray() {
   } else if (!on && tray) { tray.destroy(); tray = null; if (trayWin && !trayWin.isDestroyed()) trayWin.destroy(); }
 }
 
+// A backup from another PC can carry a key that is malformed or taken here; fall back and report it in Settings.
+function applyHotkey() {
+  if (!hotkey.isValidKey(store.settings().hotkey)) store.setSettings({ hotkey: hotkey.DEFAULT_KEY });
+  hotkey.apply(store.settings());
+}
+
 // ---------- UI scale ----------
 
 // 100% UI scale = the page at 90% zoom in a 900x640 window, which is the default window size.
@@ -838,6 +847,8 @@ if (!app.requestSingleInstanceLock()) {
     });
     createWindow();
     updateTray();
+    hotkey.init(toggleTrayPanel);
+    applyHotkey();
     const startId = playArg(process.argv);
     if (startId) win.webContents.once('did-finish-load', () => setTimeout(() => player.play(startId), 1500));
     updater.init(s => send('update', s));
@@ -846,6 +857,7 @@ if (!app.requestSingleInstanceLock()) {
     setInterval(refreshPublicAll, 5 * 60 * 1000);
   });
   app.on('window-all-closed', () => app.quit());
+  app.on('will-quit', () => hotkey.stop());
   // Quitting mid-session: put the display and sound back and close companion apps first (the game keeps running).
   let stopping = false;
   app.on('before-quit', e => {
