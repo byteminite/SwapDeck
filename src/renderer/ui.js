@@ -8,7 +8,7 @@ import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
-import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard } from './gamepage.js';
+import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard } from './gamepage.js';
 
 const api = window.api;
 
@@ -133,7 +133,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null, gFrMenu: false, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -402,7 +402,7 @@ class App extends Component {
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
       if (S.gShot) return this.setState({ gShot: null });
-      if (S.gShotMenu || S.gAchMenu) return this.setState({ gShotMenu: false, gAchMenu: false });
+      if (S.gShotMenu || S.gAchMenu || S.gFrMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false });
       if (S.colorFor) return this.setState({ colorFor: null });
       if (S.tagPop) return this.setState({ tagPop: null });
       if (S.defMenu) return this.setState({ defMenu: false });
@@ -736,6 +736,46 @@ class App extends Component {
     this.setState(s => s.gInfo && s.gInfo.id === id ? { gInfo: { ...s.gInfo, web: null } } : null);
     const web = await api.gameWeb(g.appid).catch(() => ({ news: null, dlc: null }));
     if (this.state.gd === id && this.state.gInfo && this.state.gInfo.id === id) this.setState(s => ({ gInfo: { ...s.gInfo, web: web || { news: null, dlc: null } } }));
+    this.loadConnected(id);
+  }
+  // The connected account whose friends and DLC the Overview shows (same choice as the other cards).
+  connectedAccount(g) {
+    const linked = this.accts.filter(a => a.linked).map(a => ({ sid: a.id }));
+    return linked.length ? this.cardAccount(g, linked, () => 1) : null;
+  }
+  async loadConnected(id) {
+    const g = this.gfind(id), I = this.state.gInfo, who = g && this.connectedAccount(g);
+    if (!g || !I || I.id !== id || !who) return;
+    if (I.conn && I.conn.sid === who.sid) return;
+    this.setState(s => ({ gInfo: { ...s.gInfo, conn: { sid: who.sid, data: null } } }));
+    const data = await api.gameConnected(g.appid, who.sid).catch(e => ({ linked: true, friends: { ok: false, error: String(e && e.message || e) }, owned: null }));
+    const cur = this.state.gInfo;
+    if (this.state.gd === id && cur && cur.id === id && cur.conn && cur.conn.sid === who.sid) this.setState(s => ({ gInfo: { ...s.gInfo, conn: { sid: who.sid, data } } }));
+  }
+  // Connecting lives in the account's details, on the Accounts view.
+  connectFromGame(sid) {
+    if (!sid || !this.find(sid)) return;
+    clearInterval(this._gTimer);
+    this.setState({ gd: null, acctMenu: false, gShot: null });
+    this.setView('acc');
+    this.openDetails(sid);
+  }
+  pickCardAccount(sid) { this.setState({ gShotAcct: sid, gShotMenu: false, gAchMenu: false, gFrMenu: false, gAchAll: null }, () => this.loadConnected(this.state.gd)); }
+  friendsVals(g) {
+    const S = this.state, I = this.gInfoOf(g), who = this.connectedAccount(g), mine = this.accts.find(a => a.current) || this.accts[0];
+    if (!who) return { pill: null, state: 'none', recent: [], ever: [], onConnect: () => this.connectFromGame(g.acct || (mine && mine.id)) };
+    const linked = this.accts.filter(a => a.linked), conn = I && I.conn && I.conn.sid === who.sid ? I.conn : null, F = conn && conn.data && conn.data.friends;
+    const hrs = m => m >= 60 ? (Math.round(m / 6) / 10) + ' h recently' : m + ' min recently';
+    const open = sid => () => api.openProfile('https://steamcommunity.com/profiles/' + sid);
+    const pill = linked.length > 1 ? { acct: this.accountLook(who.sid), menuOpen: S.gFrMenu, onMenu: () => this.setState(s => ({ gFrMenu: !s.gFrMenu, gShotMenu: false, gAchMenu: false })),
+      accounts: linked.map(a => ({ ...this.accountLook(a.id), count: '', on: a.id === who.sid, pick: () => this.pickCardAccount(a.id) })) } : { acct: this.accountLook(who.sid), menuOpen: false, onMenu: () => {}, accounts: [] };
+    if (!F) return { pill, state: 'loading', recent: [], ever: [] };
+    if (!F.ok) return { pill, state: 'error', error: F.error, recent: [], ever: [] };
+    return {
+      pill, state: 'ok',
+      recent: F.recent.map(f => ({ name: f.name, avatar: f.avatar, sub: hrs(f.minutes), open: open(f.sid) })), recentLabel: F.recentTotal + ' friend' + (F.recentTotal === 1 ? '' : 's') + ' played recently',
+      ever: F.ever.map(f => ({ name: f.name, avatar: f.avatar, open: open(f.sid) })), everLabel: F.everTotal + ' friend' + (F.everTotal === 1 ? '' : 's') + ' played before',
+    };
   }
   activityVals(g) {
     const I = this.gInfoOf(g), web = I && I.web, list = web && web.news;
@@ -750,8 +790,9 @@ class App extends Component {
   dlcVals(g) {
     const I = this.gInfoOf(g), web = I && I.web, D = web && web.dlc;
     if (web && D && !D.total) return null;
-    const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: d.installed ? { label: 'INSTALLED', ok: true } : null })) : [];
-    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: '', onStore: () => api.openSteamPage('dlc', g.appid) };
+    const C = I && I.conn && I.conn.data, owned = C && C.owned && C.owned.ok ? new Set(C.owned.ids) : null, who = C ? this.accountLook(I.conn.sid).name : '';
+    const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: d.installed ? { label: 'INSTALLED', ok: true } : owned ? (owned.has(d.appid) ? { label: 'OWNED', ok: true } : { label: 'NOT OWNED', ok: false }) : null })) : [];
+    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? 'Owned / not owned for ' + who + '.' : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
   }
   gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
   updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }
@@ -785,7 +826,7 @@ class App extends Component {
     const name = acc(sel.sid).name, src = rel => 'sdimg://shot/' + sel.acct + '/' + rel;
     return {
       acct: look(sel.sid), menuOpen: S.gShotMenu, onMenu: () => this.setState(s => ({ gShotMenu: !s.gShotMenu, gAchMenu: false })),
-      accounts: list.map(x => ({ ...look(x.sid), count: x.count, on: x.sid === sel.sid, pick: () => this.setState({ gShotAcct: x.sid, gShotMenu: false, gAchAll: null }) })),
+      accounts: list.map(x => ({ ...look(x.sid), count: x.count, on: x.sid === sel.sid, pick: () => this.pickCardAccount(x.sid) })),
       shots: sel.items.slice(0, 6).map(s => { const title = 'Screenshot · ' + when(s.at) + (s.w ? ' · ' + s.w + ' × ' + s.h : ''); return { src: src(s.thumb), title, open: () => this.setState({ gShot: { src: src(s.file), caption: title } }) }; }),
       count: sel.count + ' screenshot' + (sel.count === 1 ? '' : 's') + ' by ' + name,
       empty: sel.count ? '' : 'No screenshots by ' + name + ' in this game yet. Press F12 in game to take one.',
@@ -803,7 +844,7 @@ class App extends Component {
     return {
       card: {
         pill: { acct: this.accountLook(sel.sid), menuOpen: S.gAchMenu, onMenu: () => this.setState(s => ({ gAchMenu: !s.gAchMenu, gShotMenu: false })),
-          accounts: list.map(x => ({ ...this.accountLook(x.sid), count: x.ach.known ? x.ach.unlocked + '/' + x.ach.total : '–', on: x.sid === sel.sid, pick: () => this.setState({ gShotAcct: x.sid, gAchMenu: false, gAchAll: null }) })) },
+          accounts: list.map(x => ({ ...this.accountLook(x.sid), count: x.ach.known ? x.ach.unlocked + '/' + x.ach.total : '–', on: x.sid === sel.sid, pick: () => this.pickCardAccount(x.sid) })) },
         head: !A.known ? A.total + ' achievements' : A.unlocked === A.total ? 'All achievements unlocked! ' + A.total + ' of ' + A.total : A.unlocked + ' of ' + A.total + ' unlocked (' + pct + '%)',
         pct: A.known ? pct : null,
         note: A.known ? '' : 'No progress for ' + name + ' on this PC yet. Steam keeps it here once the game has been played on this account.',
@@ -845,6 +886,7 @@ class App extends Component {
         right: [
           ach ? achievementsCard(ach.card) : null,
           tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : ''),
+          friendsCard(this.friendsVals(g)),
           notesCard({ value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) }),
           dlc ? dlcCard(dlc) : null,
           ws && ws.items ? workshopCard({ items: ws.items + ' item' + (ws.items === 1 ? '' : 's') + ' installed', size: fmtBytes(ws.bytes) + ' on disk', onSubs: page('subscriptions'), onOpen: page('workshop') }) : null,
@@ -879,7 +921,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null, gFrMenu: false });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));

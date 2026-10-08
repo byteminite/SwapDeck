@@ -20,6 +20,7 @@ const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
 const { steamPage, newsPage } = require('./src/main/steamlinks');
 const steamweb = require('./src/main/steamweb');
+const connected = require('./src/main/connected');
 const gameinfo = require('./src/main/gameinfo');
 const achievements = require('./src/main/achievements');
 
@@ -497,6 +498,16 @@ function ipc() {
     if (!isAppid(appid)) return null;
     const [news, dlc] = await Promise.allSettled([steamweb.news(String(appid)), steamweb.dlc(loc.dir, String(appid))]);
     return { news: news.status === 'fulfilled' ? news.value : null, dlc: dlc.status === 'fulfilled' ? dlc.value : null };
+  });
+  // Connected accounts only: friends who play the game and which of its DLC the account owns.
+  ipcMain.handle('game:connected', async (_, appid, sid) => {
+    if (!isAppid(appid) || !/^\d{17}$/.test(String(sid))) return null;
+    let token = null;
+    try { token = store.getToken(String(sid)); } catch {}
+    if (!token) return { linked: false };
+    const dlc = await steamweb.dlc(loc.dir, String(appid)).catch(() => null);
+    const res = await connected.forGame(String(sid), token, String(appid), dlc ? dlc.items.map(d => d.appid) : []);
+    return { linked: true, ...res };
   });
   ipcMain.handle('steam:news', (_, appid, gid) => {
     const url = newsPage(appid, gid);

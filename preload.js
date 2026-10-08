@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
   gameStatus: appid => invoke('game:status', appid),
   gameLocal: appid => invoke('game:local', appid),
   gameWeb: appid => invoke('game:web', appid),
+  gameConnected: (appid, sid) => invoke('game:connected', appid, sid),
   openSteamNews: (appid, gid) => invoke('steam:news', appid, gid),
   gameAchievements: (appid, sid) => invoke('game:achievements', appid, sid),
   openShotFolder: (appid, sid) => invoke('game:shotFolder', appid, sid),
