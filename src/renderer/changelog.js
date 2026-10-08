@@ -3,6 +3,52 @@
 
 export const CHANGELOG = [
   {
+    v: '1.3.0', date: '8 Oct 2026',
+    title: 'Steam-style game details',
+    intro: 'Every game now has a Steam-style page with its updates, news, screenshots, achievements and friends, and SwapDeck fits your screen better.',
+    highlights: [
+      ['Game details', 'An Overview with update status, playtime, achievements, Steam links, screenshots, workshop, DLC and notes.'],
+      ['News & patch notes', 'Read them right in SwapDeck. Posts since you last played are tagged New.'],
+      ['Friends who play', 'See which friends play a game, and which DLC an account owns, for accounts connected for stats.'],
+      ['Update badges', 'Library covers and the tray panel show when Steam is updating a game.'],
+      ['Fits your screen', 'Auto UI scale now suits 1080p, 1440p and 4K, so a bigger window shows more instead of making everything bigger.'],
+    ],
+    sections: [
+      ['Game details', [
+        'A game\'s details open on a new Overview. Its account, display, sound and launch options are behind the gear button next to the close button',
+        'Update status straight from Steam: up to date, queued, downloading with progress, paused, verifying or failed',
+        'Last played, playtime and achievements at a glance, plus one-click links to the store page, DLC, community hub, discussions, guides, workshop, market and support',
+        'Screenshots per account, with a full-size view and Open folder',
+        'Achievements per account with your latest unlocks, and Show all. Hidden ones stay hidden until you unlock them',
+        'Workshop items installed and their size, DLC with art (Installed marked), and a note for each game',
+      ]],
+      ['News & patch notes', [
+        'The developer\'s announcements and patch notes, newest first',
+        'Click one to read the whole post in SwapDeck, with headings, lists and pictures. Steam links open in Steam, trailers on YouTube, and Open in Steam is always there',
+        'Posts since you last played the game are tagged New',
+      ]],
+      ['Connected accounts', [
+        'Friends who play: friends who played recently, with their hours, and everyone who\'s played it before. Click a friend to open their profile',
+        'DLC shows Owned / Not owned for the account, including DLC installed on this PC by another account',
+        'Pick which connected account in the card\'s corner',
+      ]],
+      ['Library & tray', [
+        'Update badges on Library covers and in the tray panel\'s recent games: Update queued, Updating 42%, Update paused or Update failed',
+        'A game\'s note (crosshair code, server IP…) shows on the launch screen when you press Play, with a Copy button',
+      ]],
+      ['App', [
+        'Auto UI scale follows your screen instead of the window size: 100% on 1080p, a little larger on 1440p and 4K, and portrait monitors count by their short side',
+        'The account and game details panels grow with the window, and a new install opens at a size that fits your screen',
+        'Ctrl + / Ctrl − and the fixed sizes in Settings work as before',
+      ]],
+      ['Good to know', [
+        'News, DLC and friends come from Steam only when you open a game\'s details, and are cached for a while',
+        'Friends and owned DLC use the connected account\'s saved Steam sign-in, the same one Refresh stats uses. Nothing is sent anywhere but Steam',
+        'If Auto felt big before, it will look smaller now. Pick a fixed size in Settings if you prefer',
+      ]],
+    ],
+  },
+  {
     v: '1.2.0', date: '8 Oct 2026',
     title: 'Tags, favourites and a quick shortcut',
     intro: 'Tag and star your games, filter by several tags at once, and open SwapDeck from anywhere.',
