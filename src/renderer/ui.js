@@ -123,6 +123,9 @@ const resSpec = p => p.w + '×' + p.h + (p.hz ? ' · ' + p.hz + ' Hz' : '') + (p
 
 // ---------- app ----------
 
+// Installed is about this PC; owned is about the account. An installed DLC the account doesn't own still won't load for it.
+const dlcBadge = (installed, owns, known) => known && !owns ? { label: 'NOT OWNED', ok: false } : installed ? { label: 'INSTALLED', ok: true } : known ? { label: 'OWNED', ok: true } : null;
+
 class App extends Component {
   state = {
     loaded: false, locked: false, vault: null, version: '',
@@ -767,8 +770,9 @@ class App extends Component {
     const linked = this.accts.filter(a => a.linked), conn = I && I.conn && I.conn.sid === who.sid ? I.conn : null, F = conn && conn.data && conn.data.friends;
     const hrs = m => m >= 60 ? (Math.round(m / 6) / 10) + ' h recently' : m + ' min recently';
     const open = sid => () => api.openProfile('https://steamcommunity.com/profiles/' + sid);
-    const pill = linked.length > 1 ? { acct: this.accountLook(who.sid), menuOpen: S.gFrMenu, onMenu: () => this.setState(s => ({ gFrMenu: !s.gFrMenu, gShotMenu: false, gAchMenu: false })),
-      accounts: linked.map(a => ({ ...this.accountLook(a.id), count: '', on: a.id === who.sid, pick: () => this.pickCardAccount(a.id) })) } : { acct: this.accountLook(who.sid), menuOpen: false, onMenu: () => {}, accounts: [] };
+    // Every account is listed; ones not connected for stats lead to their Connect button instead.
+    const pill = { acct: this.accountLook(who.sid), menuOpen: S.gFrMenu, onMenu: () => this.setState(s => ({ gFrMenu: !s.gFrMenu, gShotMenu: false, gAchMenu: false })),
+      accounts: this.accts.map(a => ({ ...this.accountLook(a.id), count: a.linked ? '' : 'CONNECT', on: a.id === who.sid, pick: () => a.linked ? this.pickCardAccount(a.id) : this.connectFromGame(a.id) })) };
     if (!F) return { pill, state: 'loading', recent: [], ever: [] };
     if (!F.ok) return { pill, state: 'error', error: F.error, recent: [], ever: [] };
     return {
@@ -791,8 +795,8 @@ class App extends Component {
     const I = this.gInfoOf(g), web = I && I.web, D = web && web.dlc;
     if (web && D && !D.total) return null;
     const C = I && I.conn && I.conn.data, owned = C && C.owned && C.owned.ok ? new Set(C.owned.ids) : null, who = C ? this.accountLook(I.conn.sid).name : '';
-    const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: d.installed ? { label: 'INSTALLED', ok: true } : owned ? (owned.has(d.appid) ? { label: 'OWNED', ok: true } : { label: 'NOT OWNED', ok: false }) : null })) : [];
-    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? 'Owned / not owned for ' + who + '.' : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
+    const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: dlcBadge(d.installed, owned && owned.has(d.appid), !!owned) })) : [];
+    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? 'Checked against ' + who + "'s Steam library." : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
   }
   gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
   updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }
