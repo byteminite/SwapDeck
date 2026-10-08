@@ -61,6 +61,8 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
 <li>Each game remembers <b>which account</b> plays it, so Play switches for you</li>
 <li><b>Tag and star games</b> (favourites come first), filter by several tags at once, and give each tag its own colour</li>
+<li><b>Steam-style game pages</b>: update status, news and patch notes you can read in the app, screenshots, achievements, workshop, DLC and notes</li>
+<li><b>Update badges</b> on covers and in the tray when Steam is updating a game</li>
 <li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
 </ul>
 </td>
@@ -110,6 +112,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
 <li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals</li>
 <li>Games and hours, Steam level, wallet balance and friends</li>
+<li><b>Friends who play</b> each game, and which of its DLC the account owns</li>
 <li>Completely optional. Switching works without it</li>
 </ul>
 </td>
@@ -123,7 +126,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li><b>Dark, OLED Black or Light</b>, with accent colours or your Windows accent</li>
 <li>The accent can <b>follow the running game's tag</b></li>
 <li>Choose the <b>grid or gallery</b> accounts layout, and whether SwapDeck opens on Accounts or Library</li>
-<li>UI scale from 80% to 150%, or automatic</li>
+<li>UI scale from 80% to 150%, or <b>Auto</b>, which fits 1080p, 1440p and 4K screens</li>
 </ul>
 </td>
 </tr>
@@ -183,6 +186,8 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 - Backups contain your tags, notes, games and profiles, never sign-ins or passwords.
 - A game's details read Steam's own files on your PC for update status, screenshots and achievements. Its news and
   DLC list come from Steam's public servers (no sign-in), only when you open that game, and are cached for a while.
+- For accounts connected for stats, a game's details also show friends who play it and which DLC the account owns. That
+  uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
 
 ## FAQ
 
