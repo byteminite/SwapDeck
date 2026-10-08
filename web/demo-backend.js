@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -90,28 +90,27 @@
   const game = (appid, name, folder, acct, hours, ago, o = {}) => ({
     id: 'steam:' + appid, steam: true, appid, name, installed: true, folder: STEAMDIR + folder,
     acct: acct ? A(acct).sid : null, opts: o.opts || '', display: { mon: null, mode: 'primary', restore: true, res: null, ...(o.display || {}) },
-    audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: acct ? A(acct).tags : [],
+    audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: o.tags || [], fav: !!o.fav,
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
   });
   const lib = [
-    game('730', 'Counter-Strike 2', 'Counter-Strike Global Offensive', 'NightOwl', 412.5, 50 * 60e3, { opts: '-novid -high +fps_max 0', display: { res: 'r1700000000001' } }),
+    game('730', 'Counter-Strike 2', 'Counter-Strike Global Offensive', 'NightOwl', 412.5, 50 * 60e3, { opts: '-novid -high +fps_max 0', display: { res: 'r1700000000001' }, tags: ['fps'], fav: true }),
     game('244210', 'Assetto Corsa', 'assettocorsa', 'ApexDrift', 186.2, 2 * D, {
       display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset',
       apps: [{ path: 'C:\\Program Files (x86)\\SimHub\\SimHubWPF.exe', args: '', close: true }],
-      launcher: 'C:\\Games\\Content Manager\\Content Manager.exe' }),
-    game('2399420', 'Le Mans Ultimate', 'Le Mans Ultimate', 'ApexDrift', 41.7, 4 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset' }),
-    game('805550', 'Assetto Corsa Competizione', 'Assetto Corsa Competizione', 'ApexDrift', 63.4, 9 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' } }),
-    game('1144200', 'Ready or Not', 'Ready Or Not', 'Crosshair', 17.3, 3 * D),
-    game('739630', 'Phasmophobia', 'Phasmophobia', 'Lantern', 52.8, 5 * D, { audio: '{demo}.headset' }),
-    game('381210', 'Dead by Daylight', 'Dead by Daylight', 'Lantern', 120.4, 12 * D),
-    game('1966720', 'Lethal Company', 'Lethal Company', 'Pixel Pilot', 33.1, 14 * D),
+      launcher: 'C:\\Games\\Content Manager\\Content Manager.exe', tags: ['racing', 'sim'], fav: true }),
+    game('2399420', 'Le Mans Ultimate', 'Le Mans Ultimate', 'ApexDrift', 41.7, 4 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset', tags: ['racing', 'sim'] }),
+    game('805550', 'Assetto Corsa Competizione', 'Assetto Corsa Competizione', 'ApexDrift', 63.4, 9 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, tags: ['racing', 'sim'] }),
+    game('1144200', 'Ready or Not', 'Ready Or Not', 'Crosshair', 17.3, 3 * D, { tags: ['fps', 'co-op'] }),
+    game('739630', 'Phasmophobia', 'Phasmophobia', 'Lantern', 52.8, 5 * D, { audio: '{demo}.headset', tags: ['horror', 'co-op'] }),
+    game('381210', 'Dead by Daylight', 'Dead by Daylight', 'Lantern', 120.4, 12 * D, { tags: ['horror'] }),
+    game('1966720', 'Lethal Company', 'Lethal Company', 'Pixel Pilot', 33.1, 14 * D, { tags: ['horror', 'co-op'] }),
     game('252490', 'Rust', 'Rust', null, 166, 20 * D),
-    game('690790', 'DiRT Rally 2.0', 'DiRT Rally 2.0', 'ApexDrift', 22.6, 25 * D),
+    game('690790', 'DiRT Rally 2.0', 'DiRT Rally 2.0', 'ApexDrift', 22.6, 25 * D, { tags: ['racing'] }),
   ];
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));
   const findGame = id => lib.find(g => g.id === id);
-  const withTags = g => ({ ...g, tags: g.acct ? (accounts.find(a => a.sid === g.acct) || { tags: [] }).tags : [] });
 
   // ---- history ----
   const sessions = [
@@ -225,7 +224,7 @@
 
   const state = () => ({
     steam: steamState(), accounts: accounts.map(a => ({ ...a })), games: gamesList(), settings: { ...settings }, version: VERSION, busy, zoom: zoom.factor,
-    update: { state: 'idle' }, vault: { mode: 'dpapi', locked: false, autoUnlock: false, canEncrypt: true }, lib: lib.map(withTags), monitors: clone(monitors),
+    update: { state: 'idle' }, vault: { mode: 'dpapi', locked: false, autoUnlock: false, canEncrypt: true }, lib: lib.map(clone), monitors: clone(monitors),
     winAccent: '#0078d4', session: curSession(), displaySaved: false, monPos: clone(monPos), resProfiles: clone(resProfiles), playLog: clone(playLog),
     sessions: clone(sessions), newInstall: false,
   });
@@ -249,7 +248,8 @@
     forget: async () => { no('Forgetting accounts'); return { ok: false, code: 'DEMO', error: DEMO }; },
     setMeta: async (sid, patch) => { const a = accounts.find(x => x.sid === sid); if (!a) return null; for (const k of ['tags', 'note', 'pinned', 'launch']) if (k in patch) a[k] = patch[k]; return clone(a); },
     setSettings: async patch => {
-      for (const k of Object.keys(patch)) if (k !== 'uiScale') settings[k] = patch[k];
+      for (const k of Object.keys(patch)) if (k !== 'uiScale' && k !== 'tagColor') settings[k] = patch[k];
+      if (patch.tagColor) { const c = { ...settings.tagColors }; if (patch.tagColor.rgb) c[patch.tagColor.tag] = patch.tagColor.rgb; else delete c[patch.tagColor.tag]; settings.tagColors = c; }
       if ('uiScale' in patch) { settings.uiScale = patch.uiScale; setZoom(patch.uiScale, true); }
       // A web page can't listen for keys outside its tab, so the demo only remembers the choice.
       if (patch.hotkeyOn) notice('Shortcut', 'In the app, these keys open the tray panel from any program. The demo only remembers your choice.');
@@ -278,7 +278,7 @@
     vaultChange: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultRemove: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultAutoUnlock: async () => state().vault,
-    libList: async () => lib.map(withTags).map(clone),
+    libList: async () => lib.map(clone),
     libSet: async (id, patch) => {
       const g = findGame(id); if (!g) return null;
       if ('acct' in patch) g.acct = patch.acct || null;
@@ -287,7 +287,9 @@
       if ('launcher' in patch) g.launcher = patch.launcher || null;
       if ('audio' in patch) g.audio = patch.audio || null;
       if (Array.isArray(patch.apps)) g.apps = patch.apps;
-      return clone(withTags(g));
+      if (Array.isArray(patch.tags)) g.tags = patch.tags.map(String).slice(0, 12);
+      if ('fav' in patch) g.fav = !!patch.fav;
+      return clone(g);
     },
     libPickExe: () => pick('exe', 'Choosing files'), libPickImage: () => pick('image', 'Choosing files'), libPickApp: () => pick('app', 'Choosing files'),
     libSaveCustom: async g => {

@@ -46,7 +46,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <h3>👥 Accounts, sorted your way</h3>
 <ul>
 <li>One-click switching from a <b>"Who's playing?"</b> picker or the classic sideways gallery</li>
-<li><b>Tags, notes and pins</b>, with search, tag filters and sorting</li>
+<li><b>Tags, notes and favourites</b>, with search, sorting and a tag filter where you tick as many tags as you like</li>
 <li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
 <li><b>Playtime per account</b> for everything you launch through SwapDeck</li>
 <li>Add and forget accounts without digging through Steam</li>
@@ -60,6 +60,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li>Your installed <b>Steam games</b> with their own Steam artwork</li>
 <li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
 <li>Each game remembers <b>which account</b> plays it, so Play switches for you</li>
+<li><b>Tag and star games</b> (favourites come first), filter by several tags at once, and give each tag its own colour</li>
 <li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
 </ul>
 </td>
