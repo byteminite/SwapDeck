@@ -20,6 +20,7 @@ const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
 const { steamPage, newsPage } = require('./src/main/steamlinks');
 const steamweb = require('./src/main/steamweb');
+const uiscale = require('./src/main/uiscale');
 const connected = require('./src/main/connected');
 const gameinfo = require('./src/main/gameinfo');
 const achievements = require('./src/main/achievements');
@@ -827,9 +828,8 @@ function applyHotkey() {
 
 // ---------- UI scale ----------
 
-// 100% UI scale = the page at 90% zoom in a 900x640 window, which is the default window size.
-// "auto" scales from that reference as the window grows. The CSS layout needs at least 900x640 px.
-const REF_W = 900, REF_H = 640, BASE_ZOOM = 0.9, MIN_W = 900, MIN_H = 640;
+// The rules live in src/main/uiscale.js: "auto" follows the screen the window is on, not the window's size.
+const { BASE_ZOOM, MIN_W, MIN_H } = uiscale;
 const SCALES = store.SCALES;
 let zoomFactor = 1; // user-facing scale (1 = 100%)
 
@@ -837,9 +837,8 @@ function applyZoom(announce) {
   if (!win || win.isDestroyed()) return;
   const [w, h] = win.getContentSize();
   const pref = store.settings().uiScale ?? 'auto';
-  const rel = pref === 'auto' ? Math.max(0.8, Math.min(w / REF_W, h / REF_H)) : Number(pref) || 1;
-  // Never scale past the point where the layout's minimum size no longer fits the window.
-  const z = Math.round(Math.max(0.5, Math.min(rel * BASE_ZOOM, w / MIN_W, h / MIN_H, 2)) * 1000) / 1000;
+  const d = screen.getDisplayMatching(win.getBounds()).size;
+  const z = uiscale.zoomFor({ pref, w, h, screenSide: Math.min(d.width, d.height) });
   if (Math.abs(win.webContents.getZoomFactor() - z) > 0.004) win.webContents.setZoomFactor(z);
   zoomFactor = Math.round(z / BASE_ZOOM * 100) / 100;
   send('zoom', { pref, factor: zoomFactor, announce: !!announce });
@@ -855,7 +854,6 @@ function stepZoom(dir) {
 
 // ---------- window ----------
 
-const DEFAULT_W = 900, DEFAULT_H = 640;
 
 // Last position/size, if it's still (mostly) on a connected screen. Otherwise null → centred default.
 function savedBounds() {
@@ -888,7 +886,7 @@ function trackBounds() {
 function createWindow() {
   const b = savedBounds();
   win = new BrowserWindow({
-    ...(b ? { x: b.x, y: b.y, width: b.width, height: b.height } : { width: DEFAULT_W, height: DEFAULT_H, center: true }),
+    ...(b ? { x: b.x, y: b.y, width: b.width, height: b.height } : { ...uiscale.defaultSize(screen.getPrimaryDisplay().workArea), center: true }),
     minWidth: MIN_W, minHeight: MIN_H, useContentSize: true,
     frame: false, backgroundColor: '#0a0a0c', show: false, title: 'SwapDeck',
     icon: path.join(__dirname, 'build', 'icon.png'),
@@ -910,6 +908,9 @@ function createWindow() {
   wc.setVisualZoomLevelLimits(1, 1);
   wc.on('did-finish-load', () => applyZoom(false));
   win.on('resize', () => applyZoom(false));
+  // Dragged to another monitor, or Windows display settings changed: Auto follows the screen.
+  win.on('moved', () => applyZoom(false));
+  screen.on('display-metrics-changed', () => applyZoom(false));
   // Ctrl + mouse wheel
   wc.on('zoom-changed', (_, dir) => stepZoom(dir === 'in' ? 1 : -1));
   // Ctrl + / Ctrl - / Ctrl 0 (back to auto)
