@@ -123,3 +123,4 @@ a{color:var(--accent-strong)}a:hover{color:var(--accent-strong)}
 .dch34:hover{background:var(--btn-hover) !important}
 .dch35:hover{background:rgba(var(--fg-rgb),.06) !important}
 .dch36:hover{background:rgba(var(--fg-rgb),.07) !important;color:var(--text) !important}
+.dctg:hover{background:rgba(var(--fg-rgb),.06) !important;color:var(--text) !important}

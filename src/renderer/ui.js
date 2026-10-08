@@ -7,6 +7,7 @@ import { displayVals } from './displays.js';
 import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
+import { TAG_PRESETS } from './tagpicker.js';
 
 const api = window.api;
 
@@ -63,7 +64,10 @@ function left(until) {
 const TAGDEF = { fps: ['34,211,238', '#67e8f9', '#0e7490'], racing: ['245,158,11', '#fcd34d', '#b45309'], horror: ['239,68,68', '#fca5a5', '#b91c1c'] };
 const CUSTDEF = [['20,184,166', '#5eead4', '#0f766e'], ['139,92,246', '#c4b5fd', '#6d28d9'], ['59,130,246', '#93c5fd', '#1d4ed8'], ['236,72,153', '#f9a8d4', '#be185d'], ['132,204,22', '#bef264', '#4d7c0f']];
 let LIGHT = false;
-const tagDef = t => TAGDEF[t] || CUSTDEF[[...t].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5];
+let TAGCOL = {}; // settings.tagColors: tag -> "r,g,b" picked by the user
+const custDef = rgb => { const h = toHex(rgb.split(',').map(Number)); return [rgb, mixc(h, '#ffffff', .45), mixc(h, '#000000', .4)]; };
+const FAV = '__fav';
+const tagDef = t => TAGCOL[t] ? custDef(TAGCOL[t]) : TAGDEF[t] || CUSTDEF[[...t].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5];
 const tc = t => { const d = tagDef(t); return ['rgba(' + d[0] + (LIGHT ? ',.12)' : ',.14)'), LIGHT ? d[2] : d[1], 'rgba(' + d[0] + ',.5)']; };
 
 // Game icons cached by 1.0.0 were two URLs glued together (…/apps/730/https://…/hash.jpg.jpg). Keep the real
@@ -78,7 +82,7 @@ const fixIcon = u => {
 // An account badge: the Steam avatar when there is one, else the generated gradient (with initials on top).
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
 
-// Smooth sideways scrolling for the tag rows: each wheel notch moves a target, and the row eases towards it.
+// Smooth sideways scrolling for the account gallery: each wheel notch moves a target, and the row eases towards it.
 function chipScroll(el, dy) {
   const max = el.scrollWidth - el.clientWidth;
   if (!el._anim) el._to = el.scrollLeft;
@@ -93,11 +97,8 @@ function chipScroll(el, dy) {
   el._anim = requestAnimationFrame(step);
 }
 
-// Tag rows fade at an edge only while there is more to scroll that way, so the first and last tags are fully visible at the ends.
-function chipFade(el) {
-  const l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
-  el.style.webkitMaskImage = !l && !r ? 'none' : 'linear-gradient(90deg,' + (l ? 'transparent,#000 24px' : '#000,#000') + ',' + (r ? '#000 calc(100% - 24px),transparent' : '#000') + ')';
-}
+// Tag filter: nothing ticked shows everything; otherwise anything with any ticked tag (or starred, for Favourites).
+const matchTags = (x, sel, fav) => !sel.length || (sel.includes(FAV) && !!fav) || x.tags.some(t => sel.includes(t));
 
 const dur = ms => { const m = Math.round(ms / 60000); return m < 60 ? m + ' m' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' m'; };
 function when(t) {
@@ -120,12 +121,12 @@ class App extends Component {
     loaded: false, locked: false, vault: null, version: '',
     steam: { found: true, running: false, activeSid: null, autoLoginUser: '', busy: null, exe: null },
     accounts: [], games: [], settings: {}, lib: [], monitors: [], monPos: {}, resProfiles: [], winAccent: null, update: null, zoom: 1,
-    view: 'acc', q: '', tagF: null, sort: 'pinned', sel: null, hover: null, kbd: false,
+    view: 'acc', q: '', accTags: [], sort: 'pinned', sel: null, hover: null, kbd: false,
     drawerId: null, tab: 'overview', gSort: 'hours', dAdv: false, dLaunchMenu: false, tagDraft: '',
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -136,8 +137,10 @@ class App extends Component {
   async componentDidMount() {
     this._key = e => this.onKey(e);
     window.addEventListener('keydown', this._key);
-    this._rs = () => this._chips.forEach(chipFade);
-    window.addEventListener('resize', this._rs);
+    // A click (or a scroll) outside closes the tag list and the colour panel.
+    this._md = e => this.closeTagPanels(e);
+    window.addEventListener('mousedown', this._md);
+    window.addEventListener('wheel', this._md, { passive: true });
     this._off = [
       api.on('steam', steam => this.setState({ steam })),
       api.on('accounts', accounts => { this.setState({ accounts }); this.reloadLib(); }),
@@ -173,7 +176,8 @@ class App extends Component {
   }
   componentWillUnmount() {
     window.removeEventListener('keydown', this._key);
-    window.removeEventListener('resize', this._rs);
+    window.removeEventListener('mousedown', this._md);
+    window.removeEventListener('wheel', this._md);
     this._off.forEach(f => f());
     this._t.forEach(clearTimeout);
     clearInterval(this._clock);
@@ -222,11 +226,8 @@ class App extends Component {
   rootRef = el => { this._root = el; if (el) this.applyTheme(); };
   componentDidUpdate() {
     this.applyTheme();
-    for (const el of this._chips) { if (el.isConnected) chipFade(el); else this._chips.delete(el); }
   }
   colorRef = el => { this._color = el; };
-  chipRef = el => { if (el) { this._chips.add(el); requestAnimationFrame(() => chipFade(el)); } };
-  _chips = new Set();
 
   // ---------- accounts ----------
   get steamState() { const s = this.state.steam; return !s.found ? 'not-found' : s.running ? 'running' : 'closed'; }
@@ -249,7 +250,7 @@ class App extends Component {
   }
   visible() {
     const S = this.state, q = S.q.trim().toLowerCase();
-    const v = this.accts.filter(a => (a.name + ' ' + a.login).toLowerCase().includes(q) && (!S.tagF || a.tags.includes(S.tagF)));
+    const v = this.accts.filter(a => (a.name + ' ' + a.login).toLowerCase().includes(q) && matchTags(a, S.accTags, a.pinned));
     const byT = (x, y) => x.ts - y.ts, byN = (x, y) => x.name.localeCompare(y.name, undefined, { sensitivity: 'base' });
     return v.sort(S.sort === 'name' ? byN : S.sort === 'recent' ? byT : (x, y) => (+y.pinned - +x.pinned) || byT(x, y));
   }
@@ -393,6 +394,8 @@ class App extends Component {
     if (S.locked) return;
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
+      if (S.colorFor) return this.setState({ colorFor: null });
+      if (S.tagPop) return this.setState({ tagPop: null });
       if (S.defMenu) return this.setState({ defMenu: false });
       if (S.rmId) return this.setState({ rmId: null });
       if (S.ag) return this.setState({ ag: null });
@@ -479,7 +482,7 @@ class App extends Component {
     if (r.cancelled) return;
     if (r.timeout) { this.toast('warning', 'Stopped waiting', 'No sign-in after 10 minutes. Try again when you are ready.'); return; }
     await this.reload();
-    this.setState({ q: '', tagF: null, sel: r.sid });
+    this.setState({ q: '', accTags: [], sel: r.sid });
     this.toast('success', r.existing ? 'Already saved' : 'Account added', r.existing ? `Signed in as ${r.name}.` : `${r.name} is saved and signed in.`);
     this.later(80, () => this.scrollToSel(r.sid));
   }
@@ -623,6 +626,59 @@ class App extends Component {
     this.gmut(id, { tags: sorted });
     this.gset(id, { tags: sorted });
   }
+  // ---------- tag filter and colours ----------
+  tagPickVals(kind) {
+    const S = this.state, isLib = kind === 'lib', items = isLib ? S.lib : this.accts, sel = isLib ? S.libTags : S.accTags, where = 'pop:' + kind;
+    const setSel = v => this.setState(isLib ? { libTags: v } : { accTags: v });
+    const flip = k => setSel(sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k]);
+    const counts = {};
+    items.forEach(x => x.tags.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+    const open = S.tagPop === kind, colorOf = t => S.colorFor && S.colorFor.t === t && S.colorFor.where === where ? this.colorVals(t) : null;
+    const chip = k => {
+      if (k === FAV) return { label: 'Favourites', fav: true, bg: 'rgba(251,191,36,.12)', fg: LIGHT ? '#a16207' : '#fbbf24', bd: 'rgba(251,191,36,.45)', onRemove: () => flip(k) };
+      const c = tc(k); return { label: k, bg: c[0], fg: c[1], bd: c[2], onRemove: () => flip(k) };
+    };
+    return {
+      open, onToggle: () => this.setState({ tagPop: open ? null : kind, colorFor: null }), count: sel.length, chips: sel.map(chip), onClear: () => setSel([]),
+      fav: { on: sel.includes(FAV), n: items.filter(x => isLib ? x.fav : x.pinned).length, toggle: () => flip(FAV) },
+      rows: this.tagOrder().filter(t => counts[t]).map(t => ({ label: t, dot: 'rgb(' + tagDef(t)[0] + ')', on: sel.includes(t), n: counts[t], toggle: () => flip(t), onDot: e => this.openColor(e, t, where), color: colorOf(t) })),
+      emptyText: isLib ? 'No tags yet. Open a game and add tags in its details.' : 'No tags yet. Add tags in an account\u2019s details.',
+      footText: 'Shows ' + (isLib ? 'games' : 'accounts') + ' with any ticked tag',
+    };
+  }
+  colorVals(t) {
+    const cur = tagDef(t)[0];
+    return {
+      name: t, hex: toHex(cur.split(',').map(Number)), canReset: !!(this.state.settings.tagColors || {})[t],
+      swatches: TAG_PRESETS.map(([label, rgb]) => ({ label, rgb, on: rgb === cur, pick: () => this.setTagColor(t, rgb) })),
+      onCustom: e => this.setTagColor(t, hx(e.target.value).join(','), true), onCustomDone: e => this.setTagColor(t, hx(e.target.value).join(',')),
+      onReset: () => this.setTagColor(t, null),
+    };
+  }
+  // live = while dragging in the system colour picker: recolour now, save once it closes.
+  setTagColor(t, rgb, live) {
+    this.setState(s => { const c = { ...(s.settings.tagColors || {}) }; if (rgb) c[t] = rgb; else delete c[t]; return { settings: { ...s.settings, tagColors: c } }; });
+    if (!live) api.setSettings({ tagColor: { tag: t, rgb } }).then(st => { if (st) this.setState({ settings: st }); });
+  }
+  // In a game's details the panel floats under the tag's chip (above it when there is no room below),
+  // positioned inside the Tags box so it scrolls with it.
+  openColor(e, t, where) {
+    e.stopPropagation();
+    const C = this.state.colorFor;
+    if (C && C.t === t && C.where === where) return this.setState({ colorFor: null });
+    let pos = null;
+    if (where === 'details') {
+      const chip = e.currentTarget.closest('button'), box = chip.offsetParent, r = chip.getBoundingClientRect();
+      const left = Math.max(0, Math.min(chip.offsetLeft, box.clientWidth - 252));
+      pos = r.bottom + 170 > innerHeight ? { left, bottom: box.clientHeight - chip.offsetTop + 8 } : { left, top: chip.offsetTop + chip.offsetHeight + 8 };
+    }
+    this.setState({ colorFor: { t, where, pos } });
+  }
+  closeTagPanels(e) {
+    const S = this.state, inside = sel => e.target.closest && e.target.closest(sel);
+    if (S.colorFor && !inside('[data-colorpanel]') && (e.type === 'mousedown' || S.colorFor.where === 'details')) this.setState({ colorFor: null });
+    if (S.tagPop && e.type === 'mousedown' && !inside('[data-tagpick]')) this.setState({ tagPop: null });
+  }
   toggleFav(id) { const fav = !this.gfind(id).fav; this.gmut(id, { fav }); this.gset(id, { fav }); }
   setDisp(id, p) { this.gmut(id, g => ({ display: { ...g.display, ...p } })); this.gset(id, { display: p }); }
   setOpts(id, v) {
@@ -762,7 +818,7 @@ class App extends Component {
     const a = this.state.ag; if (!a || !a.exe || !a.name.trim()) return;
     const id = await api.libSaveCustom({ id: a.mode === 'edit' ? a.id : null, name: a.name.trim(), exe: a.exe, opts: a.args, img: a.cover === 'image' ? a.imgFile : null, iconMode: a.cover === 'exe' ? 'exe' : 'gen' });
     if (!id) { this.toast('error', "Couldn't save", 'Pick the .exe and give the game a name.'); return; }
-    this.setState({ ag: null, lf: 'all', lq: '' });
+    this.setState({ ag: null, lf: 'all', libTags: [], lq: '' });
     await this.reloadLib();
     if (a.mode === 'edit') this.toast('success', 'Saved', a.name.trim() + ' updated.');
     else this.toast('success', 'Added to library', a.name.trim() + ' launches through SwapDeck.', { label: 'Open', fn: () => this.openGame(id) });
@@ -891,12 +947,11 @@ class App extends Component {
   libraryVals() {
     const S = this.state, games = S.lib, L = S.launch, isLib = S.view === 'lib';
     const q = S.lq.trim().toLowerCase(), byN = (x, y) => x.name.localeCompare(y.name);
-    const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || (S.lf === 'steam' ? g.steam : S.lf === 'nonsteam' ? !g.steam : g.tags.includes(S.lf))));
+    const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || (S.lf === 'steam') === g.steam) && matchTags(g, S.libTags, g.fav));
     const bySort = S.ls === 'name' ? byN : S.ls === 'recent' ? (x, y) => (y.lastPlayed - x.lastPlayed) || byN(x, y) : (x, y) => (y.hours - x.hours) || byN(x, y);
     vis.sort((x, y) => (+!!y.fav - +!!x.fav) || bySort(x, y));
-    const chip = (k, label, n, c) => { const on = S.lf === k, cc = c || ['rgba(var(--fg-rgb),.1)', 'var(--text)', 'rgba(var(--fg-rgb),.35)']; return { label, n, bg: on ? cc[0] : 'transparent', fg: on ? cc[1] : 'var(--text-muted)', bd: on ? cc[2] : 'rgba(var(--fg-rgb),.12)', on: () => this.setState({ lf: on && k !== 'all' ? 'all' : k }) }; };
-    const tags = [...new Set(games.flatMap(g => g.tags))];
-    const libFilters = [chip('all', 'All', games.length), chip('steam', 'Steam', games.filter(g => g.steam).length), chip('nonsteam', 'Non-Steam', games.filter(g => !g.steam).length), ...tags.map(t => chip(t, t, games.filter(g => g.tags.includes(t)).length, tc(t)))];
+    const libSources = [['all', 'All', games.length], ['steam', 'Steam', games.filter(g => g.steam).length], ['nonsteam', 'Non-Steam', games.filter(g => !g.steam).length]]
+      .map(([k, label, n]) => ({ label, n, bg: S.lf === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: S.lf === k ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setState({ lf: k }) }));
     const libSorts = [['recent', 'Last played'], ['hours', 'Most played'], ['name', 'Name']].map(([k, l]) => ({ label: l, bg: S.ls === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: S.ls === k ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setState({ ls: k }) }));
     this._libVis = vis;
     const cards = vis.map(g => {
@@ -922,10 +977,10 @@ class App extends Component {
     });
     const loading = S.libLoading;
     return {
-      libSearchRef: this.libSearchRef, lq: S.lq, onLq: e => this.setState({ lq: e.target.value }), libFilters, libSorts, onAddGame: () => this.openAddGame(),
+      libSearchRef: this.libSearchRef, lq: S.lq, onLq: e => this.setState({ lq: e.target.value }), libSources, libPick: this.tagPickVals('lib'), libSorts, onAddGame: () => this.openAddGame(),
       libLoadingOn: isLib && loading, libGridOn: isLib && !loading && vis.length > 0, libEmptyOn: isLib && !loading && games.length === 0, libNoRes: isLib && !loading && games.length > 0 && vis.length === 0,
       skel: [62, 80, 54, 72, 66, 58, 76, 50].map((w, i) => ({ w: w + '%', d: (i * .12).toFixed(2) + 's' })),
-      cards, onLibClear: () => this.setState({ lq: '', lf: 'all' }),
+      cards, onLibClear: () => this.setState({ lq: '', lf: 'all', libTags: [] }),
       onRescan: async () => { this.setState({ libLoading: true }); await this.reloadLib(); this.setState({ libLoading: false }); if (!this.state.lib.some(g => g.steam)) this.toast('info', 'Library scanned', 'No installed Steam games found in your library folders.'); },
     };
   }
@@ -957,7 +1012,8 @@ class App extends Component {
       gTypeLbl: g.steam ? 'STEAM' : 'NON-STEAM', gTypeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', gTypeBd: g.steam ? 'rgba(var(--fg-rgb),.25)' : 'rgba(251,191,36,.45)',
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
       gMeta: g.steam ? 'Steam · App ' + g.appid : 'Non-Steam · ' + g.exe.split('\\').pop(),
-      gTagOpts: this.tagOrder(S.gdKeep || []).map(t => { const on = g.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => this.setGameTags(g.id, on ? g.tags.filter(x => x !== t) : [...g.tags, t]) }; }),
+      gTagOpts: this.tagOrder(S.gdKeep || []).map(t => { const on = g.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => this.setGameTags(g.id, on ? g.tags.filter(x => x !== t) : [...g.tags, t]), onDot: e => this.openColor(e, t, 'details') }; }),
+      gColor: S.colorFor && S.colorFor.where === 'details' ? { ...this.colorVals(S.colorFor.t), pos: S.colorFor.pos } : null,
       gFav: !!g.fav, gStarFg: g.fav ? '#fbbf24' : '#fff', gStarFill: g.fav ? '#fbbf24' : 'none', gStarBd: g.fav ? 'rgba(251,191,36,.5)' : 'rgba(var(--fg-rgb),.2)',
       gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
       gTagN: g.tags.length ? g.tags.length + ' selected' : '', gTagDraft: S.gTagDraft || '', onGTagDraft: e => this.setState({ gTagDraft: e.target.value }),
@@ -1183,7 +1239,7 @@ class App extends Component {
           },
         };
       })(),
-      onDManageLib: () => this.setState({ drawerId: null, view: 'lib', lq: '', lf: 'all' }),
+      onDManageLib: () => this.setState({ drawerId: null, view: 'lib', lq: '', lf: 'all', libTags: [] }),
       dAdvOpen: S.dAdv, dAdvRot: S.dAdv ? 'rotate(180deg)' : 'none', onDAdv: () => this.setState(s => ({ dAdv: !s.dAdv })),
       dLaunchMenu: S.dLaunchMenu, onDLaunchMenu: () => this.setState(s => ({ dLaunchMenu: !s.dLaunchMenu })), dLaunchBd: S.dLaunchMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)',
       dLaunchLbl: !d.launch || d.launch === 'default' ? 'Default (' + (this.defGameName() || 'nothing') + ')' : d.launch === 'none' ? 'Nothing' : (this.gameName(d.launch) || 'App ' + d.launch),
@@ -1233,11 +1289,6 @@ class App extends Component {
     const S = this.state, accts = this.accts, steam = this.steamState, running = steam === 'running', cfg = S.settings;
     const vis = this.visible(), selId = this.selId();
     const cur = accts.find(a => a.current), nf = steam === 'not-found', has = accts.length > 0, busy = S.steam.busy;
-    const allTags = [...KNOWN.filter(t => accts.some(a => a.tags.includes(t))), ...[...new Set(accts.flatMap(a => a.tags))].filter(t => !KNOWN.includes(t))];
-    const tagFilters = [{ label: 'All', n: accts.length, act: !S.tagF, key: null }, ...allTags.map(t => ({ label: t, n: accts.filter(a => a.tags.includes(t)).length, act: S.tagF === t, key: t }))].map(f => {
-      const c = f.key ? tc(f.key) : ['rgba(var(--fg-rgb),.1)', 'var(--text)', 'rgba(var(--fg-rgb),.3)'];
-      return { label: f.label, n: f.n, bg: f.act ? c[0] : 'transparent', fg: f.act ? c[1] : 'var(--text-muted)', bd: f.act ? c[2] : 'rgba(var(--fg-rgb),.13)', on: () => this.setState({ tagF: f.act ? null : f.key, hover: null }) };
-    });
     const seg = (curK, k, l, on) => ({ label: l, bg: curK === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: curK === k ? 'var(--text)' : 'var(--text-subtle)', on });
     const sorts = [['pinned', 'Favourites first'], ['recent', 'Last used'], ['name', 'Name']].map(([k, l]) => seg(S.sort, k, l, () => this.setState({ sort: k })));
     const idx = vis.findIndex(a => a.id === selId);
@@ -1253,10 +1304,10 @@ class App extends Component {
       stBusyText: busy === 'closing' ? 'Closing Steam…' : 'Starting Steam…',
       showClose: running && !busy, showStart: steam === 'closed' && !busy,
       onCloseSteam: () => this.closeSteam(), onStartSteam: () => this.startSteam(), onAdd: () => this.addAcc(), onSetOpen: () => this.openSettings(),
-      showToolbar: !nf && has, searchRef: this.searchRef, q: S.q, onQ: e => this.setState({ q: e.target.value, hover: null }), tagFilters, sorts,
+      showToolbar: !nf && has, searchRef: this.searchRef, q: S.q, onQ: e => this.setState({ q: e.target.value, hover: null }), accPick: this.tagPickVals('acc'), sorts,
       showGallery: !nf && has && vis.length > 0, galRef: this.galRef, onGalLeave: () => this.setState({ hover: null }),
-      showNoResults: !nf && has && vis.length === 0, nrTitle: S.q.trim() ? 'No accounts match "' + S.q.trim() + '"' : 'No accounts tagged ' + (S.tagF || ''),
-      onClearFilters: () => this.setState({ q: '', tagF: null }), showEmpty: !nf && !has,
+      showNoResults: !nf && has && vis.length === 0, nrTitle: S.q.trim() ? 'No accounts match "' + S.q.trim() + '"' : 'No accounts with the ticked tags',
+      onClearFilters: () => this.setState({ q: '', accTags: [] }), showEmpty: !nf && !has,
       retrying: S.retrying, notRetrying: !S.retrying, onRetry: () => this.retry(), onBrowse: () => this.browse(),
       counter: (idx + 1) + ' / ' + vis.length, onPrev: () => this.step(-1), onNext: () => this.step(1),
       swOn: !!sw, swName: sw ? sw.name : '', swAvIni: sw && !sw.avatar ? sw.ini : '', swAvBg: sw ? (sw.avatar ? 'url("' + sw.avatar + '") center/cover' : 'radial-gradient(120% 90% at 20% 0%,rgba(var(--fg-rgb),.25),transparent 60%),' + sw.grad) : '',
@@ -1277,6 +1328,7 @@ class App extends Component {
   renderVals() {
     const S = this.state;
     LIGHT = (S.settings.base || 'dark') === 'light';
+    TAGCOL = S.settings.tagColors || {};
     const running = this.steamState === 'running', isLib = S.view === 'lib';
     const b = this.baseVals(), lv = this.launchVals(b), nm = this.normMon(), tm = this.testMon();
     const vt = (k, label, n) => { const on = S.view === k; return { label, n, isAcc: k === 'acc', isLib: k === 'lib', bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', nFg: on ? 'var(--text-muted)' : 'var(--text-subtle)', on: () => this.setView(k) }; };
@@ -1289,9 +1341,6 @@ class App extends Component {
     return {
       ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...this.gameVals(), ...lv, ...this.addGameVals(),
       ...this.settingsVals(), ...this.themeVals(), ...dv,
-      // Tag rows scroll sideways with the normal mouse wheel.
-      onChipWheel: e => { const el = e.currentTarget; if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { e.preventDefault(); chipScroll(el, e.deltaY); } },
-      chipRef: this.chipRef, onChipScroll: e => chipFade(e.currentTarget),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

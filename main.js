@@ -46,6 +46,14 @@ function rememberTags(tags) {
   const known = store.settings().tagList || [], fresh = tags.filter(t => !known.includes(t));
   if (fresh.length) store.setSettings({ tagList: [...known, ...fresh].slice(-200) });
 }
+const validRgb = v => { const m = typeof v === 'string' && v.match(/^(\d{1,3}),(\d{1,3}),(\d{1,3})$/); return !!m && m.slice(1).every(n => +n <= 255); };
+// Sets one tag's own colour ("r,g,b"), or with rgb null goes back to its built-in colour.
+function withTagColor({ tag, rgb }) {
+  const t = cleanTags([tag])[0], colors = { ...(store.settings().tagColors || {}) };
+  if (!t) return colors;
+  if (rgb == null) delete colors[t]; else if (validRgb(rgb)) colors[t] = rgb;
+  return Object.fromEntries(Object.entries(colors).slice(-200));
+}
 
 // ---------- state ----------
 
@@ -405,6 +413,7 @@ function ipc() {
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
+    if (patch.tagColor && typeof patch.tagColor === 'object') allowed.tagColors = withTagColor(patch.tagColor);
     let keyError = null;
     // A new key is only saved once Windows has accepted it, so a refused key leaves the old one in place.
     if ('hotkey' in patch) {

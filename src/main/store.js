@@ -26,6 +26,7 @@ const DEFAULTS = {
     hotkey: require('./hotkey').DEFAULT_KEY, // Electron accelerator, checked by hotkey.isValidKey
     lastSeenVersion: null,   // the version whose What's new was last shown
     tagList: [],             // every tag used on a game or account, in first-used order (keeps tag order stable)
+    tagColors: {},           // tag -> "r,g,b" the user picked (tags without one use their built-in colour)
     normalOn: null,          // device names switched on in the normal setup (null = whatever was on at first run)
     normalMon: null,         // device name of the normal primary monitor (\\.\DISPLAYn)
   },
@@ -180,6 +181,7 @@ function importData(b) {
       const v = b.settings[k];
       if (v === undefined) continue;
       if (k === 'tagList') { if (Array.isArray(v)) next[k] = v.filter(x => typeof x === 'string').slice(-200); }
+      else if (k === 'tagColors') { if (isObj(v)) next[k] = Object.fromEntries(Object.entries(v).filter(([t, c]) => t.length <= 16 && /^\d{1,3},\d{1,3},\d{1,3}$/.test(c)).slice(-200)); }
       else if (k === 'normalOn') { if (v === null || (Array.isArray(v) && v.every(x => typeof x === 'string'))) next[k] = v; }
       else if (k === 'uiScale') { if (v === 'auto' || SCALES.includes(v)) next[k] = v; }
       else if (def === null ? (v === null || typeof v === 'string') : typeof v === typeof def) next[k] = v;
