@@ -35,7 +35,7 @@ export function gameTabs(p) {
   return html`<div role="tablist" style="flex:none;display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid rgba(var(--fg-rgb),.07)">${p.tabs.map(t => html`<button role="tab" aria-selected=${t.on} style=${`position:relative;padding:13px 2px;border:0;background:transparent;color:${t.on ? 'var(--text)' : 'var(--text-subtle)'};font:500 13.5px 'Geist',sans-serif;cursor:pointer;box-shadow:${t.on ? 'inset 0 -2px 0 var(--accent)' : 'none'}`} onClick=${t.pick} class="dch4">${t.label}</button>`)}<div style="flex:1"></div><span style="font:400 12px 'Geist',sans-serif;color:var(--text-subtle)">${p.hint}</span></div>`;
 }
 
-// p: { stats: [statCell props], links: [{ label, on }], left: [vnodes], right: [vnodes], lightbox? }
+// p: { stats: [statCell props], links: [{ label, on }], left: [vnodes], right: [vnodes], lightbox?, reader? (vnode) }
 export function gameOverview(p) {
   return html`<div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px 22px 26px">
 <div style="display:flex;align-items:stretch;border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);overflow:hidden">${p.stats.map(statCell)}</div>
@@ -43,7 +43,7 @@ export function gameOverview(p) {
 <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;margin-top:18px;align-items:start">
 <div style="display:flex;flex-direction:column;gap:16px;min-width:0">${p.left}</div>
 <div style="display:flex;flex-direction:column;gap:16px;min-width:0">${p.right}</div>
-</div>${p.lightbox ? lightbox(p.lightbox) : null}</div>`;
+</div>${p.lightbox ? lightbox(p.lightbox) : null}${p.reader || null}</div>`;
 }
 
 // The tags card on Overview reuses the editor from the Setup tab (same values, same colour panel).
@@ -106,7 +106,7 @@ export function activityCard(p) {
     : p.state === 'error' ? html`<div style="display:flex;align-items:center;gap:10px"><div style=${`flex:1;${MUTED}`}>Couldn't load news from Steam. Check your connection.</div><button style=${BTN} onClick=${p.onRetry} class="dcha">Try again</button></div>`
     : !p.groups.length ? html`<div style=${MUTED}>No announcements from the developer yet.</div>`
     : html`${p.groups.map((grp, gi) => html`<div style=${`display:flex;align-items:center;gap:10px;margin:${gi ? 14 : 0}px 0 8px;${LABEL}`}>${grp.day}<span style="flex:1;height:1px;background:rgba(var(--fg-rgb),.07)"></span></div>
-${grp.items.map(n => html`<button style="display:flex;gap:14px;align-items:center;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--fg-rgb),.07);background:rgba(var(--fg-rgb),.02);color:inherit;cursor:pointer;text-align:left" onClick=${n.open} title="Opens in Steam" class="dche2"><span style="width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(var(--fg-rgb),.06);color:var(--text-muted)">${n.patch ? NEWS_ICONS.patch : NEWS_ICONS.news}</span><span style="min-width:0"><span style=${`display:block;${LABEL}`}>${n.patch ? 'Patch notes' : 'News'}</span><span style="display:block;font:500 14px 'Geist',sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</span></span></button>`)}`)}`;
+${grp.items.map(n => html`<button style="display:flex;gap:14px;align-items:center;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--fg-rgb),.07);background:rgba(var(--fg-rgb),.02);color:inherit;cursor:pointer;text-align:left" onClick=${n.open} title="Read in SwapDeck" class="dche2"><span style="width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(var(--fg-rgb),.06);color:var(--text-muted)">${n.patch ? NEWS_ICONS.patch : NEWS_ICONS.news}</span><span style="min-width:0"><span style=${`display:block;${LABEL}`}>${n.patch ? 'Patch notes' : 'News'}</span><span style="display:block;font:500 14px 'Geist',sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</span></span></button>`)}`)}`;
   return card('Activity', body, html`<button style=${LINK} onClick=${p.onAll} class="dch4">All news in Steam</button>`);
 }
 

@@ -509,6 +509,16 @@ function ipc() {
     const res = await connected.forGame(String(sid), token, String(appid), dlc ? dlc.items.map(d => d.appid) : [], t2 => store.setToken(String(sid), t2));
     return { linked: true, ...res };
   });
+  ipcMain.handle('steam:post', (_, appid, gid) => steamweb.newsPost(String(appid), String(gid)).catch(() => null));
+  // Links inside a news post: https only. Steam's own pages open in the Steam client, everything else in the browser.
+  ipcMain.handle('news:link', (_, url) => {
+    let u;
+    try { u = new URL(String(url).slice(0, 2000)); } catch { return { ok: false }; }
+    if (u.protocol !== 'https:' || u.username || u.password) return { ok: false };
+    const steamHost = ['store.steampowered.com', 'steamcommunity.com', 'help.steampowered.com'].includes(u.hostname);
+    shell.openExternal(steamHost ? 'steam://openurl/' + u.href : u.href);
+    return { ok: true };
+  });
   ipcMain.handle('steam:news', (_, appid, gid) => {
     const url = newsPage(appid, gid);
     if (url) shell.openExternal(url);

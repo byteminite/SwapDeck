@@ -9,6 +9,7 @@ import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
 import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard } from './gamepage.js';
+import { newsReader } from './newsreader.js';
 
 const api = window.api;
 
@@ -136,7 +137,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null, gFrMenu: false, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -404,6 +405,7 @@ class App extends Component {
     if (S.locked) return;
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
+      if (S.gNews) return this.setState({ gNews: null });
       if (S.gShot) return this.setState({ gShot: null });
       if (S.gShotMenu || S.gAchMenu || S.gFrMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false });
       if (S.colorFor) return this.setState({ colorFor: null });
@@ -763,6 +765,19 @@ class App extends Component {
     this.setView('acc');
     this.openDetails(sid);
   }
+  // A post opens in SwapDeck's reader; the full text comes from Steam on demand.
+  async openNews(g, n) {
+    this.setState({ gNews: { gid: n.gid, title: n.title, patch: n.patch, at: n.at, state: 'loading' } });
+    const post = await api.newsPost(g.appid, n.gid).catch(() => null);
+    if (this.state.gNews && this.state.gNews.gid === n.gid) this.setState(s => ({ gNews: { ...s.gNews, state: post ? 'ok' : 'error', body: post ? post.body : '', author: post ? post.author : '' } }));
+  }
+  newsVals(g) {
+    const N = this.state.gNews, date = N.at ? new Date(N.at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    return newsReader({
+      ...N, meta: [date, N.author].filter(Boolean).join(' · '),
+      onBack: () => this.setState({ gNews: null }), onSteam: () => api.openSteamNews(g.appid, N.gid), onLink: url => api.openNewsLink(url),
+    });
+  }
   pickCardAccount(sid) { this.setState({ gShotAcct: sid, gShotMenu: false, gAchMenu: false, gFrMenu: false, gAchAll: null }, () => this.loadConnected(this.state.gd)); }
   friendsVals(g) {
     const S = this.state, I = this.gInfoOf(g), who = this.connectedAccount(g), mine = this.accts.find(a => a.current) || this.accts[0];
@@ -786,7 +801,7 @@ class App extends Component {
     const day = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }).toUpperCase();
     const groups = [];
     for (const n of (list || []).slice(0, 8)) {
-      const d = day(n.at), last = groups[groups.length - 1], item = { patch: n.patch, title: n.title, open: () => api.openSteamNews(g.appid, n.gid) };
+      const d = day(n.at), last = groups[groups.length - 1], item = { patch: n.patch, title: n.title, open: () => this.openNews(g, n) };
       if (last && last.day === d) last.items.push(item); else groups.push({ day: d, items: [item] });
     }
     return { state: !web ? 'loading' : !list ? 'error' : 'ok', groups, onRetry: () => this.loadGameWeb(g.id), onAll: () => api.openSteamPage('news', g.appid) };
@@ -896,6 +911,7 @@ class App extends Component {
           ws && ws.items ? workshopCard({ items: ws.items + ' item' + (ws.items === 1 ? '' : 's') + ' installed', size: fmtBytes(ws.bytes) + ' on disk', onSubs: page('subscriptions'), onOpen: page('workshop') }) : null,
         ],
         lightbox: S.gShot ? { ...S.gShot, close: () => this.setState({ gShot: null }) } : null,
+        reader: S.gNews && S.gNews.gid ? this.newsVals(g) : null,
       },
     };
   }
@@ -925,7 +941,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gAchMenu: false, gAchAll: null, gFrMenu: false });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
@@ -1241,7 +1257,7 @@ class App extends Component {
       ...this.overviewVals(g),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: this.updating(g) ? 'Steam finishes the update first' : [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
-      onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null }); },
+      onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null, gNews: null }); },
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),

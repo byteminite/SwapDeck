@@ -7,7 +7,8 @@ const steam = require('./steam');
 const vdf = require('./vdf');
 const { get } = require('./profile');
 
-const HOUR = 3600e3, TTL = { news: HOUR, dlc: 24 * HOUR };
+const HOUR = 3600e3, TTL = { news: HOUR, posts: HOUR, dlc: 24 * HOUR };
+const MAX_POST = 200000;
 const cache = new Map(); // `${kind}:${appid}` -> { at, value }
 const isAppid = v => /^\d{1,10}$/.test(String(v));
 
@@ -36,6 +37,21 @@ function news(appid) {
       .map(n => ({ gid: String(n.gid), title: n.title.slice(0, 200), at: (Number(n.date) || 0) * 1000, patch: Array.isArray(n.tags) && n.tags.includes('patchnotes') }))
       .sort((a, b) => b.at - a.at);
   });
+}
+
+// One announcement's full text (Steam's BBCode) for the in-app reader. Same feed as news(), fetched in full.
+async function newsPost(appid, gid) {
+  if (!isAppid(appid) || !/^\d{1,20}$/.test(String(gid))) return null;
+  const posts = await cached('posts', appid, async () => {
+    const j = await json(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=12&maxlength=0&feeds=steam_community_announcements&format=json`);
+    const items = (j.appnews && Array.isArray(j.appnews.newsitems)) ? j.appnews.newsitems : [];
+    return items.filter(n => n && /^\d{1,20}$/.test(String(n.gid)) && typeof n.contents === 'string').map(n => ({
+      gid: String(n.gid), title: String(n.title || '').slice(0, 200), at: (Number(n.date) || 0) * 1000,
+      author: typeof n.author === 'string' ? n.author.slice(0, 80) : '', patch: Array.isArray(n.tags) && n.tags.includes('patchnotes'),
+      body: n.contents.slice(0, MAX_POST),
+    }));
+  });
+  return posts.find(p => p.gid === String(gid)) || null;
 }
 
 // DLC appids installed with the game, from its app manifest (InstalledDepots … dlcappid).
@@ -67,4 +83,4 @@ async function dlc(dir, appid) {
   return { total: list.total, items: list.items.map(it => ({ ...it, installed: installed.has(it.appid) })) };
 }
 
-module.exports = { news, dlc };
+module.exports = { news, newsPost, dlc };

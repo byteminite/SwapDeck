@@ -330,6 +330,15 @@
       accounts: accounts.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar, lastUsed: a.lastUsed, pinned: a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15).map(g => ({ id: g.id, name: g.name, cover: g.cover, acct: g.acct, lastPlayed: g.lastPlayed })),
     }),
+    // Game details: no Steam on a web page, so a quiet Overview with one made-up post to show the reader.
+    gameStatus: async () => ({ state: 'ok' }),
+    gameLocal: async () => ({ shots: [], workshop: null }),
+    gameAchievements: async () => null,
+    gameWeb: async () => ({ news: [{ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, patch: true }], dlc: { total: 0, items: [] } }),
+    newsPost: async () => ({ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, author: 'SwapDeck', patch: true,
+      body: '[p]In the app, this is where a game\'s real patch notes and news appear, straight from Steam.[/p][h3]What you can do[/h3][list][*]Read the whole post without leaving SwapDeck[*]Open links in Steam or your browser[*]Use Open in Steam for videos and polls[/list]' }),
+    gameConnected: async () => ({ linked: false }),
+    openSteamPage: async () => no('Steam pages'), openSteamNews: async () => no('Steam pages'), openNewsLink: async () => no('Links'), openShotFolder: async () => no('Folders'),
     steamLaunchOpts: async id => { const g = findGame(id); return g && g.appid === '730' ? [{ sid: A('NightOwl').sid, name: 'NightOwl', opts: '-novid -high +fps_max 0' }] : []; },
     cs2Info: async sid => ({
       installed: true, autoexec: (cs2[sid] && cs2[sid].autoexec) || '', hasSettings: !!(cs2[sid] && cs2[sid].settings),
