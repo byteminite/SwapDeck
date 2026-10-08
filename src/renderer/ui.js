@@ -796,7 +796,7 @@ class App extends Component {
     if (web && D && !D.total) return null;
     const C = I && I.conn && I.conn.data, owned = C && C.owned && C.owned.ok ? new Set(C.owned.ids) : null, who = C ? this.accountLook(I.conn.sid).name : '';
     const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: dlcBadge(d.installed, owned && owned.has(d.appid), !!owned) })) : [];
-    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? 'Checked against ' + who + "'s Steam library." : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
+    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? (C.owned.game === false ? who + " doesn't own " + g.name + ' on Steam, so none of its DLC either.' : 'Checked against ' + who + "'s Steam library: owns " + C.owned.ids.length + ' of ' + D.items.length + ' DLC checked.') : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
   }
   gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
   updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }

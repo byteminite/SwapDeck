@@ -81,7 +81,7 @@ async function forGame(sid, refreshToken, appid, dlcIds, onNewToken) {
   const [friends, owned] = await Promise.allSettled([friendsWhoPlay(sid, refreshToken, appid, onNewToken), dlcIds.length ? ownedApps(sid, refreshToken, onNewToken) : Promise.resolve(null)]);
   return {
     friends: friends.status === 'fulfilled' ? { ok: true, ...friends.value } : fail(friends.reason),
-    owned: owned.status === 'fulfilled' ? (owned.value ? { ok: true, ids: dlcIds.filter(id => owned.value.has(id)) } : null) : fail(owned.reason),
+    owned: owned.status === 'fulfilled' ? (owned.value ? { ok: true, game: owned.value.has(appid), ids: dlcIds.filter(id => owned.value.has(id)) } : null) : fail(owned.reason),
   };
 }
 
