@@ -55,12 +55,9 @@ const MUTED = "font:400 12.5px/1.5 'Geist',sans-serif;color:var(--text-subtle)";
 // p: { acct: { name, bg, ini, img }, menuOpen, onMenu, accounts: [{ name, bg, ini, img, count, pick, on }], shots: [{ src, title, open }],
 //      count, empty, onFolder }
 export function screenshotsCard(p) {
-  const av = a => html`<span style=${`width:20px;height:20px;flex:none;border-radius:99px;display:grid;place-items:center;font:700 10px 'Geist',sans-serif;color:#fff;background:${a.img ? `url("${a.img}") center/cover` : a.bg}`}>${a.img ? '' : a.ini}</span>`;
-  const pill = html`<div style="position:relative"><button aria-haspopup="true" aria-expanded=${p.menuOpen} style="display:flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border-radius:99px;border:1px solid rgba(var(--fg-rgb),.12);background:transparent;color:var(--text-soft);font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${p.onMenu} class="dcha" title="Whose screenshots">${av(p.acct)}${p.acct.name}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
-${p.menuOpen ? html`<div role="menu" style="position:absolute;right:0;top:34px;z-index:30;min-width:210px;padding:5px;border-radius:12px;background:var(--surface-raised);border:1px solid rgba(var(--fg-rgb),.12);box-shadow:0 16px 40px var(--shadow-c)">${p.accounts.map(a => html`<button role="menuitemradio" aria-checked=${a.on} style=${`display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:${a.on ? 'rgba(var(--fg-rgb),.07)' : 'transparent'};color:var(--text-soft);font:500 12.5px 'Geist',sans-serif;cursor:pointer;text-align:left`} onClick=${a.pick} class="dctg">${av(a)}${a.name}<span style="margin-left:auto;font:500 11px 'Geist Mono',monospace;color:var(--text-subtle)">${a.count}</span></button>`)}</div>` : null}</div>`;
   const body = p.empty ? html`<div style=${MUTED}>${p.empty}</div>` : html`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${p.shots.map(s => html`<button style=${`aspect-ratio:16/9;padding:0;border-radius:10px;border:1px solid rgba(var(--fg-rgb),.08);background:rgba(var(--fg-rgb),.05) url("${s.src}") center/cover;cursor:zoom-in`} onClick=${s.open} title=${s.title} aria-label=${s.title} class="dche2"></button>`)}</div>
 <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span style=${`flex:1;${MUTED}`}>${p.count}</span><button style=${BTN} onClick=${p.onFolder} class="dcha">Open folder</button></div>`;
-  return card('Screenshots', body, pill);
+  return card('Screenshots', body, acctPill(p));
 }
 
 // p: { src, caption, close }
@@ -71,3 +68,27 @@ export const workshopCard = p => card('Workshop', html`<div style="display:flex;
 
 // p: { value, count, onInput }
 export const notesCard = p => card('Notes', html`<textarea maxlength="1000" rows="3" placeholder="e.g. crosshair code, server IPs, what to try next time" value=${p.value} onInput=${p.onInput} aria-label="Notes for this game" style="width:100%;box-sizing:border-box;resize:vertical;min-height:72px;padding:10px 12px;border-radius:10px;border:1px solid rgba(var(--fg-rgb),.1);background:rgba(var(--fg-rgb),.03);color:var(--text-soft);font:400 13px/1.5 'Geist',sans-serif;outline:none" class="dcf14"></textarea>`, html`<span style="font:400 11px 'Geist Mono',monospace;color:var(--text-subtle)">${p.count}</span>`);
+
+// The account pill with its menu, shared by the screenshots and achievements cards.
+// p: { acct: { name, bg, ini, img }, menuOpen, onMenu, accounts: [{ name, bg, ini, img, count, pick, on }] }
+export function acctPill(p) {
+  const av = a => html`<span style=${`width:20px;height:20px;flex:none;border-radius:99px;display:grid;place-items:center;font:700 10px 'Geist',sans-serif;color:#fff;background:${a.img ? `url("${a.img}") center/cover` : a.bg}`}>${a.img ? '' : a.ini}</span>`;
+  return html`<div style="position:relative"><button aria-haspopup="true" aria-expanded=${p.menuOpen} style="display:flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border-radius:99px;border:1px solid rgba(var(--fg-rgb),.12);background:transparent;color:var(--text-soft);font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${p.onMenu} class="dcha" title="Whose progress">${av(p.acct)}${p.acct.name}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+${p.menuOpen ? html`<div role="menu" style="position:absolute;right:0;top:34px;z-index:30;min-width:210px;padding:5px;border-radius:12px;background:var(--surface-raised);border:1px solid rgba(var(--fg-rgb),.12);box-shadow:0 16px 40px var(--shadow-c)">${p.accounts.map(a => html`<button role="menuitemradio" aria-checked=${a.on} style=${`display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:${a.on ? 'rgba(var(--fg-rgb),.07)' : 'transparent'};color:var(--text-soft);font:500 12.5px 'Geist',sans-serif;cursor:pointer;text-align:left`} onClick=${a.pick} class="dctg">${av(a)}${a.name}<span style="margin-left:auto;font:500 11px 'Geist Mono',monospace;color:var(--text-subtle)">${a.count}</span></button>`)}</div>` : null}</div>`;
+}
+
+const achRow = a => html`<div style=${`display:flex;gap:12px;align-items:center;padding:9px 0;border-top:1px solid rgba(var(--fg-rgb),.06);opacity:${a.got ? 1 : .5}`}>
+<span style=${`width:40px;height:40px;flex:none;border-radius:9px;background:rgba(var(--fg-rgb),.06) ${a.icon ? `url("${a.icon}") center/cover` : ''}`}></span>
+<div style="min-width:0;flex:1"><div style="font:600 13px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title=${a.name}>${a.name}</div><div style="font:400 12px/1.4 'Geist',sans-serif;color:var(--text-subtle);margin-top:2px">${a.desc}</div></div>
+<span style="flex:none;font:500 11px 'Geist Mono',monospace;color:var(--text-subtle);white-space:nowrap">${a.when}</span></div>`;
+
+// p: { pill, head, pct, rows: [{ name, desc, icon, got, when }], showAll: { label, on } | null, note, loading }
+export function achievementsCard(p) {
+  const medal = html`<span style="width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(var(--accent-rgb),.25),rgba(var(--accent2-rgb),.15));color:var(--accent)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"></circle><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"></path></svg></span>`;
+  const body = html`<div style="display:flex;align-items:center;gap:14px">${medal}<div style="flex:1;min-width:0"><div style="font:600 14px 'Geist',sans-serif">${p.head}</div>${p.pct != null ? bar(p.pct) : null}</div></div>
+${p.note ? html`<div style=${`${MUTED};margin-top:12px`}>${p.note}</div>` : null}
+${p.rows.length ? html`<div style="margin-top:10px;max-height:420px;overflow-y:auto">${p.rows.map(achRow)}</div>` : null}
+${p.loading ? html`<div style=${`${MUTED};margin-top:10px`}>Loading…</div>` : null}`;
+  const aside = html`<div style="display:flex;align-items:center;gap:6px">${p.showAll ? html`<button style="border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px" onClick=${p.showAll.on} class="dch4">${p.showAll.label}</button>` : null}${p.pill ? acctPill(p.pill) : null}</div>`;
+  return card('Achievements', body, aside);
+}

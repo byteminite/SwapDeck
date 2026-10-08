@@ -20,6 +20,7 @@ const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
 const { steamPage } = require('./src/main/steamlinks');
 const gameinfo = require('./src/main/gameinfo');
+const achievements = require('./src/main/achievements');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
 protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -486,9 +487,13 @@ function ipc() {
     if (!isAppid(appid) || !loc.dir) return null;
     const shots = accounts().map(a => {
       const acct = String(steam.accountIdFromSid(a.sid)), list = gameinfo.screenshots(loc.dir, acct, String(appid));
-      return { sid: a.sid, acct, count: list.length, items: list.slice(0, 12) };
+      return { sid: a.sid, acct, count: list.length, items: list.slice(0, 12), ach: achievements.summary(achievements.achievements(loc.dir, acct, String(appid))) };
     });
     return { workshop: gameinfo.workshop(loc.dir, String(appid)), shots };
+  });
+  ipcMain.handle('game:achievements', (_, appid, sid) => {
+    if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return null;
+    return achievements.achievements(loc.dir, String(steam.accountIdFromSid(String(sid))), String(appid));
   });
   ipcMain.handle('game:shotFolder', (_, appid, sid) => {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return { ok: false };
