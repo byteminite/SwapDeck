@@ -7,7 +7,7 @@ import { displayVals } from './displays.js';
 import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
-import { TAG_PRESETS } from './tagpicker.js';
+import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
 
 const api = window.api;
 
@@ -65,9 +65,13 @@ const TAGDEF = { fps: ['34,211,238', '#67e8f9', '#0e7490'], racing: ['245,158,11
 const CUSTDEF = [['20,184,166', '#5eead4', '#0f766e'], ['139,92,246', '#c4b5fd', '#6d28d9'], ['59,130,246', '#93c5fd', '#1d4ed8'], ['236,72,153', '#f9a8d4', '#be185d'], ['132,204,22', '#bef264', '#4d7c0f']];
 let LIGHT = false;
 let TAGCOL = {}; // settings.tagColors: tag -> "r,g,b" picked by the user
-const custDef = rgb => { const h = toHex(rgb.split(',').map(Number)); return [rgb, mixc(h, '#ffffff', .45), mixc(h, '#000000', .4)]; };
+const custDef = rgb => { const h = toHex(rgb.split(',').map(Number)); return [rgb, mixc(h, '#ffffff', .45), mixc(h, '#000000', .55)]; };
 const FAV = '__fav';
-const tagDef = t => TAGCOL[t] ? custDef(TAGCOL[t]) : TAGDEF[t] || CUSTDEF[[...t].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5];
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// Same rules as cleanTags in src/main/tags.js: what the tag inputs turn typed text into ('' = not a usable tag).
+const normTag = s => { const t = s.trim().toLowerCase().replace(/\s+/g, '-').replace(/^_+/, '').slice(0, 16); return t && !(t in Object.prototype) ? t : ''; };
+const MAX_TAGS = 12;
+const tagDef = t => own(TAGCOL, t) ? custDef(TAGCOL[t]) : own(TAGDEF, t) ? TAGDEF[t] : CUSTDEF[[...t].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5];
 const tc = t => { const d = tagDef(t); return ['rgba(' + d[0] + (LIGHT ? ',.12)' : ',.14)'), LIGHT ? d[2] : d[1], 'rgba(' + d[0] + ',.5)']; };
 
 // Game icons cached by 1.0.0 were two URLs glued together (…/apps/730/https://…/hash.jpg.jpg). Keep the real
@@ -126,7 +130,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -151,7 +155,7 @@ class App extends Component {
       api.on('update', u => {
         this.setState({ update: u });
         if (!u.announce) return;
-        if (u.state === 'ready') this.toast('success', 'Update ready: v' + u.version, (u.notes ? u.notes + ' ' : '') + 'Restart SwapDeck to install it now, or it installs when you quit.', { label: 'Restart now', fn: () => api.installUpdate() });
+        if (u.state === 'ready') this.toast('success', 'Update ready: v' + u.version, (u.notes ? u.notes + ' ' : '') + 'Restart SwapDeck to install it now, or it installs when you quit.', { label: 'Restart now', fn: () => this.installUpdate() });
         else if (u.state === 'none') this.toast('info', "You're up to date", 'SwapDeck v' + u.current + ' is the latest version.');
         else if (u.state === 'error') this.toast('warning', 'Update check failed', u.error);
       }),
@@ -349,7 +353,6 @@ class App extends Component {
     this.setState(s => ({ accounts: s.accounts.map(x => x.sid === id ? { ...x, ...p } : x) }));
     const res = await api.setMeta(id, p);
     if (res) this.replaceAcc(res);
-    if ('tags' in p) this.reloadLib();
   }
   async setCfg(patch) {
     this.setState(s => ({ settings: { ...s.settings, ...patch } }));
@@ -489,7 +492,7 @@ class App extends Component {
   cancelAdd() { api.cancelAdd(); this.setState({ addOpen: false }); }
   openDetails(id) {
     const a = this.find(id);
-    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dAdv: false, dLaunchMenu: false, cs2: null });
+    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dKeep: [], colorFor: null, tagPop: null, dAdv: false, dLaunchMenu: false, cs2: null });
     api.cs2Info(id).then(info => { if (this.state.drawerId === id) this.setState({ cs2: { sid: id, ...info, from: info.sources[0] ? info.sources[0].sid : null } }); });
     if (a && (!a.pubAt || (a.linked && !a.statsAt))) this.fetchStats(id);
   }
@@ -619,19 +622,40 @@ class App extends Component {
     const S = this.state, used = [...this.accts.flatMap(a => a.tags), ...S.lib.flatMap(g => g.tags)];
     return [...new Set([...KNOWN, ...(S.settings.tagList || []), ...used, ...keep])].filter(t => KNOWN.includes(t) || used.includes(t) || keep.includes(t));
   }
+  // Keeps tags in the shared order; a 13th tag is refused (the main process keeps at most 12).
+  // Unticked tags stay listed (keepKey) while the details are open, so nothing moves.
+  orderTags(tags, prev, keepKey) {
+    if (tags.length > MAX_TAGS) { this.toast('info', 'Tag limit reached', 'Up to ' + MAX_TAGS + ' tags each. Untick one to add another.'); return null; }
+    const keep = [...new Set([...(this.state[keepKey] || []), ...prev, ...tags])];
+    this.setState({ [keepKey]: keep });
+    return this.tagOrder(keep).filter(t => tags.includes(t));
+  }
   setGameTags(id, tags) {
-    const g = this.gfind(id), keep = [...new Set([...(this.state.gdKeep || []), ...g.tags, ...tags])];
-    const sorted = this.tagOrder(keep).filter(t => tags.includes(t)).slice(0, 12);
-    this.setState({ gdKeep: keep });
+    const sorted = this.orderTags(tags, this.gfind(id).tags, 'gdKeep');
+    if (!sorted) return;
     this.gmut(id, { tags: sorted });
     this.gset(id, { tags: sorted });
+  }
+  setAcctTags(id, tags) {
+    const sorted = this.orderTags(tags, this.find(id).tags, 'dKeep');
+    if (sorted) this.mut(id, { tags: sorted });
+  }
+  // The tag chips of a game's or account's details (o: { tags, keep, where, setTags, draftKey }).
+  tagEditVals(o) {
+    const S = this.state, draft = S[o.draftKey] || '';
+    return {
+      opts: this.tagOrder(o.keep).map(t => { const on = o.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => o.setTags(on ? o.tags.filter(x => x !== t) : [...o.tags, t]), onDot: e => this.openColor(e, t, o.where) }; }),
+      draft, onDraft: e => this.setState({ [o.draftKey]: e.target.value }),
+      onKey: e => { if (e.key !== 'Enter') return; const t = normTag(draft); if (t && !o.tags.includes(t)) o.setTags([...o.tags, t]); this.setState({ [o.draftKey]: '' }); },
+      color: S.colorFor && S.colorFor.where === o.where ? { ...this.colorVals(S.colorFor.t), pos: S.colorFor.pos } : null,
+    };
   }
   // ---------- tag filter and colours ----------
   tagPickVals(kind) {
     const S = this.state, isLib = kind === 'lib', items = isLib ? S.lib : this.accts, sel = isLib ? S.libTags : S.accTags, where = 'pop:' + kind;
     const setSel = v => this.setState(isLib ? { libTags: v } : { accTags: v });
     const flip = k => setSel(sel.includes(k) ? sel.filter(x => x !== k) : [...sel, k]);
-    const counts = {};
+    const counts = Object.create(null);
     items.forEach(x => x.tags.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
     const open = S.tagPop === kind, colorOf = t => S.colorFor && S.colorFor.t === t && S.colorFor.where === where ? this.colorVals(t) : null;
     const chip = k => {
@@ -655,10 +679,11 @@ class App extends Component {
       onReset: () => this.setTagColor(t, null),
     };
   }
-  // live = while dragging in the system colour picker: recolour now, save once it closes.
+  // While dragging in the system colour picker (live) the save waits a moment, so a drag is one save.
   setTagColor(t, rgb, live) {
     this.setState(s => { const c = { ...(s.settings.tagColors || {}) }; if (rgb) c[t] = rgb; else delete c[t]; return { settings: { ...s.settings, tagColors: c } }; });
-    if (!live) api.setSettings({ tagColor: { tag: t, rgb } }).then(st => { if (st) this.setState({ settings: st }); });
+    clearTimeout(this._colorSave);
+    this._colorSave = setTimeout(() => api.setSettings({ tagColor: { tag: t, rgb } }).then(st => { if (st) this.setState({ settings: st }); }), live ? 400 : 0);
   }
   // In a game's details the panel floats under the tag's chip (above it when there is no room below),
   // positioned inside the Tags box so it scrolls with it.
@@ -667,17 +692,21 @@ class App extends Component {
     const C = this.state.colorFor;
     if (C && C.t === t && C.where === where) return this.setState({ colorFor: null });
     let pos = null;
-    if (where === 'details') {
-      const chip = e.currentTarget.closest('button'), box = chip.offsetParent, r = chip.getBoundingClientRect();
-      const left = Math.max(0, Math.min(chip.offsetLeft, box.clientWidth - 252));
+    if (!where.startsWith('pop:')) {
+      const chip = e.currentTarget.closest('[data-tagchip]'), box = chip.offsetParent, r = chip.getBoundingClientRect();
+      const left = Math.max(0, Math.min(chip.offsetLeft, box.clientWidth - PANEL_W));
       pos = r.bottom + 170 > innerHeight ? { left, bottom: box.clientHeight - chip.offsetTop + 8 } : { left, top: chip.offsetTop + chip.offsetHeight + 8 };
     }
     this.setState({ colorFor: { t, where, pos } });
   }
   closeTagPanels(e) {
     const S = this.state, inside = sel => e.target.closest && e.target.closest(sel);
-    if (S.colorFor && !inside('[data-colorpanel]') && (e.type === 'mousedown' || S.colorFor.where === 'details')) this.setState({ colorFor: null });
+    if (S.colorFor && !inside('[data-colorpanel]') && (e.type === 'mousedown' || !S.colorFor.where.startsWith('pop:'))) this.setState({ colorFor: null });
     if (S.tagPop && e.type === 'mousedown' && !inside('[data-tagpick]')) this.setState({ tagPop: null });
+  }
+  async installUpdate() {
+    const r = await api.installUpdate();
+    if (r && r.ok === false) this.toast('warning', "Can't restart yet", r.error);
   }
   toggleFav(id) { const fav = !this.gfind(id).fav; this.gmut(id, { fav }); this.gset(id, { fav }); }
   setDisp(id, p) { this.gmut(id, g => ({ display: { ...g.display, ...p } })); this.gset(id, { display: p }); }
@@ -701,11 +730,11 @@ class App extends Component {
   }
   setView(v) {
     if (v === this.state.view) return;
-    this.setState({ view: v, drawerId: null });
+    this.setState({ view: v, drawerId: null, tagPop: null, colorFor: null });
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, acctMenu: false, gdKeep: [], gTagDraft: '' });
+    this.setState({ gd: id, acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null });
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
@@ -928,7 +957,7 @@ class App extends Component {
       updIdle: !['checking', 'downloading', 'ready'].includes(upd), updChecking: upd === 'checking', updDl: dl, updReady: upd === 'ready', updPct: (u.percent || 0) + '%', updChecked: u.checkedAt ? rel(u.checkedAt) : 'not yet',
       updVer: 'v' + (u.version || ''), updIdleText: idleText, updIdleFg: upd === 'none' ? 'var(--ok-fg)' : upd === 'error' ? 'var(--warn-fg)' : 'var(--text-subtle)',
       updCanCheck: !['checking', 'downloading', 'ready', 'unsupported'].includes(upd),
-      onUpdCheck: () => api.checkUpdates(), onUpdRestart: () => api.installUpdate(),
+      onUpdCheck: () => api.checkUpdates(), onUpdRestart: () => this.installUpdate(),
       onAbout: e => { e.preventDefault(); api.openProfile('https://github.com/byteminite/SwapDeck/releases'); },
       lockOn: !!S.locked, lockPw: S.unlockPw, lockErr: !!S.unlockErr, lockBd: S.unlockErr ? 'rgba(248,113,113,.6)' : 'rgba(var(--fg-rgb),.14)',
       onLockPw: e => this.setState({ unlockPw: e.target.value, unlockErr: false }), onLockKey: e => { if (e.key === 'Enter') this.unlock(); }, onUnlock: () => this.unlock(),
@@ -1013,15 +1042,13 @@ class App extends Component {
       gTypeLbl: g.steam ? 'STEAM' : 'NON-STEAM', gTypeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', gTypeBd: g.steam ? 'rgba(var(--fg-rgb),.25)' : 'rgba(251,191,36,.45)',
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
       gMeta: g.steam ? 'Steam · App ' + g.appid : 'Non-Steam · ' + g.exe.split('\\').pop(),
-      gTagOpts: this.tagOrder(S.gdKeep || []).map(t => { const on = g.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => this.setGameTags(g.id, on ? g.tags.filter(x => x !== t) : [...g.tags, t]), onDot: e => this.openColor(e, t, 'details') }; }),
-      gColor: S.colorFor && S.colorFor.where === 'details' ? { ...this.colorVals(S.colorFor.t), pos: S.colorFor.pos } : null,
+      gTagEd: this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' }),
       gFav: !!g.fav, gStarFg: g.fav ? '#fbbf24' : '#fff', gStarFill: g.fav ? '#fbbf24' : 'none', gStarBd: g.fav ? 'rgba(251,191,36,.5)' : 'rgba(var(--fg-rgb),.2)',
       gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
-      gTagN: g.tags.length ? g.tags.length + ' selected' : '', gTagDraft: S.gTagDraft || '', onGTagDraft: e => this.setState({ gTagDraft: e.target.value }),
-      onGTagKey: e => { if (e.key !== 'Enter') return; const t = (S.gTagDraft || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16); if (t && !g.tags.includes(t)) this.setGameTags(g.id, [...g.tags, t]); this.setState({ gTagDraft: '' }); },
+      gTagN: g.tags.length ? g.tags.length + ' selected' : '',
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
-      onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null }),
+      onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null }),
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
@@ -1200,7 +1227,7 @@ class App extends Component {
         return { label: l, sub, hasSub: !!sub, isG: !!game, ini: game ? shortName(l).slice(0, 4) : '', icBg: game ? this.cardBg(game) : '', bg: act ? 'rgba(var(--accent-rgb),.12)' : 'rgba(var(--fg-rgb),.02)', bd: act ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.09)', fg: act ? 'var(--text-soft)' : 'var(--text-muted)', act, on: () => { this.mut(d.id, { launch: k }); this.setState({ dLaunchMenu: false }); } };
       }),
       dLaunchNow: g ? 'Launches ' + g + ' after switching' : 'Only signs in, no game launches',
-      dTagOpts: [...KNOWN, ...d.tags.filter(t => !KNOWN.includes(t))].map(t => { const act = d.tags.includes(t), cc = tc(t); return { label: t, mark: act ? '✓' : '+', bg: act ? cc[0] : 'transparent', fg: act ? cc[1] : 'var(--text-subtle)', bd: act ? cc[2] : 'rgba(var(--fg-rgb),.18)', bs: act ? 'solid' : 'dashed', on: () => this.mut(d.id, x => ({ tags: (x.tags || []).includes(t) ? x.tags.filter(y => y !== t) : [...(x.tags || []), t] })) }; }),
+      dTagEd: this.tagEditVals({ tags: d.tags, keep: S.dKeep, where: 'acct', setTags: tags => this.setAcctTags(d.id, tags), draftKey: 'tagDraft' }),
       dNote: d.note, dNoteCount: d.note.length + ' / 140', onDNote: e => this.editNote(d.id, e.target.value),
       acctLoading: L && ld(1), acctReady: L,
       csLoading: L && ld(3), csReady: L && !ld(3) && !!c, gmLoading: L && ld(2), gmReady: L && !ld(2) && !!st,
@@ -1257,8 +1284,6 @@ class App extends Component {
       gSummary: games.length + ' games · ' + fmt(Math.round(totH)) + ' h total',
       gameRows: games.map(x => ({ n: x.n, ab: x.icon ? '' : shortName(x.n).slice(0, 4), icBg: gameIc(x), h: fmt(x.h) + ' h', w: x.w ? fmt(x.w) + ' h' : '—', wFg: x.w ? 'var(--ok-fg)' : 'var(--text-subtle)', pct: Math.max(2, Math.round(x.h / maxH * 100)) + '%', banned: vac.has(x.n) })),
       onDForget: () => this.setState({ confirmId: d.id }),
-      tagDraft: S.tagDraft, onTagDraft: e => this.setState({ tagDraft: e.target.value }),
-      onTagKey: e => { if (e.key !== 'Enter') return; const t = S.tagDraft.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16); if (t && !d.tags.includes(t)) this.mut(d.id, { tags: [...d.tags, t] }); this.setState({ tagDraft: '' }); },
     };
   }
   row(label, val, c, plain, loading) { return { label, val, bg: c ? c[0] : '', fg: c ? c[1] : '', bd: c ? c[2] : '', loading: !!loading, chip: !loading && !plain, plain: !loading && !!plain }; }

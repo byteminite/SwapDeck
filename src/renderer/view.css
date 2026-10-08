@@ -20,9 +20,7 @@ a{color:var(--accent-strong)}a:hover{color:var(--accent-strong)}
 .dch9:hover{background:rgba(var(--fg-rgb),.2) !important}
 .dcha:hover{color:var(--text) !important;border-color:rgba(var(--fg-rgb),.28) !important}
 .dcfb:focus{border-color:rgba(var(--accent-rgb),.55) !important;background:rgba(var(--accent-rgb),.04) !important}
-.dchc:hover{border-color:rgba(var(--fg-rgb),.35) !important}
 .dcfd:focus{border-color:rgba(var(--accent-rgb),.55) !important;background:rgba(var(--accent-rgb),.04) !important}
-.dche:hover{border-color:rgba(var(--fg-rgb),.35) !important}
 .dchf:hover{background:var(--btn-hover) !important}
 .dchg:hover{background:var(--btn-hover) !important}
 .dchh:hover{border-color:#fff !important}

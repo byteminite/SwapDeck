@@ -17,6 +17,7 @@ const display = require('./src/main/display');
 const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
 const hotkey = require('./src/main/hotkey');
+const { cleanTags, validRgb } = require('./src/main/tags');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
 protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -37,16 +38,11 @@ const send = (ch, ...args) => {
 
 // ---------- tags ----------
 
-// Same shape as the tag inputs make: lowercase, dashes for spaces, at most 16 characters, 12 per game or account.
-const cleanTags = list => Array.isArray(list)
-  ? [...new Set(list.map(t => String(t).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16)).filter(Boolean))].slice(0, 12)
-  : [];
 // Tags are listed in first-used order, so a tag never jumps around when it is ticked or unticked.
 function rememberTags(tags) {
   const known = store.settings().tagList || [], fresh = tags.filter(t => !known.includes(t));
   if (fresh.length) store.setSettings({ tagList: [...known, ...fresh].slice(-200) });
 }
-const validRgb = v => { const m = typeof v === 'string' && v.match(/^(\d{1,3}),(\d{1,3}),(\d{1,3})$/); return !!m && m.slice(1).every(n => +n <= 255); };
 // Sets one tag's own colour ("r,g,b"), or with rgb null goes back to its built-in colour.
 function withTagColor({ tag, rgb }) {
   const t = cleanTags([tag])[0], colors = { ...(store.settings().tagColors || {}) };
@@ -444,7 +440,12 @@ function ipc() {
     return { ok: true, path: p };
   });
   ipcMain.handle('update:check', () => updater.check(true));
-  ipcMain.handle('update:install', () => updater.install());
+  // Installing quits SwapDeck, which would cut short putting the display and sound back after a game.
+  ipcMain.handle('update:install', () => {
+    if (player.current()) return { ok: false, error: 'A game SwapDeck launched is still running. Quit the game (or press Stop) first; the update also installs when you quit SwapDeck.' };
+    updater.install();
+    return { ok: true };
+  });
   ipcMain.handle('vault:status', () => store.vault.status());
   ipcMain.handle('vault:unlock', (_, password) => store.vault.unlock(String(password)));
   ipcMain.handle('vault:set', (_, password, autoUnlock) => {

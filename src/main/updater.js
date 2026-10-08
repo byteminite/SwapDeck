@@ -69,7 +69,9 @@ function install() {
   // The silent install closes the window at once, which looks like a crash: show "Installing update" first.
   set({ state: 'installing', version: state.version, notes: state.notes });
   // Silent install (no installer window), then SwapDeck reopens on the new version.
-  setTimeout(() => autoUpdater.quitAndInstall(true, true), NOTICE_MS);
+  setTimeout(() => {
+    try { autoUpdater.quitAndInstall(true, true); } catch (e) { set({ state: 'error', error: 'Couldn\'t start the update: ' + e.message, announce: true }); }
+  }, NOTICE_MS);
 }
 
 const current = () => state;

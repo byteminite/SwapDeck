@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 const vault = require('./vault');
+const { cleanTags, validRgb } = require('./tags');
 
 const DEFAULTS = {
   settings: {
@@ -180,8 +181,8 @@ function importData(b) {
     for (const [k, def] of Object.entries(DEFAULTS.settings)) {
       const v = b.settings[k];
       if (v === undefined) continue;
-      if (k === 'tagList') { if (Array.isArray(v)) next[k] = v.filter(x => typeof x === 'string').slice(-200); }
-      else if (k === 'tagColors') { if (isObj(v)) next[k] = Object.fromEntries(Object.entries(v).filter(([t, c]) => t.length <= 16 && /^\d{1,3},\d{1,3},\d{1,3}$/.test(c)).slice(-200)); }
+      if (k === 'tagList') next[k] = cleanTags(v, 200);
+      else if (k === 'tagColors') { if (isObj(v)) next[k] = Object.fromEntries(Object.entries(v).filter(([t, c]) => cleanTags([t])[0] === t && validRgb(c)).slice(0, 200)); }
       else if (k === 'normalOn') { if (v === null || (Array.isArray(v) && v.every(x => typeof x === 'string'))) next[k] = v; }
       else if (k === 'uiScale') { if (v === 'auto' || SCALES.includes(v)) next[k] = v; }
       else if (def === null ? (v === null || typeof v === 'string') : typeof v === typeof def) next[k] = v;
@@ -189,6 +190,7 @@ function importData(b) {
     data.settings = { ...next, scaleBase: 0.9 };
   }
   data.customGames = data.customGames.filter(c => c && typeof c.exe === 'string' && typeof c.name === 'string');
+  for (const g of Object.values(data.games)) if (isObj(g)) { g.tags = cleanTags(g.tags); g.fav = !!g.fav; }
   data.settings.steamExe = keepExe;
   flush();
 }
