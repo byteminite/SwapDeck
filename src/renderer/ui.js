@@ -902,14 +902,15 @@ class App extends Component {
   }
   overviewVals(g) {
     // Non-Steam games have no Overview, so their note sits on the settings page.
-    if (!g.steam) return { gTabs: null, gOv: null, gNoteSetup: { value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) } };
+    if (!g.steam) return { gGear: null, gOv: null, gNoteSetup: { value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) } };
     const S = this.state, L = S.launch, ov = S.gdTab !== 'setup', tab = k => () => this.setState({ gdTab: k, colorFor: null });
     const page = kind => () => api.openSteamPage(kind, g.appid);
     const ed = this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' });
     const I = this.gInfoOf(g), ws = I && I.local ? I.local.workshop : null, shots = this.shotsVals(g), ach = this.achVals(g), dlc = I ? this.dlcVals(g) : null;
     return {
       gNoteSetup: null,
-      gTabs: { tabs: [{ label: 'Overview', on: ov, pick: tab('ov') }, { label: 'Setup', on: !ov, pick: tab('setup') }], hint: 'Account, display, sound and apps are in Setup' },
+      // The gear next to the close button swaps between the Overview and the game's setup.
+      gGear: { on: !ov, title: ov ? 'Setup: account, display, sound and apps' : 'Back to the overview', onClick: tab(ov ? 'setup' : 'ov') },
       gOv: !ov ? null : {
         stats: [
           this.updateCell(g),

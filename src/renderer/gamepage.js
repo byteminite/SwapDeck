@@ -29,14 +29,9 @@ ${s.action ? html`<button style="flex:none;border:0;background:transparent;color
 const card = (title, body, aside) => html`<section style="border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);padding:16px 18px;position:relative;min-width:0">
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style=${`flex:1;${LABEL}`}>${title}</span>${aside || null}</div>${body}</section>`;
 
-// p: { tabs: [{ label, on, pick }], hint }
-export function gameTabs(p) {
-  return html`<div role="tablist" style="flex:none;display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid rgba(var(--fg-rgb),.07)">${p.tabs.map(t => html`<button role="tab" aria-selected=${t.on} style=${`position:relative;padding:13px 2px;border:0;background:transparent;color:${t.on ? 'var(--text)' : 'var(--text-subtle)'};font:500 13.5px 'Geist',sans-serif;cursor:pointer;box-shadow:${t.on ? 'inset 0 -2px 0 var(--accent)' : 'none'}`} onClick=${t.pick} class="dch4">${t.label}</button>`)}<div style="flex:1"></div><span style="font:400 12px 'Geist',sans-serif;color:var(--text-subtle)">${p.hint}</span></div>`;
-}
-
 // p: { stats: [statCell props], links: [{ label, on }], left: [vnodes], right: [vnodes], lightbox?, reader? (vnode) }
 export function gameOverview(p) {
-  return html`<div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px 22px 26px">
+  return html`<div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 22px 26px">
 <div style="display:flex;align-items:stretch;border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);overflow:hidden">${p.stats.map(statCell)}</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">${p.links.map(l => html`<button style="padding:7px 11px;border-radius:9px;border:1px solid rgba(var(--fg-rgb),.1);background:transparent;color:var(--text-muted);font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${l.on} class="dcha" title=${'Opens in Steam'}>${l.label}</button>`)}</div>
 <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;margin-top:18px;align-items:start">
