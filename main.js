@@ -18,6 +18,7 @@ const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
 const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
+const { steamPage } = require('./src/main/steamlinks');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
 protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -477,6 +478,11 @@ function ipc() {
   ipcMain.handle('link:cancel', () => link.cancel());
   ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.removeCredentials(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
   ipcMain.handle('credentials:clear', (_, sid) => { store.removeCredentials(String(sid)); return oneAccount(String(sid)); });
+  ipcMain.handle('steam:page', (_, kind, appid) => {
+    const url = steamPage(String(kind), appid);
+    if (url) shell.openExternal(url);
+    return { ok: !!url };
+  });
   ipcMain.handle('open', (_, url) => {
     if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases') shell.openExternal(url);
   });

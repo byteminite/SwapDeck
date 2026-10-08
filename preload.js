@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('api', {
   vaultAutoUnlock: on => invoke('vault:autounlock', on),
   libList: () => invoke('lib:list'),
   libSet: (id, patch) => invoke('lib:set', id, patch),
+  openSteamPage: (kind, appid) => invoke('steam:page', kind, appid),
   libPickExe: () => invoke('lib:pickExe'),
   libPickImage: () => invoke('lib:pickImage'),
   libSaveCustom: game => invoke('lib:saveCustom', game),

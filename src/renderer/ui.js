@@ -8,6 +8,7 @@ import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
+import { tagsCard } from './gamepage.js';
 
 const api = window.api;
 
@@ -130,7 +131,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -708,6 +709,25 @@ class App extends Component {
     const r = await api.installUpdate();
     if (r && r.ok === false) this.toast('warning', "Can't restart yet", r.error);
   }
+  // ---------- game details: Overview tab (Steam games only; non-Steam games show Setup alone) ----------
+  overviewVals(g) {
+    if (!g.steam) return { gTabs: null, gOv: null };
+    const S = this.state, L = S.launch, ov = S.gdTab !== 'setup', tab = k => () => this.setState({ gdTab: k, colorFor: null });
+    const page = kind => () => api.openSteamPage(kind, g.appid);
+    const ed = this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' });
+    return {
+      gTabs: { tabs: [{ label: 'Overview', on: ov, pick: tab('ov') }, { label: 'Setup', on: !ov, pick: tab('setup') }], hint: 'Account, display, sound and apps are in Setup' },
+      gOv: !ov ? null : {
+        stats: [
+          { icon: 'calendar', label: 'Last played', value: L && L.gid === g.id ? 'Playing now' : rel(g.lastPlayed) },
+          { icon: 'clock', label: 'Playtime', value: g.hours ? fmt(Math.round(g.hours)) + ' h' : 'Not played yet' },
+        ],
+        links: [['Store page', 'store'], ['DLC', 'dlc'], ['Community hub', 'hub'], ['Discussions', 'discussions'], ['Guides', 'guides'], ['Workshop', 'workshop'], ['Market', 'market'], ['Support', 'support']].map(([label, kind]) => ({ label, on: page(kind) })),
+        left: [],
+        right: [tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : '')],
+      },
+    };
+  }
   toggleFav(id) { const fav = !this.gfind(id).fav; this.gmut(id, { fav }); this.gset(id, { fav }); }
   setDisp(id, p) { this.gmut(id, g => ({ display: { ...g.display, ...p } })); this.gset(id, { display: p }); }
   setOpts(id, v) {
@@ -734,7 +754,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null });
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
@@ -1046,6 +1066,7 @@ class App extends Component {
       gFav: !!g.fav, gStarFg: g.fav ? '#fbbf24' : '#fff', gStarFill: g.fav ? '#fbbf24' : 'none', gStarBd: g.fav ? 'rgba(251,191,36,.5)' : 'rgba(var(--fg-rgb),.2)',
       gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
       gTagN: g.tags.length ? g.tags.length + ' selected' : '',
+      ...this.overviewVals(g),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null }),
