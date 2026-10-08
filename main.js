@@ -2,6 +2,10 @@ const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, dialog, shell, screen, protocol, net, systemPreferences } = require('electron');
+
+// `npm run dev`: run from source with a separate profile (%APPDATA%\SwapDeck-dev), so development never
+// touches the real settings and can run next to the installed app (the single-instance lock is per profile).
+if (process.argv.includes('--dev-profile')) app.setPath('userData', path.join(app.getPath('appData'), 'SwapDeck-dev'));
 const store = require('./src/main/store');
 const steam = require('./src/main/steam');
 const { fetchPublic } = require('./src/main/profile');
