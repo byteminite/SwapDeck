@@ -121,7 +121,7 @@ export function dlcCard(p) {
 // p: { pill | null, state: 'none' | 'loading' | 'error' | 'ok', error, recent: [{ name, avatar, sub, open }], recentLabel,
 //      ever: [{ name, avatar, open }], everLabel, onConnect }
 export function friendsCard(p) {
-  const face = (f, s) => html`<span style=${`width:${s}px;height:${s}px;flex:none;border-radius:8px;background:rgba(var(--fg-rgb),.08) ${f.avatar ? `url("${f.avatar}") center/cover` : ''}`}></span>`;
+  const face = (f, s) => html`<span style=${`display:block;width:${s}px;height:${s}px;flex:none;border-radius:8px;background:rgba(var(--fg-rgb),.08) ${f.avatar ? `url("${f.avatar}") center/cover` : ''}`}></span>`;
   const body = p.state === 'none' ? html`<div style=${MUTED}>See which friends play this game: connect one of your accounts for stats in its details.</div><div style="margin-top:10px"><button style=${BTN} onClick=${p.onConnect} class="dcha">Connect for stats</button></div>`
     : p.state === 'loading' ? html`<div style=${MUTED}>Asking Steam…</div>`
     : p.state === 'error' ? html`<div style=${MUTED}>Couldn't load friends from Steam: ${p.error}</div>`
