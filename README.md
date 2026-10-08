@@ -5,7 +5,7 @@
 # SwapDeck
 
 **Switch Steam accounts in one click, and launch every game with the right account, monitor, resolution and sound.**<br>
-Built for people who keep separate FPS, sim racing and horror accounts.
+Built for people who keep separate FPS, sim racing and horror accounts, with a Steam-style page for every game.
 
 [![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made) [![Made in Munder Difflin](https://img.shields.io/badge/made%20in-Munder%20Difflin-f5b942?style=flat-square)](https://munderdiffl.in/)
 
@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
     <td width="25%" valign="top" align="center"><h3>🔁</h3><b>One click to switch</b><br><sub>Every account saved in Steam. No retyping passwords, no Steam Guard codes.</sub></td>
     <td width="25%" valign="top" align="center"><h3>🎮</h3><b>Play does the setup</b><br><sub>The right account, monitor, resolution, sound and apps, then the game.</sub></td>
     <td width="25%" valign="top" align="center"><h3>↩️</h3><b>Everything goes back</b><br><sub>Your normal setup returns when the game exits. Stop never closes your game.</sub></td>
-    <td width="25%" valign="top" align="center"><h3>🔒</h3><b>Stays on your PC</b><br><sub>No sign-up, no telemetry. Stats are optional and encrypted by Windows.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>🔒</h3><b>Stays on your PC</b><br><sub>No sign-up, no telemetry. Stats and friends are optional and encrypted by Windows.</sub></td>
   </tr>
 </table>
 
@@ -46,7 +46,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <h3>👥 Accounts, sorted your way</h3>
 <ul>
 <li>One-click switching from a <b>"Who's playing?"</b> picker or the classic sideways gallery</li>
-<li><b>Tags, notes and favourites</b>, with search, sorting and a tag filter where you tick as many tags as you like</li>
+<li><b>Tags, notes and favourites</b>: give each tag its own colour, then tick as many tags as you like in the <b>Tags</b> filter</li>
 <li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
 <li><b>Playtime per account</b> for everything you launch through SwapDeck</li>
 <li>Add and forget accounts without digging through Steam</li>
@@ -60,13 +60,37 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li>Your installed <b>Steam games</b> with their own Steam artwork</li>
 <li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
 <li>Each game remembers <b>which account</b> plays it, so Play switches for you</li>
-<li><b>Tag and star games</b> (favourites come first), filter by several tags at once, and give each tag its own colour</li>
-<li><b>Steam-style game pages</b>: update status, news and patch notes you can read in the app, screenshots, achievements, workshop, DLC and notes</li>
-<li><b>Update badges</b> on covers and in the tray when Steam is updating a game</li>
+<li><b>Tag and star games</b>: favourites come first, whatever the sort</li>
+<li><b>Update badges</b> on the covers: <i>Update queued</i>, <i>Updating 42%</i> or <i>Update failed</i>, straight from Steam</li>
 <li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
 </ul>
 </td>
 <td width="55%"><img src="docs/screenshots/04-library.png" alt="One library for everything"></td>
+</tr>
+<tr>
+<td width="55%"><img src="docs/screenshots/08-game-overview.png" alt="A Steam-style page for every game"></td>
+<td width="45%" valign="middle">
+<h3>🎮 A Steam-style page for every game</h3>
+<ul>
+<li><b>Update status</b> from Steam: up to date, downloading with progress, paused or failed</li>
+<li><b>Last played, playtime and achievements</b> at a glance, per account</li>
+<li><b>Screenshots</b>, <b>workshop</b> items and <b>DLC</b>, with one-click links to the store, hub, guides and more</li>
+<li><b>Friends who play</b> it, and which DLC the account owns (for accounts connected for stats)</li>
+<li>A <b>note</b> for each game: a crosshair code, a server IP…</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td width="45%" valign="middle">
+<h3>📰 Patch notes, right in SwapDeck</h3>
+<ul>
+<li>The developer's <b>announcements and patch notes</b>, newest first</li>
+<li><b>Read the whole post</b> in the app, with headings, lists and pictures</li>
+<li>Posts since you last played are tagged <b>New</b></li>
+<li>Steam links open in Steam, trailers on YouTube, and <i>Open in Steam</i> is always there</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/10-news-reader.png" alt="Patch notes, right in SwapDeck"></td>
 </tr>
 <tr>
 <td width="55%"><img src="docs/screenshots/05-game-cs2.png" alt="Per-game setup"></td>
@@ -77,7 +101,8 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li><b>Resolution profiles</b> you make yourself, like 1280 × 960 stretched for CS2</li>
 <li><b>Sound device</b> per game, e.g. your headset</li>
 <li><b>Launch options</b>, or import the ones you already set in Steam</li>
-<li>Everything is <b>put back</b> when the game exits</li>
+<li>Your <b>note on the launch screen</b> when you press Play, with a <i>Copy</i> button</li>
+<li>Everything is <b>put back</b> when the game exits. It's all behind the ⚙️ gear on the game's page</li>
 </ul>
 </td>
 </tr>
@@ -112,7 +137,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
 <li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals</li>
 <li>Games and hours, Steam level, wallet balance and friends</li>
-<li><b>Friends who play</b> each game, and which of its DLC the account owns</li>
+<li><b>Friends who play</b> each game, with their hours, and which of its DLC the account owns</li>
 <li>Completely optional. Switching works without it</li>
 </ul>
 </td>
@@ -126,7 +151,7 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 <li><b>Dark, OLED Black or Light</b>, with accent colours or your Windows accent</li>
 <li>The accent can <b>follow the running game's tag</b></li>
 <li>Choose the <b>grid or gallery</b> accounts layout, and whether SwapDeck opens on Accounts or Library</li>
-<li>UI scale from 80% to 150%, or <b>Auto</b>, which fits 1080p, 1440p and 4K screens</li>
+<li><b>Auto UI scale</b> that fits 1080p, 1440p and 4K screens (a bigger window shows more, not bigger), or pick 80% to 150%</li>
 </ul>
 </td>
 </tr>
@@ -138,8 +163,8 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 
 <table>
   <tr>
-    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, or open it from any app with an optional shortcut (off by default, key of your choice)</sub></td>
-    <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
+    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, with update status for each game</sub></td>
+    <td width="33%" valign="top">⌨️ <b>Tray shortcut</b><br><sub>Open the tray panel from any app with <code>Ctrl + Alt + S</code>. Off by default, key of your choice</sub></td>
     <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X, and LB / RB to change tabs</sub></td>
   </tr>
   <tr>
@@ -151,6 +176,11 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
     <td width="33%" valign="top">🕓 <b>Session history</b><br><sub>Who played what, when, and for how long</sub></td>
     <td width="33%" valign="top">✨ <b>Updates itself</b><br><sub>Quietly, with a What's new after each update</sub></td>
     <td width="33%" valign="top">⌨️ <b>Keyboard friendly</b><br><sub>Arrows, Enter and <code>/</code> to search</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
+    <td width="33%" valign="top">⭐ <b>Favourites</b><br><sub>Star accounts and games, and they come first</sub></td>
+    <td width="33%" valign="top">🏆 <b>Achievements per account</b><br><sub>Latest unlocks and progress, from Steam's files on your PC. Hidden ones stay hidden</sub></td>
   </tr>
 </table>
 
@@ -171,6 +201,9 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 | Switch account | Click a card (grid) or double-click a panel (gallery), or select it and press `Enter` |
 | Account details | `ⓘ` on a card, or right-click |
 | Play a game | Library → hover a game → Play, or double-click |
+| Game page | Click a game in the Library. The ⚙️ gear next to the close button opens its setup |
+| Read patch notes | A game's page → Activity → click a post |
+| Tray panel from anywhere | `Ctrl + Alt + S` (turn it on in Settings → General) |
 | Move around | Arrow keys, or a controller's d-pad / stick |
 | Controller | `A` select · `B` back · `X` details · `LB`/`RB` switch Accounts ↔ Library |
 | Search | `/` |
@@ -234,6 +267,7 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 - Steam's **"Ask which account to use each time Steam starts"** blocks automatic sign-in, so SwapDeck turns it off when you switch.
 - If Steam asks for a password after a switch, that account's saved login expired. Sign in once with **Remember me** ticked.
 - CS2 stats aren't refreshed while that account is in a game, because it would kick the game session.
+- A game's **news, DLC and friends** load when you open its page and are cached for a while, so the first open takes a second.
 - **Monitors** only need to be plugged in and powered. SwapDeck can switch one on that's turned off in Windows.
 - **Resolution profiles** can only use sizes your graphics driver offers. For stretched 4:3, add the resolution as a custom
   resolution in AMD Software or the NVIDIA Control Panel, and set scaling to Full panel / Full-screen. The **Test** button
@@ -243,7 +277,8 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 
 ```bash
 npm install
-npm start       # run from source
+npm run dev     # run from source with its own test profile (your real settings stay untouched)
+npm start       # run from source with your normal settings
 npm run dist    # build installer + portable exe into dist\
 ```
 

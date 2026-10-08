@@ -3,7 +3,7 @@
 // Nothing here talks to Steam or Windows, and nothing leaves the browser.
 (() => {
   'use strict';
-  const VERSION = '1.1.0';
+  const VERSION = '1.3.0';
   const H = 3600e3, D = 24 * H, now = Date.now();
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const clone = v => JSON.parse(JSON.stringify(v));
@@ -43,7 +43,7 @@
       stats: stats(21, '€3,15', 17, { premier: 12890, wins: 54, comp: { name: 'Legendary Eagle', i: 15, wins: 88 } }) }),
     acc('76561190000000102', 'apexdrift', 'ApexDrift', AV.helmet, ['racing'], 2 * D, { note: 'Sim racing. Content Manager + SimHub.', pub: pub('ApexDrift', 'offline'), stats: stats(34, '€0,00', 38) }),
     acc('76561190000000103', 'lantern_lit', 'Lantern', AV.lantern, ['horror'], 5 * D, { pub: pub('Lantern', 'offline') }),
-    acc('76561190000000105', 'pixelpilot', 'Pixel Pilot', AV.rocket, ['coop'], 14 * D, { pub: pub('Pixel Pilot', 'away') }),
+    acc('76561190000000105', 'pixelpilot', 'Pixel Pilot', AV.rocket, ['co-op'], 14 * D, { pub: pub('Pixel Pilot', 'away') }),
     acc('76561190000000106', 'frostbyte_tr', 'Frostbyte', AV.snow, [], 31 * D, { pub: pub('Frostbyte', 'offline', { trade: 'probation' }) }),
   ];
   const A = n => accounts.find(a => a.name === n);
@@ -111,6 +111,54 @@
   ];
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));
   const findGame = id => lib.find(g => g.id === id);
+
+  // ---- game details (Overview) ----
+  const ACH_ICON = 'https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/';
+  const DLC_ART = id => 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/' + id + '/header.jpg';
+  const patchNote = (lines) => '[p]\[ ' + lines[0] + ' ][/p][list]' + lines.slice(1).map(l => '[*][p]' + l + '[/p][/*]').join('') + '[/list]';
+  const friend = (name, av, minutes) => ({ sid: '7656119' + String(1e9 + name.length * 7919 + minutes).slice(-10), name, avatar: av, minutes });
+  const DETAILS = {
+    status: { '1144200': { state: 'downloading', pct: 42, bytes: 3.4e9, staging: false } },
+    workshop: { '730': { items: 14, bytes: 1.62e9 }, '244210': { items: 37, bytes: 8.9e9 } },
+    ach: {
+      '730': { sid: A('NightOwl').sid, summary: { known: true, total: 1, unlocked: 1, latest: [{ id: 'a1', name: 'A New Beginning', desc: 'This is Counter-Strike, too.', icon: ACH_ICON + '730/f75dd04fa12445a8ec43be65fa16ff1b8d2bf82e.jpg', got: true, at: now - 410 * D }] } },
+    },
+    newsFor: {
+      '730': [
+        [20 * 60e3, 'Counter-Strike 2 Update', true, patchNote(['MAPS', 'Fixed a spot on Mirage where players could see through a wall', 'Updated the lighting in the Inferno banana area']) + patchNote(['MISC', 'Improved loading times when joining a match', 'Fixed a rare crash when changing video settings'])],
+        [2 * D, 'Counter-Strike 2 Update', true, patchNote(['GAMEPLAY', 'Smoke grenades now fade out slightly faster at the edges', 'Fixed footstep sounds sometimes playing late']) + patchNote(['CROSSHAIR', 'Added a crosshair preview on the main menu'])],
+        [5 * D, 'Counter-Strike 2 Update', true, patchNote(['PREMIER', 'Season rewards now show on your profile', 'Fixed rating changes sometimes showing the wrong number'])],
+        [9 * D, 'The Premier Season Two Update', false, '[h3]A new Premier season is here[/h3][p]Fresh ratings, a new map pool and new rewards. Play a few matches to get your rating.[/p][list][*]New map: Train returns to Active Duty[*]Season Two medal for 25 wins[*]Leaderboards reset for every region[/list]'],
+        [12 * D, 'Counter-Strike 2 Update', true, patchNote(['MISC', 'Workshop maps now download in the background', 'Fixed text overlapping in the settings menu'])],
+      ],
+      '244210': [
+        [3 * D, 'Assetto Corsa: summer racing weekend', false, '[h3]Race with the community[/h3][p]Join the weekend events on the official servers and try the new community liveries.[/p]'],
+        [20 * D, 'Assetto Corsa Update 1.16.5', true, patchNote(['PHYSICS', 'Improved tyre temperatures on long stints', 'Fixed a rare FFB spike when hitting kerbs'])],
+      ],
+    },
+    news(appid) {
+      return (this.newsFor[appid] || []).map(([ago, title, patch, body], i) => ({ gid: appid + '00' + i, title, at: now - ago, patch, author: 'Demo', body }));
+    },
+    dlc: {
+      '244210': { total: 11, items: [['675590', 'Ferrari 70th Anniversary Pack', true], ['540710', 'Porsche Pack II', true], ['540711', 'Porsche Pack III', false], ['347990', 'Dream Pack 1', true], ['404430', 'Dream Pack 2', true], ['423630', 'Dream Pack 3', false]]
+        .map(([appid, name, installed]) => ({ appid, name, art: DLC_ART(appid), installed })) },
+    },
+    local(appid) {
+      const a = this.ach[appid];
+      const shots = accounts.map(x => ({ sid: x.sid, acct: x.sid.slice(-6), count: 0, items: [], ach: a && a.sid === x.sid ? a.summary : null }));
+      return { shots, workshop: this.workshop[appid] || null };
+    },
+    connected(appid, sid) {
+      const acct = accounts.find(x => x.sid === sid);
+      if (!acct || !acct.linked) return { linked: false };
+      const recent = appid === '730' ? [friend('Crosshair', AV.cross, 1530), friend('frostbyte', AV.snow, 640), friend('Pixel Pilot', AV.rocket, 95), friend('lantern_lit', AV.lantern, 28)]
+        : appid === '244210' ? [friend('ApexDrift', AV.helmet, 860)] : [];
+      const ever = appid === '730' ? [AV.owl, AV.helmet, AV.snow, AV.rocket, AV.cross, AV.lantern].map((av, i) => friend('Steam friend ' + (i + 1), av, 0)) : [];
+      const dlc = this.dlc[appid];
+      return { linked: true, friends: { ok: true, recent, recentTotal: recent.length, ever, everTotal: ever.length + (ever.length ? 9 : 0) },
+        owned: dlc ? { ok: true, game: true, ids: dlc.items.filter((d, i) => i !== 2).map(d => d.appid) } : null };
+    },
+  };
 
   // ---- history ----
   const sessions = [
@@ -330,15 +378,14 @@
       accounts: accounts.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar, lastUsed: a.lastUsed, pinned: a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15).map(g => ({ id: g.id, name: g.name, cover: g.cover, acct: g.acct, lastPlayed: g.lastPlayed })),
     }),
-    // Game details: no Steam on a web page, so a quiet Overview with one made-up post to show the reader.
-    gameStatus: async () => ({ state: 'ok' }),
-    libUpdates: async () => ({}),
-    gameLocal: async () => ({ shots: [], workshop: null }),
-    gameAchievements: async () => null,
-    gameWeb: async () => ({ news: [{ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, patch: true }], dlc: { total: 0, items: [] } }),
-    newsPost: async () => ({ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, author: 'SwapDeck', patch: true,
-      body: '[p]In the app, this is where a game\'s real patch notes and news appear, straight from Steam.[/p][h3]What you can do[/h3][list][*]Read the whole post without leaving SwapDeck[*]Open links in Steam or your browser[*]Use Open in Steam for videos and polls[/list]' }),
-    gameConnected: async () => ({ linked: true, friends: { ok: true, recent: [], recentTotal: 0, ever: [], everTotal: 0 }, owned: null }),
+    // Game details: made-up news, achievements, friends and DLC (names and art are Steam's public store info).
+    gameStatus: async appid => clone(DETAILS.status[appid] || { state: 'ok' }),
+    libUpdates: async () => clone(DETAILS.status),
+    gameLocal: async appid => clone(DETAILS.local(appid)),
+    gameAchievements: async (appid, sid) => { const a = DETAILS.ach[appid]; return a && a.sid === sid ? clone(a.full) : null; },
+    gameWeb: async appid => ({ news: DETAILS.news(appid).map(({ body, author, ...n }) => n), dlc: clone(DETAILS.dlc[appid] || { total: 0, items: [] }) }),
+    newsPost: async (appid, gid) => clone(DETAILS.news(appid).find(n => n.gid === gid) || null),
+    gameConnected: async (appid, sid) => DETAILS.connected(appid, sid),
     openSteamPage: async () => no('Steam pages'), openSteamNews: async () => no('Steam pages'), openNewsLink: async () => no('Links'), openShotFolder: async () => no('Folders'),
     steamLaunchOpts: async id => { const g = findGame(id); return g && g.appid === '730' ? [{ sid: A('NightOwl').sid, name: 'NightOwl', opts: '-novid -high +fps_max 0' }] : []; },
     cs2Info: async sid => ({

@@ -107,10 +107,10 @@
   const screenEl = document.getElementById('screen'), app = document.getElementById('app'), tray = document.getElementById('tray');
   const closed = document.getElementById('closed'), hint = document.getElementById('hint'), taskApp = document.getElementById('taskApp');
   const W = 1280, H = 800;               // the pretend window, in screen pixels
-  let scale = 1.25;                       // SwapDeck's UI scale (like Ctrl +/−)
+  let scale = 1;                          // SwapDeck's UI scale (like Ctrl +/−)
   const k = () => screenEl.clientWidth / W;
-  // Same rule as the app's auto scale for a 1280 × 800 window.
-  const autoScale = () => Math.round(Math.min(Math.max(.8, Math.min(W / 900, H / 640)) * .9, W / 900, H / 640) / .9 * 100) / 100;
+  // Same rule as the app's Auto on a 1080p screen: 100%, whatever the window size.
+  const autoScale = () => 1;
   function layout() {
     const z = Math.min(scale * .9, W / 900, H / 640);
     app.style.width = (W / z) + 'px'; app.style.height = (H / z) + 'px';
