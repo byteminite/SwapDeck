@@ -14,3 +14,9 @@ docs/*.mp4
 
 # Local Claude Code config
 .claude/
+
+# PandaOS and agent instruction files (local workspace only, not part of SwapDeck)
+.pandaos/
+.agents/
+AGENTS.md
+CLAUDE.md
