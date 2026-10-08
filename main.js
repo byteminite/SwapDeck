@@ -18,7 +18,8 @@ const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
 const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
-const { steamPage } = require('./src/main/steamlinks');
+const { steamPage, newsPage } = require('./src/main/steamlinks');
+const steamweb = require('./src/main/steamweb');
 const gameinfo = require('./src/main/gameinfo');
 const achievements = require('./src/main/achievements');
 
@@ -490,6 +491,17 @@ function ipc() {
       return { sid: a.sid, acct, count: list.length, items: list.slice(0, 12), ach: achievements.summary(achievements.achievements(loc.dir, acct, String(appid))) };
     });
     return { workshop: gameinfo.workshop(loc.dir, String(appid)), shots };
+  });
+  // From Steam's public servers; each part fails on its own so one slow answer doesn't hide the other.
+  ipcMain.handle('game:web', async (_, appid) => {
+    if (!isAppid(appid)) return null;
+    const [news, dlc] = await Promise.allSettled([steamweb.news(String(appid)), steamweb.dlc(loc.dir, String(appid))]);
+    return { news: news.status === 'fulfilled' ? news.value : null, dlc: dlc.status === 'fulfilled' ? dlc.value : null };
+  });
+  ipcMain.handle('steam:news', (_, appid, gid) => {
+    const url = newsPage(appid, gid);
+    if (url) shell.openExternal(url);
+    return { ok: !!url };
   });
   ipcMain.handle('game:achievements', (_, appid, sid) => {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return null;

@@ -181,6 +181,8 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 - Add a **master password** in Settings → Security for a lock screen on top of Windows' encryption.
 - Disconnecting deletes the token. You can also revoke the "SwapDeck" device in your Steam account settings.
 - Backups contain your tags, notes, games and profiles, never sign-ins or passwords.
+- A game's details read Steam's own files on your PC for update status, screenshots and achievements. Its news and
+  DLC list come from Steam's public servers (no sign-in), only when you open that game, and are cached for a while.
 
 ## FAQ
 

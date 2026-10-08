@@ -92,3 +92,28 @@ ${p.loading ? html`<div style=${`${MUTED};margin-top:10px`}>Loading…</div>` : 
   const aside = html`<div style="display:flex;align-items:center;gap:6px">${p.showAll ? html`<button style="border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px" onClick=${p.showAll.on} class="dch4">${p.showAll.label}</button>` : null}${p.pill ? acctPill(p.pill) : null}</div>`;
   return card('Achievements', body, aside);
 }
+
+const NEWS_ICONS = {
+  patch: html`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`,
+  news: html`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>`,
+};
+const skeleton = html`<div style="height:62px;border-radius:12px;margin-bottom:8px;background:rgba(var(--fg-rgb),.05);animation:shim 1.4s ease-in-out infinite"></div>`;
+
+// p: { state: 'loading' | 'error' | 'ok', groups: [{ day, items: [{ patch, title, open }] }], onRetry, onAll }
+export function activityCard(p) {
+  const LINK = "border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px";
+  const body = p.state === 'loading' ? html`${skeleton}${skeleton}${skeleton}`
+    : p.state === 'error' ? html`<div style="display:flex;align-items:center;gap:10px"><div style=${`flex:1;${MUTED}`}>Couldn't load news from Steam. Check your connection.</div><button style=${BTN} onClick=${p.onRetry} class="dcha">Try again</button></div>`
+    : !p.groups.length ? html`<div style=${MUTED}>No announcements from the developer yet.</div>`
+    : html`${p.groups.map((grp, gi) => html`<div style=${`display:flex;align-items:center;gap:10px;margin:${gi ? 14 : 0}px 0 8px;${LABEL}`}>${grp.day}<span style="flex:1;height:1px;background:rgba(var(--fg-rgb),.07)"></span></div>
+${grp.items.map(n => html`<button style="display:flex;gap:14px;align-items:center;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--fg-rgb),.07);background:rgba(var(--fg-rgb),.02);color:inherit;cursor:pointer;text-align:left" onClick=${n.open} title="Opens in Steam" class="dche2"><span style="width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(var(--fg-rgb),.06);color:var(--text-muted)">${n.patch ? NEWS_ICONS.patch : NEWS_ICONS.news}</span><span style="min-width:0"><span style=${`display:block;${LABEL}`}>${n.patch ? 'Patch notes' : 'News'}</span><span style="display:block;font:500 14px 'Geist',sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</span></span></button>`)}`)}`;
+  return card('Activity', body, html`<button style=${LINK} onClick=${p.onAll} class="dch4">All news in Steam</button>`);
+}
+
+// p: { state, items: [{ name, art, badge: { label, ok } | null }], more, note, onStore }
+export function dlcCard(p) {
+  const body = p.state === 'loading' ? html`<div style=${MUTED}>Loading…</div>`
+    : p.state === 'error' ? html`<div style=${MUTED}>Couldn't load DLC from Steam.</div>`
+    : html`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">${p.items.map(d => html`<div style="border-radius:10px;overflow:hidden;border:1px solid rgba(var(--fg-rgb),.08);min-width:0"><div style=${`position:relative;aspect-ratio:460/215;background:rgba(var(--fg-rgb),.05) url("${d.art}") center/cover`}>${d.badge ? html`<span style=${`position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);font:600 10px 'Geist Mono',monospace;letter-spacing:.06em;padding:2px 7px;border-radius:99px;border:1px solid ${d.badge.ok ? 'rgba(74,222,128,.45)' : 'rgba(var(--fg-rgb),.15)'};color:${d.badge.ok ? 'var(--ok-fg)' : 'var(--text-subtle)'}`}>${d.badge.label}</span>` : null}</div><div style="padding:8px 10px;font:500 12px/1.35 'Geist',sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden" title=${d.name}>${d.name}</div></div>`)}</div>${p.more ? html`<div style=${`${MUTED};margin-top:10px`}>${p.more}</div>` : null}${p.note ? html`<div style=${`${MUTED};margin-top:6px`}>${p.note}</div>` : null}`;
+  return card('DLC', body, html`<button style="border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px" onClick=${p.onStore} class="dch4">View in store</button>`);
+}

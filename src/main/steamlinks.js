@@ -22,4 +22,10 @@ function steamPage(kind, appid) {
   return PAGES[kind](String(appid));
 }
 
-module.exports = { steamPage, PAGE_KINDS: Object.keys(PAGES) };
+// One announcement on the game's news page.
+function newsPage(appid, gid) {
+  if (!/^\d{1,10}$/.test(String(appid)) || !/^\d{1,20}$/.test(String(gid))) return null;
+  return web(`https://store.steampowered.com/news/app/${appid}/view/${gid}`);
+}
+
+module.exports = { steamPage, newsPage, PAGE_KINDS: Object.keys(PAGES) };

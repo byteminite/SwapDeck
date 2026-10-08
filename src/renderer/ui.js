@@ -8,7 +8,7 @@ import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
-import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard } from './gamepage.js';
+import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard } from './gamepage.js';
 
 const api = window.api;
 
@@ -722,12 +722,36 @@ class App extends Component {
     if (!g || !g.steam) return;
     const [status, local] = await Promise.all([api.gameStatus(g.appid), api.gameLocal(g.appid)]);
     if (this.state.gd !== id) return;
-    this.setState({ gInfo: { id, status, local } });
+    this.setState({ gInfo: { id, status, local, web: null } });
+    this.loadGameWeb(id);
     this._gTimer = setInterval(async () => {
       if (this.state.gd !== id) return clearInterval(this._gTimer);
       const st = await api.gameStatus(g.appid);
       if (this.state.gd === id && this.state.gInfo) this.setState(s => ({ gInfo: { ...s.gInfo, status: st } }));
     }, 2000);
+  }
+  // News and DLC from Steam's servers (cached in the main process); web stays null while loading.
+  async loadGameWeb(id) {
+    const g = this.gfind(id);
+    this.setState(s => s.gInfo && s.gInfo.id === id ? { gInfo: { ...s.gInfo, web: null } } : null);
+    const web = await api.gameWeb(g.appid).catch(() => ({ news: null, dlc: null }));
+    if (this.state.gd === id && this.state.gInfo && this.state.gInfo.id === id) this.setState(s => ({ gInfo: { ...s.gInfo, web: web || { news: null, dlc: null } } }));
+  }
+  activityVals(g) {
+    const I = this.gInfoOf(g), web = I && I.web, list = web && web.news;
+    const day = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }).toUpperCase();
+    const groups = [];
+    for (const n of (list || []).slice(0, 8)) {
+      const d = day(n.at), last = groups[groups.length - 1], item = { patch: n.patch, title: n.title, open: () => api.openSteamNews(g.appid, n.gid) };
+      if (last && last.day === d) last.items.push(item); else groups.push({ day: d, items: [item] });
+    }
+    return { state: !web ? 'loading' : !list ? 'error' : 'ok', groups, onRetry: () => this.loadGameWeb(g.id), onAll: () => api.openSteamPage('news', g.appid) };
+  }
+  dlcVals(g) {
+    const I = this.gInfoOf(g), web = I && I.web, D = web && web.dlc;
+    if (web && D && !D.total) return null;
+    const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: d.installed ? { label: 'INSTALLED', ok: true } : null })) : [];
+    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: '', onStore: () => api.openSteamPage('dlc', g.appid) };
   }
   gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
   updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }
@@ -805,7 +829,7 @@ class App extends Component {
     const S = this.state, L = S.launch, ov = S.gdTab !== 'setup', tab = k => () => this.setState({ gdTab: k, colorFor: null });
     const page = kind => () => api.openSteamPage(kind, g.appid);
     const ed = this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' });
-    const I = this.gInfoOf(g), ws = I && I.local ? I.local.workshop : null, shots = this.shotsVals(g), ach = this.achVals(g);
+    const I = this.gInfoOf(g), ws = I && I.local ? I.local.workshop : null, shots = this.shotsVals(g), ach = this.achVals(g), dlc = I ? this.dlcVals(g) : null;
     return {
       gNoteSetup: null,
       gTabs: { tabs: [{ label: 'Overview', on: ov, pick: tab('ov') }, { label: 'Setup', on: !ov, pick: tab('setup') }], hint: 'Account, display, sound and apps are in Setup' },
@@ -817,11 +841,12 @@ class App extends Component {
           ach ? ach.cell : null,
         ].filter(Boolean),
         links: [['Store page', 'store'], ['DLC', 'dlc'], ['Community hub', 'hub'], ['Discussions', 'discussions'], ['Guides', 'guides'], ['Workshop', 'workshop'], ['Market', 'market'], ['Support', 'support']].map(([label, kind]) => ({ label, on: page(kind) })),
-        left: [shots ? screenshotsCard(shots) : null],
+        left: [I ? activityCard(this.activityVals(g)) : null, shots ? screenshotsCard(shots) : null],
         right: [
           ach ? achievementsCard(ach.card) : null,
           tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : ''),
           notesCard({ value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) }),
+          dlc ? dlcCard(dlc) : null,
           ws && ws.items ? workshopCard({ items: ws.items + ' item' + (ws.items === 1 ? '' : 's') + ' installed', size: fmtBytes(ws.bytes) + ' on disk', onSubs: page('subscriptions'), onOpen: page('workshop') }) : null,
         ],
         lightbox: S.gShot ? { ...S.gShot, close: () => this.setState({ gShot: null }) } : null,
