@@ -392,6 +392,13 @@ function ipc() {
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
+    let keyError = null;
+    // A new key is only saved once Windows has accepted it, so a refused key leaves the old one in place.
+    if ('hotkey' in patch) {
+      const key = String(patch.hotkey);
+      if (!hotkey.isValidKey(key)) keyError = 'Use Ctrl or Alt with a letter, a number or F1 to F12.';
+      else if (hotkey.apply({ ...store.settings(), ...allowed, hotkey: key }).ok) allowed.hotkey = key;
+    }
     if ('startup' in patch) { try { setStartWithWindows(patch.startup); } catch (e) { store.logError && store.logError('startup', e); } }
     if (Array.isArray(patch.normalOn)) allowed.normalOn = patch.normalOn.map(String).slice(0, 16);
     if ('uiScale' in patch && (patch.uiScale === 'auto' || SCALES.includes(patch.uiScale))) allowed.uiScale = patch.uiScale;
@@ -399,7 +406,7 @@ function ipc() {
     if ('uiScale' in allowed) applyZoom(false);
     if ('tray' in allowed) updateTray();
     if ('tray' in allowed || 'hotkeyOn' in allowed) hotkey.apply(store.settings());
-    return { ...s, hotkeyError: hotkey.error() };
+    return { ...s, hotkeyError: keyError || hotkey.error() };
   });
   ipcMain.handle('steam:browse', async () => {
     const r = await dialog.showOpenDialog(win, {

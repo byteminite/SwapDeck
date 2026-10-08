@@ -356,6 +356,25 @@ class App extends Component {
     if (settings) this.setState({ settings });
   }
 
+  // Settings > General shortcut recorder: the next real key pressed with Ctrl or Alt becomes the shortcut.
+  recordHotkey(e) {
+    e.preventDefault();
+    if (e.key === 'Escape') return this.setState({ hkRec: false });
+    if (['Control', 'Alt', 'Shift', 'Meta', 'AltGraph'].includes(e.key)) return;
+    const key = /^F([1-9]|1[0-2])$/.test(e.key) ? e.key : /^(Key[A-Z]|Digit\d)$/.test(e.code) ? e.code.slice(-1) : null;
+    const err = e.metaKey ? 'The Windows key is reserved by Windows. Use Ctrl or Alt instead.'
+      : !key ? 'Use a letter, a number or F1 to F12 as the last key.'
+      : !e.ctrlKey && !e.altKey ? "Add Ctrl or Alt, so the shortcut can't fire while you type or play." : '';
+    if (err) return this.setState(s => ({ hkRec: false, hkOk: '', settings: { ...s.settings, hotkeyError: err } }));
+    this.saveHotkey([e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', key].filter(Boolean).join('+'));
+  }
+
+  async saveHotkey(key) {
+    this.setState({ hkRec: false, hkOk: '' });
+    const settings = await api.setSettings({ hotkey: key });
+    if (settings) this.setState({ settings, hkOk: settings.hotkeyError ? '' : 'Saved. Press ' + key.split('+').join(' + ') + ' in any app.' });
+  }
+
   openSettings(sec) {
     this.setState({ setOpen: true, setSec: sec || this.state.setSec || 'general', defMenu: false });
     if (sec === 'displays') this.reloadMonitors();
@@ -365,6 +384,7 @@ class App extends Component {
   onKey(e) {
     const S = this.state, tag = (e.target && e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if (S.locked) return;
+    if (S.hkRec && S.setOpen && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
       if (S.defMenu) return this.setState({ defMenu: false });
       if (S.rmId) return this.setState({ rmId: null });
@@ -814,7 +834,9 @@ class App extends Component {
       swSub: cfg.tray ? 'Opens quietly in the tray when you sign in to Windows.' : 'Opens SwapDeck when you sign in to Windows. Turn on the tray option above to start it hidden.',
       trBg: cfg.tray ? on : off, trX: cfg.tray ? 'translateX(18px)' : 'translateX(0px)', onTr: () => this.setCfg({ tray: !cfg.tray }),
       hkShow: !!cfg.tray, hkOn: !!cfg.hotkeyOn, hkBg, hkX, onHk: () => this.setCfg({ hotkeyOn: !cfg.hotkeyOn }),
-      hkKeys: (cfg.hotkey || 'Ctrl+Alt+S').split('+'), hkErr: cfg.hotkeyError || '',
+      hkKeys: (cfg.hotkey || 'Ctrl+Alt+S').split('+'), hkErr: cfg.hotkeyError || '', hkOk: S.hkOk || '', hkRec: !!S.hkRec,
+      onHkRec: () => this.setState(s => ({ hkRec: true, hkOk: '', settings: { ...s.settings, hotkeyError: '' } })), onHkCancel: () => this.setState({ hkRec: false }),
+      hkCanReset: (cfg.hotkey || 'Ctrl+Alt+S') !== 'Ctrl+Alt+S', onHkReset: () => this.saveHotkey('Ctrl+Alt+S'),
       onExport: async () => { const r = await api.exportBackup(); if (r.ok) this.toast('success', 'Backup saved', r.file + ' is in the folder you picked.'); else if (r.error) this.toast('error', "Couldn't save the backup", r.error); },
       onImport: async () => { const r = await api.importBackup(); if (r.ok) { await this.reload(); this.toast('success', 'Backup restored', 'Settings from ' + r.file + ' are back.'); } else if (r.error) this.toast('error', "Couldn't restore", r.error); },
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),
