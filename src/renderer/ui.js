@@ -8,7 +8,7 @@ import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
-import { tagsCard } from './gamepage.js';
+import { tagsCard, screenshotsCard, workshopCard, notesCard } from './gamepage.js';
 
 const api = window.api;
 
@@ -105,6 +105,8 @@ function chipScroll(el, dy) {
 // Tag filter: nothing ticked shows everything; otherwise anything with any ticked tag (or starred, for Favourites).
 const matchTags = (x, sel, fav) => !sel.length || (sel.includes(FAV) && !!fav) || x.tags.some(t => sel.includes(t));
 
+const fmtBytes = b => b >= 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b >= 1e6 ? Math.round(b / 1e6) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB';
+
 const dur = ms => { const m = Math.round(ms / 60000); return m < 60 ? m + ' m' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' m'; };
 function when(t) {
   const d = new Date(t), now = new Date(), day = 86400000;
@@ -131,7 +133,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -180,6 +182,7 @@ class App extends Component {
     this.setState({ loaded: true, view: st && st.settings && st.settings.startView === 'lib' ? 'lib' : 'acc' });
   }
   componentWillUnmount() {
+    clearInterval(this._gTimer);
     window.removeEventListener('keydown', this._key);
     window.removeEventListener('mousedown', this._md);
     window.removeEventListener('wheel', this._md);
@@ -398,6 +401,8 @@ class App extends Component {
     if (S.locked) return;
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
+      if (S.gShot) return this.setState({ gShot: null });
+      if (S.gShotMenu) return this.setState({ gShotMenu: false });
       if (S.colorFor) return this.setState({ colorFor: null });
       if (S.tagPop) return this.setState({ tagPop: null });
       if (S.defMenu) return this.setState({ defMenu: false });
@@ -710,21 +715,85 @@ class App extends Component {
     if (r && r.ok === false) this.toast('warning', "Can't restart yet", r.error);
   }
   // ---------- game details: Overview tab (Steam games only; non-Steam games show Setup alone) ----------
+  // Reads what Steam keeps on this PC for the open game, then keeps the update state fresh while it stays open.
+  async loadGameInfo(id) {
+    clearInterval(this._gTimer);
+    const g = this.gfind(id);
+    if (!g || !g.steam) return;
+    const [status, local] = await Promise.all([api.gameStatus(g.appid), api.gameLocal(g.appid)]);
+    if (this.state.gd !== id) return;
+    this.setState({ gInfo: { id, status, local } });
+    this._gTimer = setInterval(async () => {
+      if (this.state.gd !== id) return clearInterval(this._gTimer);
+      const st = await api.gameStatus(g.appid);
+      if (this.state.gd === id && this.state.gInfo) this.setState(s => ({ gInfo: { ...s.gInfo, status: st } }));
+    }, 2000);
+  }
+  gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
+  updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }
+  updateCell(g) {
+    const I = this.gInfoOf(g), st = I ? I.status : null, size = st && st.bytes ? ' of ' + fmtBytes(st.bytes) : '';
+    const C = { ok: 'var(--ok-fg)', warn: 'var(--warn-fg)', bad: 'var(--bad-fg)', run: 'var(--accent)' };
+    const cell = !st ? { icon: 'dash', value: 'Checking…' }
+      : st.state === 'ok' ? { icon: 'check', tint: C.ok, value: 'Up to date' }
+      : st.state === 'queued' ? { icon: 'clock', tint: C.warn, value: 'Update queued' + (st.bytes ? ' · ' + fmtBytes(st.bytes) : '') }
+      : st.state === 'downloading' ? { icon: 'download', tint: C.run, value: (st.staging ? 'Installing update · ' : 'Downloading · ') + st.pct + '%' + size, pct: st.pct }
+      : st.state === 'paused' ? { icon: 'pause', tint: C.warn, value: 'Paused at ' + st.pct + '% · resume in Steam', pct: st.pct }
+      : st.state === 'verifying' ? { icon: 'download', tint: C.run, value: 'Verifying files · ' + st.pct + '%', pct: st.pct }
+      : st.state === 'failed' ? { icon: 'warn', tint: C.bad, value: st.reason === 'files' ? 'Files missing · verify in Steam' : 'Update failed · retry in Steam' }
+      : { icon: 'dash', value: 'Not installed' };
+    return { ...cell, label: 'Updates', grow: 1.5, action: { label: 'Open in Steam', on: () => api.openSteamPage('game', g.appid) } };
+  }
+  // Whose screenshots: the one picked, else the game's account, else the account Steam signs in with if it has
+  // any, else whichever account has the most for this game.
+  shotsVals(g) {
+    const S = this.state, I = this.gInfoOf(g);
+    const list = I && I.local ? I.local.shots : [], has = sid => list.some(x => x.sid === sid);
+    const cur = (this.accts.find(a => a.current) || {}).id, most = [...list].sort((a, b) => b.count - a.count)[0];
+    const curWithShots = cur && (list.find(x => x.sid === cur) || {}).count ? cur : null;
+    const pickSid = [S.gShotAcct, g.acct, curWithShots, most && most.count ? most.sid : null, cur].find(sid => sid && has(sid)) || (list[0] && list[0].sid);
+    const sel = list.find(x => x.sid === pickSid), acc = sid => this.find(sid) || { name: 'Account', ini: '?', grad: 'rgba(var(--fg-rgb),.2)' };
+    const look = sid => { const a = acc(sid); return { name: a.name, ini: a.ini, bg: avBg(a), img: a.avatar || null }; };
+    if (!sel) return null;
+    const name = acc(sel.sid).name, src = rel => 'sdimg://shot/' + sel.acct + '/' + rel;
+    return {
+      acct: look(sel.sid), menuOpen: S.gShotMenu, onMenu: () => this.setState(s => ({ gShotMenu: !s.gShotMenu })),
+      accounts: list.map(x => ({ ...look(x.sid), count: x.count, on: x.sid === sel.sid, pick: () => this.setState({ gShotAcct: x.sid, gShotMenu: false }) })),
+      shots: sel.items.slice(0, 6).map(s => { const title = 'Screenshot · ' + when(s.at) + (s.w ? ' · ' + s.w + ' × ' + s.h : ''); return { src: src(s.thumb), title, open: () => this.setState({ gShot: { src: src(s.file), caption: title } }) }; }),
+      count: sel.count + ' screenshot' + (sel.count === 1 ? '' : 's') + ' by ' + name,
+      empty: sel.count ? '' : 'No screenshots by ' + name + ' in this game yet. Press F12 in game to take one.',
+      onFolder: async () => { const r = await api.openShotFolder(g.appid, sel.sid); if (!r.ok) this.toast('info', 'No screenshot folder yet', 'Steam makes it when ' + name + ' takes the first screenshot of this game.'); },
+    };
+  }
+  setGameNote(id, v) {
+    this.gmut(id, { note: v });
+    clearTimeout(this._gNoteT);
+    this._gNoteT = setTimeout(() => api.libSet(id, { note: v }), 400);
+  }
   overviewVals(g) {
-    if (!g.steam) return { gTabs: null, gOv: null };
+    // Non-Steam games have no Overview, so their note sits on the settings page.
+    if (!g.steam) return { gTabs: null, gOv: null, gNoteSetup: { value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) } };
     const S = this.state, L = S.launch, ov = S.gdTab !== 'setup', tab = k => () => this.setState({ gdTab: k, colorFor: null });
     const page = kind => () => api.openSteamPage(kind, g.appid);
     const ed = this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' });
+    const I = this.gInfoOf(g), ws = I && I.local ? I.local.workshop : null, shots = this.shotsVals(g);
     return {
+      gNoteSetup: null,
       gTabs: { tabs: [{ label: 'Overview', on: ov, pick: tab('ov') }, { label: 'Setup', on: !ov, pick: tab('setup') }], hint: 'Account, display, sound and apps are in Setup' },
       gOv: !ov ? null : {
         stats: [
+          this.updateCell(g),
           { icon: 'calendar', label: 'Last played', value: L && L.gid === g.id ? 'Playing now' : rel(g.lastPlayed) },
           { icon: 'clock', label: 'Playtime', value: g.hours ? fmt(Math.round(g.hours)) + ' h' : 'Not played yet' },
         ],
         links: [['Store page', 'store'], ['DLC', 'dlc'], ['Community hub', 'hub'], ['Discussions', 'discussions'], ['Guides', 'guides'], ['Workshop', 'workshop'], ['Market', 'market'], ['Support', 'support']].map(([label, kind]) => ({ label, on: page(kind) })),
-        left: [],
-        right: [tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : '')],
+        left: [shots ? screenshotsCard(shots) : null],
+        right: [
+          tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : ''),
+          notesCard({ value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) }),
+          ws && ws.items ? workshopCard({ items: ws.items + ' item' + (ws.items === 1 ? '' : 's') + ' installed', size: fmtBytes(ws.bytes) + ' on disk', onSubs: page('subscriptions'), onOpen: page('workshop') }) : null,
+        ],
+        lightbox: S.gShot ? { ...S.gShot, close: () => this.setState({ gShot: null }) } : null,
       },
     };
   }
@@ -754,7 +823,8 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null });
+    this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
@@ -1068,8 +1138,8 @@ class App extends Component {
       gTagN: g.tags.length ? g.tags.length + ' selected' : '',
       ...this.overviewVals(g),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
-      gPlaySub: [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
-      onGPlay: () => this.play(g.id), onGdClose: () => this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null }),
+      gPlaySub: this.updating(g) ? 'Steam finishes the update first' : [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
+      onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null }); },
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),

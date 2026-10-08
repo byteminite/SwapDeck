@@ -422,5 +422,5 @@ module.exports = {
   localPlaytime, artFile, splitArgs, steamLaunchOptions, cs2HasSettings, cs2CopySettings,
   locate, status, isRunning, shutdown, start, waitFor, readSteamReg, regSet,
   listAccounts, loginUsersMtime, markMostRecent, clearAutoLogin, disableUserChooser, removeAccount,
-  avatar, installedGames, sidFromAccountId, accountIdFromSid, loginUsersPath, sleep,
+  avatar, installedGames, sidFromAccountId, accountIdFromSid, loginUsersPath, sleep, libraryDirs,
 };

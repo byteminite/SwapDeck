@@ -122,3 +122,4 @@ a{color:var(--accent-strong)}a:hover{color:var(--accent-strong)}
 .dch35:hover{background:rgba(var(--fg-rgb),.06) !important}
 .dch36:hover{background:rgba(var(--fg-rgb),.07) !important;color:var(--text) !important}
 .dctg:hover{background:rgba(var(--fg-rgb),.06) !important;color:var(--text) !important}
+.dche2:hover{border-color:rgba(var(--fg-rgb),.35) !important}

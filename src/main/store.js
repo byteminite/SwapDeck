@@ -34,7 +34,7 @@ const DEFAULTS = {
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, tags: [], fav: false, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
+const DEFAULT_GAME = { acct: null, tags: [], fav: false, note: '', opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
 // display.res = resolution profile id · audio = playback device id · apps = companion apps [{ path, args, close }]
 // launcher = an .exe to start instead of the Steam game (e.g. Content Manager for Assetto Corsa)
 
@@ -190,7 +190,7 @@ function importData(b) {
     data.settings = { ...next, scaleBase: 0.9 };
   }
   data.customGames = data.customGames.filter(c => c && typeof c.exe === 'string' && typeof c.name === 'string');
-  for (const g of Object.values(data.games)) if (isObj(g)) { g.tags = cleanTags(g.tags); g.fav = !!g.fav; }
+  for (const g of Object.values(data.games)) if (isObj(g)) { g.tags = cleanTags(g.tags); g.fav = !!g.fav; g.note = typeof g.note === 'string' ? g.note.slice(0, 1000) : ''; }
   data.settings.steamExe = keepExe;
   flush();
 }

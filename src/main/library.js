@@ -26,7 +26,7 @@ function build(dir) {
     const cfg = store.gameCfg(id), p = play[g.appid] || {};
     out.push({
       id, steam: true, appid: g.appid, name: g.name, installed: true, folder: g.folder,
-      acct: cfg.acct, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, launcher: cfg.launcher || null, tags: tagsOf(cfg), fav: !!cfg.fav,
+      acct: cfg.acct, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, launcher: cfg.launcher || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       cover: art(dir, g.appid, 'library_600x900.jpg'), hero: art(dir, g.appid, 'library_hero.jpg'), logo: art(dir, g.appid, 'logo.png'),
       lastPlayed: Math.max(p.last || 0, cfg.lastPlayed || 0), hours: Math.round((p.mins || 0) / 6) / 10,
     });
@@ -38,7 +38,7 @@ function build(dir) {
     const appid = id.slice(6), p = play[appid] || {};
     out.push({
       id, steam: true, appid, name: cfg.name, installed: false, folder: null,
-      acct: cfg.acct, opts: cfg.opts || '', display: store.gameCfg(id).display, audio: store.gameCfg(id).audio, apps: store.gameCfg(id).apps, tags: tagsOf(cfg), fav: !!cfg.fav,
+      acct: cfg.acct, opts: cfg.opts || '', display: store.gameCfg(id).display, audio: store.gameCfg(id).audio, apps: store.gameCfg(id).apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
       lastPlayed: Math.max(p.last || 0, cfg.lastPlayed || 0), hours: Math.round((p.mins || 0) / 6) / 10,
     });
@@ -48,7 +48,7 @@ function build(dir) {
     const cfg = store.gameCfg(c.id);
     out.push({
       id: c.id, steam: false, name: c.name, exe: c.exe, installed: fs.existsSync(c.exe), folder: path.dirname(c.exe),
-      acct: null, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav,
+      acct: null, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       img: c.img ? `sdimg://cover/${encodeURIComponent(c.img)}` : null, iconMode: c.iconMode || 'gen',
       lastPlayed: cfg.lastPlayed || 0, hours: Math.round((cfg.playMs || 0) / 360000) / 10,
     });

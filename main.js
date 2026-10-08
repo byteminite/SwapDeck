@@ -19,6 +19,7 @@ const { createPlayer } = require('./src/main/play');
 const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
 const { steamPage } = require('./src/main/steamlinks');
+const gameinfo = require('./src/main/gameinfo');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
 protocol.registerSchemesAsPrivileged([{ scheme: 'sdimg', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -478,6 +479,24 @@ function ipc() {
   ipcMain.handle('link:cancel', () => link.cancel());
   ipcMain.handle('unlink', (_, sid) => { store.removeToken(String(sid)); store.removeCredentials(String(sid)); store.dropStats(String(sid)); return oneAccount(String(sid)); });
   ipcMain.handle('credentials:clear', (_, sid) => { store.removeCredentials(String(sid)); return oneAccount(String(sid)); });
+  // Game details (Overview): what Steam keeps on this PC about a game. appid is checked before any file is read.
+  const isAppid = v => /^\d{1,10}$/.test(String(v));
+  ipcMain.handle('game:status', (_, appid) => isAppid(appid) && loc.dir ? gameinfo.updateStatus(loc.dir, String(appid)) : { state: 'missing' });
+  ipcMain.handle('game:local', (_, appid) => {
+    if (!isAppid(appid) || !loc.dir) return null;
+    const shots = accounts().map(a => {
+      const acct = String(steam.accountIdFromSid(a.sid)), list = gameinfo.screenshots(loc.dir, acct, String(appid));
+      return { sid: a.sid, acct, count: list.length, items: list.slice(0, 12) };
+    });
+    return { workshop: gameinfo.workshop(loc.dir, String(appid)), shots };
+  });
+  ipcMain.handle('game:shotFolder', (_, appid, sid) => {
+    if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return { ok: false };
+    const dir = gameinfo.screenshotFolder(loc.dir, steam.accountIdFromSid(String(sid)), String(appid));
+    if (!fs.existsSync(dir)) return { ok: false };
+    shell.openPath(dir);
+    return { ok: true };
+  });
   ipcMain.handle('steam:page', (_, kind, appid) => {
     const url = steamPage(String(kind), appid);
     if (url) shell.openExternal(url);
@@ -496,6 +515,7 @@ function ipc() {
     if ('acct' in patch) allowed.acct = patch.acct || null;
     if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
     if ('fav' in patch) allowed.fav = !!patch.fav;
+    if ('note' in patch) allowed.note = String(patch.note || '').slice(0, 1000);
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
@@ -880,6 +900,7 @@ if (!app.requestSingleInstanceLock()) {
       let file = null;
       if (u.hostname === 'lc' && parts.length === 2 && /^\d+$/.test(parts[0]) && ['library_600x900.jpg', 'library_hero.jpg', 'logo.png'].includes(parts[1])) file = steam.artFile(loc.dir, parts[0], parts[1]);
       else if (u.hostname === 'cover' && parts.length === 1 && /^[\w.-]+$/.test(parts[0])) file = path.join(app.getPath('userData'), 'covers', parts[0]);
+      else if (u.hostname === 'shot' && parts.length >= 3) file = gameinfo.screenshotFile(loc.dir, parts[0], parts.slice(1).join('/'));
       if (!file || !fs.existsSync(file)) return new Response('', { status: 404 });
       return net.fetch(pathToFileURL(file).toString());
     });
