@@ -623,6 +623,7 @@ class App extends Component {
     this.gmut(id, { tags: sorted });
     this.gset(id, { tags: sorted });
   }
+  toggleFav(id) { const fav = !this.gfind(id).fav; this.gmut(id, { fav }); this.gset(id, { fav }); }
   setDisp(id, p) { this.gmut(id, g => ({ display: { ...g.display, ...p } })); this.gset(id, { display: p }); }
   setOpts(id, v) {
     this.gmut(id, { opts: v });
@@ -891,7 +892,8 @@ class App extends Component {
     const S = this.state, games = S.lib, L = S.launch, isLib = S.view === 'lib';
     const q = S.lq.trim().toLowerCase(), byN = (x, y) => x.name.localeCompare(y.name);
     const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || (S.lf === 'steam' ? g.steam : S.lf === 'nonsteam' ? !g.steam : g.tags.includes(S.lf))));
-    vis.sort(S.ls === 'name' ? byN : S.ls === 'recent' ? (x, y) => (y.lastPlayed - x.lastPlayed) || byN(x, y) : (x, y) => (y.hours - x.hours) || byN(x, y));
+    const bySort = S.ls === 'name' ? byN : S.ls === 'recent' ? (x, y) => (y.lastPlayed - x.lastPlayed) || byN(x, y) : (x, y) => (y.hours - x.hours) || byN(x, y);
+    vis.sort((x, y) => (+!!y.fav - +!!x.fav) || bySort(x, y));
     const chip = (k, label, n, c) => { const on = S.lf === k, cc = c || ['rgba(var(--fg-rgb),.1)', 'var(--text)', 'rgba(var(--fg-rgb),.35)']; return { label, n, bg: on ? cc[0] : 'transparent', fg: on ? cc[1] : 'var(--text-muted)', bd: on ? cc[2] : 'rgba(var(--fg-rgb),.12)', on: () => this.setState({ lf: on && k !== 'all' ? 'all' : k }) }; };
     const tags = [...new Set(games.flatMap(g => g.tags))];
     const libFilters = [chip('all', 'All', games.length), chip('steam', 'Steam', games.filter(g => g.steam).length), chip('nonsteam', 'Non-Steam', games.filter(g => !g.steam).length), ...tags.map(t => chip(t, t, games.filter(g => g.tags.includes(t)).length, tc(t)))];
@@ -909,6 +911,7 @@ class App extends Component {
         // Outline the account that's signed in to Steam right now.
         aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
+        fav: !!g.fav, starOp: g.fav || hov ? 1 : 0, starTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onStar: e => { e.stopPropagation(); this.toggleFav(g.id); },
         hovOp: hov && !run ? 1 : 0, hovPe: hov && !run ? 'auto' : 'none', ty: hov ? 'translateY(-3px)' : 'none',
         ring: run ? '0 0 0 2px #4ade80,0 0 30px rgba(74,222,128,.25)' : S.kbd && S.lsel === g.id ? '0 0 0 3px var(--background),0 0 0 5px var(--text)' : hov ? '0 0 0 2px rgba(var(--fg-rgb),.4),0 18px 40px rgba(0,0,0,.5)' : '0 0 0 1px rgba(var(--fg-rgb),.08)',
         onEnter: () => this.setState({ hovG: g.id }), onLeave: () => this.setState(s => s.hovG === g.id ? { hovG: null } : null),
@@ -955,6 +958,8 @@ class App extends Component {
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
       gMeta: g.steam ? 'Steam · App ' + g.appid : 'Non-Steam · ' + g.exe.split('\\').pop(),
       gTagOpts: this.tagOrder(S.gdKeep || []).map(t => { const on = g.tags.includes(t), c = tc(t); return { label: t, sel: on, dot: 'rgb(' + tagDef(t)[0] + ')', bg: on ? c[0] : 'transparent', fg: on ? c[1] : 'var(--text-subtle)', bd: on ? c[2] : 'rgba(var(--fg-rgb),.2)', bs: on ? 'solid' : 'dashed', on: () => this.setGameTags(g.id, on ? g.tags.filter(x => x !== t) : [...g.tags, t]) }; }),
+      gFav: !!g.fav, gStarFg: g.fav ? '#fbbf24' : '#fff', gStarFill: g.fav ? '#fbbf24' : 'none', gStarBd: g.fav ? 'rgba(251,191,36,.5)' : 'rgba(var(--fg-rgb),.2)',
+      gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
       gTagN: g.tags.length ? g.tags.length + ' selected' : '', gTagDraft: S.gTagDraft || '', onGTagDraft: e => this.setState({ gTagDraft: e.target.value }),
       onGTagKey: e => { if (e.key !== 'Enter') return; const t = (S.gTagDraft || '').trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16); if (t && !g.tags.includes(t)) this.setGameTags(g.id, [...g.tags, t]); this.setState({ gTagDraft: '' }); },
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
@@ -1103,7 +1108,7 @@ class App extends Component {
       dLinked: L, dNotLinked: !L,
       dCanSwitch: dCanSw, dSignedIn: !dCanSw, dSwLabel: d.current ? 'Start Steam' : 'Switch', dSwSub: g ? 'then ' + g : 'no game after',
       onDSwitch: () => this.switchTo(d.id),
-      dPinFg: d.pinned ? '#fbbf24' : '#fff', dPinFill: d.pinned ? '#fbbf24' : 'none', dPinTitle: d.pinned ? 'Unpin' : 'Pin', onDPin: () => this.mut(d.id, { pinned: !d.pinned }),
+      dPinFg: d.pinned ? '#fbbf24' : '#fff', dPinFill: d.pinned ? '#fbbf24' : 'none', dPinTitle: d.pinned ? 'Remove from favourites' : 'Add to favourites', onDPin: () => this.mut(d.id, { pinned: !d.pinned }),
       dUrl: 'https://steamcommunity.com/profiles/' + d.sid,
       dFetching: f !== undefined, dIdle: f === undefined,
       dUpd: f !== undefined ? 'Updating… ' + (f + 1) + '/' + (L ? 4 : 1) : (updatedAt ? 'Updated ' + rel(updatedAt) : 'Never updated'),
@@ -1234,7 +1239,7 @@ class App extends Component {
       return { label: f.label, n: f.n, bg: f.act ? c[0] : 'transparent', fg: f.act ? c[1] : 'var(--text-muted)', bd: f.act ? c[2] : 'rgba(var(--fg-rgb),.13)', on: () => this.setState({ tagF: f.act ? null : f.key, hover: null }) };
     });
     const seg = (curK, k, l, on) => ({ label: l, bg: curK === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: curK === k ? 'var(--text)' : 'var(--text-subtle)', on });
-    const sorts = [['pinned', 'Pinned first'], ['recent', 'Last used'], ['name', 'Name']].map(([k, l]) => seg(S.sort, k, l, () => this.setState({ sort: k })));
+    const sorts = [['pinned', 'Favourites first'], ['recent', 'Last used'], ['name', 'Name']].map(([k, l]) => seg(S.sort, k, l, () => this.setState({ sort: k })));
     const idx = vis.findIndex(a => a.id === selId);
     const sw = S.sw;
     const swSteps = sw ? sw.steps.map((l, i) => ({ label: l, done: i < sw.step, active: i === sw.step, todo: i > sw.step, color: i < sw.step ? 'var(--ok-fg)' : i === sw.step ? 'var(--text)' : 'var(--text-subtle)' })) : [];

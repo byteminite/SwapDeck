@@ -479,6 +479,7 @@ function ipc() {
     const allowed = {};
     if ('acct' in patch) allowed.acct = patch.acct || null;
     if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
+    if ('fav' in patch) allowed.fav = !!patch.fav;
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),

@@ -32,7 +32,7 @@ const DEFAULTS = {
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, tags: [], opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
+const DEFAULT_GAME = { acct: null, tags: [], fav: false, opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
 // display.res = resolution profile id · audio = playback device id · apps = companion apps [{ path, args, close }]
 // launcher = an .exe to start instead of the Steam game (e.g. Content Manager for Assetto Corsa)
 
