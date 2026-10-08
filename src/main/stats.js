@@ -249,4 +249,27 @@ async function fetchLinked(sid, refreshToken, onStep, onNewToken) {
   }
 }
 
-module.exports = { fetchLinked, LinkError };
+// Steam client sign-ins only turn into web access over a logged-on client session, so log on just long enough
+// to receive the web cookies. No game is started, so nothing running elsewhere on the account is affected.
+async function webSession(sid, refreshToken, onNewToken) {
+  checkToken(sid, refreshToken);
+  const client = new SteamUser({ dataDirectory: null, autoRelogin: false, renewRefreshTokens: true, enablePicsCache: false });
+  client.on('error', () => {});
+  client.on('refreshToken', t => onNewToken && onNewToken(t));
+  const webP = once(client, 'webSession', 15000);
+  try {
+    await logOn(client, refreshToken);
+    if (client.steamID.getSteamID64() !== sid) throw new LinkError('The saved sign-in belongs to a different account. Link again.', 'relink');
+    const got = await webP;
+    const cookies = got && got[1];
+    if (!cookies || !cookies.length) throw new LinkError("Steam didn't open a web session. Try again in a bit.", 'steam');
+    const secure = cookies.map(c => String(c).split(';')[0]).find(c => c.startsWith('steamLoginSecure='));
+    const access = secure ? decodeURIComponent(secure.slice('steamLoginSecure='.length)).split('||')[1] : null;
+    if (!access) throw new LinkError("Steam didn't open a web session. Try again in a bit.", 'steam');
+    return { access, cookies: cookies.map(c => String(c).split(';')[0]) };
+  } finally {
+    try { client.logOff(); } catch {}
+  }
+}
+
+module.exports = { fetchLinked, webSession, LinkError };

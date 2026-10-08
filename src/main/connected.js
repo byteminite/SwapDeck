@@ -1,25 +1,24 @@
 // Game details for accounts connected for stats: friends who play a game, and which of its DLC the account owns.
-// Uses the account's stored refresh token (never sent anywhere but Steam) to get a short-lived access token and
-// store cookies, the same way the Steam client does. Results are cached briefly; any failure is reported, not thrown.
+// Uses the account's stored refresh token (never sent anywhere but Steam) to open a short web session, the same
+// sign-in "Refresh stats" uses. Results are cached briefly; any failure is reported, not thrown.
 
-const { LoginSession, EAuthTokenPlatformType } = require('steam-session');
 const { get, fetchPublic } = require('./profile');
+const { webSession } = require('./stats');
 
 const ACCESS_TTL = 15 * 60e3, FRIENDS_TTL = 10 * 60e3, OWNED_TTL = 10 * 60e3;
 const sessions = new Map(); // sid -> { at, access, cookies }
+const pending = new Map(); // sid -> Promise, so friends and DLC share one Steam sign-in
 const friendsCache = new Map(), ownedCache = new Map();
 
-async function signIn(sid, refreshToken, needCookies) {
+async function signIn(sid, refreshToken, onNewToken) {
   const hit = sessions.get(sid);
-  if (hit && Date.now() - hit.at < ACCESS_TTL && (!needCookies || hit.cookies)) return hit;
-  const session = new LoginSession(EAuthTokenPlatformType.SteamClient);
-  session.refreshToken = refreshToken;
-  if (session.steamID.getSteamID64() !== sid) throw new Error('The saved sign-in belongs to a different account.');
-  const cookies = needCookies ? await session.getWebCookies() : null; // also refreshes the access token
-  if (!needCookies) await session.refreshAccessToken();
-  const entry = { at: Date.now(), access: session.accessToken, cookies: cookies || (hit && hit.cookies) || null };
-  sessions.set(sid, entry);
-  return entry;
+  if (hit && Date.now() - hit.at < ACCESS_TTL) return hit;
+  if (!pending.has(sid)) {
+    pending.set(sid, webSession(sid, refreshToken, onNewToken)
+      .then(s => { const entry = { at: Date.now(), ...s }; sessions.set(sid, entry); return entry; })
+      .finally(() => pending.delete(sid)));
+  }
+  return pending.get(sid);
 }
 
 async function api(path, params) {
@@ -46,10 +45,10 @@ async function profiles(access, ids) {
 
 const isSid = v => /^\d{17}$/.test(String(v));
 
-async function friendsWhoPlay(sid, refreshToken, appid) {
+async function friendsWhoPlay(sid, refreshToken, appid, onNewToken) {
   const key = sid + ':' + appid, hit = friendsCache.get(key);
   if (hit && Date.now() - hit.at < FRIENDS_TTL) return hit.value;
-  const { access } = await signIn(sid, refreshToken, false);
+  const { access } = await signIn(sid, refreshToken, onNewToken);
   const j = await api('IPlayerService/GetFriendsGameplayInfo/v1/', { access_token: access, appid });
   const r = j.response || {};
   const recent = (r.played_recently || []).filter(f => isSid(f.steamid)).sort((a, b) => (b.minutes_played || 0) - (a.minutes_played || 0));
@@ -64,11 +63,11 @@ async function friendsWhoPlay(sid, refreshToken, appid) {
 }
 
 // Everything the account owns, games and DLC, as the Steam store sees it.
-async function ownedApps(sid, refreshToken) {
+async function ownedApps(sid, refreshToken, onNewToken) {
   const hit = ownedCache.get(sid);
   if (hit && Date.now() - hit.at < OWNED_TTL) return hit.value;
-  const { cookies } = await signIn(sid, refreshToken, true);
-  const cookie = (cookies || []).map(c => String(c).split(';')[0]).join('; ');
+  const { cookies } = await signIn(sid, refreshToken, onNewToken);
+  const cookie = cookies.join('; ');
   const { status, body } = await get('https://store.steampowered.com/dynamicstore/userdata/', { timeout: 8000, headers: { Cookie: cookie } });
   if (status !== 200) throw new Error('Steam store returned HTTP ' + status);
   const owned = new Set(((JSON.parse(body).rgOwnedApps) || []).map(String));
@@ -78,8 +77,8 @@ async function ownedApps(sid, refreshToken) {
 }
 
 const fail = e => ({ ok: false, error: String((e && e.message) || e).slice(0, 160) });
-async function forGame(sid, refreshToken, appid, dlcIds) {
-  const [friends, owned] = await Promise.allSettled([friendsWhoPlay(sid, refreshToken, appid), dlcIds.length ? ownedApps(sid, refreshToken) : Promise.resolve(null)]);
+async function forGame(sid, refreshToken, appid, dlcIds, onNewToken) {
+  const [friends, owned] = await Promise.allSettled([friendsWhoPlay(sid, refreshToken, appid, onNewToken), dlcIds.length ? ownedApps(sid, refreshToken, onNewToken) : Promise.resolve(null)]);
   return {
     friends: friends.status === 'fulfilled' ? { ok: true, ...friends.value } : fail(friends.reason),
     owned: owned.status === 'fulfilled' ? (owned.value ? { ok: true, ids: dlcIds.filter(id => owned.value.has(id)) } : null) : fail(owned.reason),

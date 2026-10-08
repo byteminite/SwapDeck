@@ -506,7 +506,7 @@ function ipc() {
     try { token = store.getToken(String(sid)); } catch {}
     if (!token) return { linked: false };
     const dlc = await steamweb.dlc(loc.dir, String(appid)).catch(() => null);
-    const res = await connected.forGame(String(sid), token, String(appid), dlc ? dlc.items.map(d => d.appid) : []);
+    const res = await connected.forGame(String(sid), token, String(appid), dlc ? dlc.items.map(d => d.appid) : [], t2 => store.setToken(String(sid), t2));
     return { linked: true, ...res };
   });
   ipcMain.handle('steam:news', (_, appid, gid) => {
