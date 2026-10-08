@@ -484,6 +484,7 @@ function ipc() {
   ipcMain.handle('credentials:clear', (_, sid) => { store.removeCredentials(String(sid)); return oneAccount(String(sid)); });
   // Game details (Overview): what Steam keeps on this PC about a game. appid is checked before any file is read.
   const isAppid = v => /^\d{1,10}$/.test(String(v));
+  ipcMain.handle('lib:updates', () => loc.dir ? gameinfo.updates(loc.dir) : {});
   ipcMain.handle('game:status', (_, appid) => isAppid(appid) && loc.dir ? gameinfo.updateStatus(loc.dir, String(appid)) : { state: 'missing' });
   ipcMain.handle('game:local', (_, appid) => {
     if (!isAppid(appid) || !loc.dir) return null;
@@ -649,13 +650,13 @@ function ipc() {
   });
   // ---- tray panel ----
   ipcMain.handle('tray:data', () => {
-    const accs = accounts(), lib = library.build(loc.dir), s = store.settings();
+    const accs = accounts(), lib = library.build(loc.dir), s = store.settings(), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
       accounts: accs.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
-        .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed })),
+        .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
     };
   });
   ipcMain.on('tray:size', (_, h) => { if (trayWin && !trayWin.isDestroyed() && trayWin.isVisible()) placeTrayPanel(Math.round(h)); });

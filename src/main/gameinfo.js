@@ -40,6 +40,32 @@ function stateOf(st) {
   return flags & F.installed ? { state: 'ok', lastUpdated: num(vdf.get(st, 'LastUpdated')) * 1000 } : { state: 'missing' };
 }
 
+// Every installed game that isn't simply up to date, for the Library and tray badges. Polled while those are on
+// screen, so a manifest is only parsed again when its file changed.
+const seen = new Map(); // manifest path -> { mtime, status }
+function updates(dir) {
+  const out = {};
+  for (const lib of steam.libraryDirs(dir || '')) {
+    let names;
+    try { names = fs.readdirSync(lib); } catch { continue; }
+    for (const name of names) {
+      const m = /^appmanifest_(\d{1,10})\.acf$/.exec(name);
+      if (!m) continue;
+      const file = path.join(lib, name);
+      let mtime;
+      try { mtime = fs.statSync(file).mtimeMs; } catch { continue; }
+      let hit = seen.get(file);
+      if (!hit || hit.mtime !== mtime) {
+        const st = readVdf(file);
+        hit = { mtime, status: st ? stateOf(vdf.get(st, 'AppState') || {}) : { state: 'missing' } };
+        seen.set(file, hit);
+      }
+      if (hit.status.state !== 'ok' && hit.status.state !== 'missing') out[m[1]] = hit.status;
+    }
+  }
+  return out;
+}
+
 function updateStatus(dir, appid) {
   const m = dir && manifest(dir, appid);
   return m ? stateOf(m.st) : { state: 'missing' };
@@ -79,4 +105,4 @@ function screenshotFile(dir, accountId, rel) {
 }
 const screenshotFolder = (dir, accountId, appid) => path.join(dir, 'userdata', String(accountId), '760', 'remote', String(appid), 'screenshots');
 
-module.exports = { updateStatus, workshop, screenshots, screenshotFile, screenshotFolder };
+module.exports = { updateStatus, updates, workshop, screenshots, screenshotFile, screenshotFolder };

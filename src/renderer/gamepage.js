@@ -98,14 +98,14 @@ const NEWS_ICONS = {
 };
 const skeleton = html`<div style="height:62px;border-radius:12px;margin-bottom:8px;background:rgba(var(--fg-rgb),.05);animation:shim 1.4s ease-in-out infinite"></div>`;
 
-// p: { state: 'loading' | 'error' | 'ok', groups: [{ day, items: [{ patch, title, open }] }], onRetry, onAll }
+// p: { state: 'loading' | 'error' | 'ok', groups: [{ day, items: [{ patch, title, isNew, open }] }], onRetry, onAll }
 export function activityCard(p) {
   const LINK = "border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px";
   const body = p.state === 'loading' ? html`${skeleton}${skeleton}${skeleton}`
     : p.state === 'error' ? html`<div style="display:flex;align-items:center;gap:10px"><div style=${`flex:1;${MUTED}`}>Couldn't load news from Steam. Check your connection.</div><button style=${BTN} onClick=${p.onRetry} class="dcha">Try again</button></div>`
     : !p.groups.length ? html`<div style=${MUTED}>No announcements from the developer yet.</div>`
     : html`${p.groups.map((grp, gi) => html`<div style=${`display:flex;align-items:center;gap:10px;margin:${gi ? 14 : 0}px 0 8px;${LABEL}`}>${grp.day}<span style="flex:1;height:1px;background:rgba(var(--fg-rgb),.07)"></span></div>
-${grp.items.map(n => html`<button style="display:flex;gap:14px;align-items:center;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--fg-rgb),.07);background:rgba(var(--fg-rgb),.02);color:inherit;cursor:pointer;text-align:left" onClick=${n.open} title="Read in SwapDeck" class="dche2"><span style="width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(var(--fg-rgb),.06);color:var(--text-muted)">${n.patch ? NEWS_ICONS.patch : NEWS_ICONS.news}</span><span style="min-width:0"><span style=${`display:block;${LABEL}`}>${n.patch ? 'Patch notes' : 'News'}</span><span style="display:block;font:500 14px 'Geist',sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</span></span></button>`)}`)}`;
+${grp.items.map(n => html`<button style="display:flex;gap:14px;align-items:center;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--fg-rgb),.07);background:rgba(var(--fg-rgb),.02);color:inherit;cursor:pointer;text-align:left" onClick=${n.open} title="Read in SwapDeck" class="dche2"><span style="width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(var(--fg-rgb),.06);color:var(--text-muted)">${n.patch ? NEWS_ICONS.patch : NEWS_ICONS.news}</span><span style="min-width:0"><span style=${`display:flex;align-items:center;gap:7px;${LABEL}`}>${n.patch ? 'Patch notes' : 'News'}${n.isNew ? html`<span style="padding:1px 6px;border-radius:99px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent-strong);letter-spacing:.06em" title="Posted after you last played">New</span>` : null}</span><span style="display:block;font:500 14px 'Geist',sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</span></span></button>`)}`)}`;
   return card('Activity', body, html`<button style=${LINK} onClick=${p.onAll} class="dch4">All news in Steam</button>`);
 }
 

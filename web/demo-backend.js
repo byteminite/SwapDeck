@@ -332,6 +332,7 @@
     }),
     // Game details: no Steam on a web page, so a quiet Overview with one made-up post to show the reader.
     gameStatus: async () => ({ state: 'ok' }),
+    libUpdates: async () => ({}),
     gameLocal: async () => ({ shots: [], workshop: null }),
     gameAchievements: async () => null,
     gameWeb: async () => ({ news: [{ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, patch: true }], dlc: { total: 0, items: [] } }),

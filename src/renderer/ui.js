@@ -10,6 +10,7 @@ import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './them
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
 import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard } from './gamepage.js';
 import { newsReader } from './newsreader.js';
+import { updateBadge } from './updatebadge.js';
 
 const api = window.api;
 
@@ -137,7 +138,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
   };
@@ -146,6 +147,8 @@ class App extends Component {
   later(ms, fn) { const id = setTimeout(fn, ms); this._t.push(id); return id; }
 
   async componentDidMount() {
+    // Library update badges: Steam's files are checked every few seconds, only while the Library is on screen.
+    this._updT = setInterval(() => this.pollUpdates(), 3000);
     this._key = e => this.onKey(e);
     window.addEventListener('keydown', this._key);
     // A click (or a scroll) outside closes the tag list and the colour panel.
@@ -187,6 +190,7 @@ class App extends Component {
   }
   componentWillUnmount() {
     clearInterval(this._gTimer);
+    clearInterval(this._updT);
     window.removeEventListener('keydown', this._key);
     window.removeEventListener('mousedown', this._md);
     window.removeEventListener('wheel', this._md);
@@ -805,7 +809,7 @@ class App extends Component {
     const day = t => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }).toUpperCase();
     const groups = [];
     for (const n of (list || []).slice(0, 8)) {
-      const d = day(n.at), last = groups[groups.length - 1], item = { patch: n.patch, title: n.title, open: () => this.openNews(g, n) };
+      const d = day(n.at), last = groups[groups.length - 1], item = { patch: n.patch, title: n.title, isNew: g.lastPlayed > 0 && n.at > g.lastPlayed, open: () => this.openNews(g, n) };
       if (last && last.day === d) last.items.push(item); else groups.push({ day: d, items: [item] });
     }
     return { state: !web ? 'loading' : !list ? 'error' : 'ok', groups, onRetry: () => this.loadGameWeb(g.id), onAll: () => api.openSteamPage('news', g.appid) };
@@ -948,10 +952,15 @@ class App extends Component {
     const r = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : null;
     this.setState({ menu: key, menuUp: !!r && window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom });
   }
+  async pollUpdates(force) {
+    if (!force && (document.hidden || this.state.view !== 'lib')) return;
+    const libUpd = await api.libUpdates().catch(() => null);
+    if (libUpd) this.setState({ libUpd });
+  }
   setView(v) {
     if (v === this.state.view) return;
     this.setState({ view: v, drawerId: null, tagPop: null, colorFor: null });
-    if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); }
+    if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
     this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false });
@@ -1216,6 +1225,7 @@ class App extends Component {
         hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '',
         // Outline the account that's signed in to Steam right now.
         aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
+        upd: g.steam && g.installed && !run ? updateBadge(S.libUpd[g.appid]) : null,
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         fav: !!g.fav, starOp: g.fav || hov ? 1 : 0, starTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onStar: e => { e.stopPropagation(); this.toggleFav(g.id); },
         hovOp: hov && !run ? 1 : 0, hovPe: hov && !run ? 'auto' : 'none', ty: hov ? 'translateY(-3px)' : 'none',
@@ -1360,6 +1370,8 @@ class App extends Component {
     return {
       lOn: !L.hidden, lName: lg.name, lCoverBg: this.cardBg(lg), lIniTxt: this.coverOf(lg) ? '' : iniOf(lg),
       lLaunching: !L.running, lRunning: L.running, lTitle: L.running ? 'Now playing' : 'Launching',
+      // The game's note (crosshair code, server IP…) is shown while it starts, with a one-click copy.
+      lNote: (lg.note || '').trim(), lNoteCopied: !!S.lNoteCopied, onLNoteCopy: () => this.copyNote(lg.note),
       lMeta: [la ? la.name : lg.steam ? 'current account' : 'non-Steam', lmon ? lmon.label + (L.mode === 'only' ? ' only' : '') : 'default display', L.res || null].filter(Boolean).join(' · '),
       lPct: Math.round(L.step / Math.max(1, L.steps.length - 1) * 100) + '%', lBarBg: L.running ? '#4ade80' : 'linear-gradient(90deg,var(--accent),var(--accent-2))',
       lSteps: L.steps.map((s, i) => { const done = i < L.step, act = i === L.step, live = act && L.running; return { label: s.label, sub: s.sub || '', hasSub: !!s.sub, done: done && !s.skip, skipped: done && !!s.skip, active: act && !L.running, todo: i > L.step, live, color: live ? 'var(--ok-fg)' : done && s.skip ? 'var(--text-subtle)' : done ? 'var(--text-soft)' : act ? 'var(--accent-strong)' : 'var(--text-subtle)' }; }),
@@ -1368,6 +1380,13 @@ class App extends Component {
       gRunOn: L.running, gRunName: lg.name, gRunHasMon: !!lmon || !!L.res, gRunMon: (lmon ? lmon.label : L.res || '').toUpperCase(),
       tbText: (L.running ? 'playing ' : 'launching ') + lg.name + (lmon ? ' · ' + lmon.label : ''), tbDot: changed ? 'var(--accent)' : '#4ade80',
     };
+  }
+
+  async copyNote(text) {
+    try { await navigator.clipboard.writeText(String(text || '').trim()); } catch { return this.toast('error', "Couldn't copy the note", 'Select the text and press Ctrl+C instead.'); }
+    this.setState({ lNoteCopied: true });
+    clearTimeout(this._copyT);
+    this._copyT = setTimeout(() => this.setState({ lNoteCopied: false }), 1600);
   }
 
   addGameVals() {

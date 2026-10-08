@@ -3,6 +3,7 @@
 
 import { html, render, Component } from './vendor/htm-preact.js';
 import { ACCENTS, WIN_ACCENT, themeTokens } from './theme.js';
+import { updateBadge } from './updatebadge.js';
 
 const api = window.api;
 const GRADS = ['#22d3ee,#4f46e5', '#2dd4bf,#0f766e', '#a78bfa,#6d28d9', '#94a3b8,#334155', '#fbbf24,#b45309', '#60a5fa,#1e3a8a', '#34d399,#065f46', '#f472b6,#9d174d', '#fb923c,#9a3412'];
@@ -24,12 +25,14 @@ class Tray extends Component {
 
   componentDidMount() {
     this.load();
+    // While the panel is open, keep the games' update badges current.
+    this._poll = setInterval(() => { if (!document.hidden) this.load(); }, 3000);
     this._off = ['tray-show', 'steam', 'accounts', 'launch', 'launch-end', 'switch'].map(ch => api.on(ch, () => this.load()));
     this._key = e => { if (e.key === 'Escape') api.trayHide(); };
     window.addEventListener('keydown', this._key);
     this._ro = new ResizeObserver(() => { if (this._box) api.traySize(this._box.offsetHeight); });
   }
-  componentWillUnmount() { this._off.forEach(f => f()); window.removeEventListener('keydown', this._key); this._ro.disconnect(); }
+  componentWillUnmount() { clearInterval(this._poll); this._off.forEach(f => f()); window.removeEventListener('keydown', this._key); this._ro.disconnect(); }
   async load() { const d = await api.trayData(); if (d) this.setState({ d }); }
   listRef = el => { this._list = el; };
   // Smooth wheel scrolling for the games list.
@@ -101,10 +104,10 @@ class Tray extends Component {
     <div style=${H + ';padding:0 8px 6px'}>PLAY</div>
     <div ref=${this.listRef} onWheel=${this.listWheel} style="max-height:262px;overflow-y:auto;padding-right:2px">
     ${d.games.map(g => {
-      const dis = !!sess;
+      const dis = !!sess, upd = sess && sess.gid === g.id ? null : updateBadge(g.upd);
       return html`<div class="tp-row" style=${`display:flex;align-items:center;gap:11px;padding:6px 8px;border-radius:10px;cursor:${dis ? 'default' : 'pointer'};opacity:${dis && !(sess && sess.gid === g.id) ? .5 : 1}`} onClick=${() => !dis && this.play(g)}>
         <span style=${`width:28px;height:38px;flex:none;border-radius:6px;background:${g.cover ? `url("${g.cover}") center/cover,rgba(var(--fg-rgb),.08)` : 'rgba(var(--fg-rgb),.1)'}`}></span>
-        <div style="flex:1;min-width:0"><div style="font:600 12.5px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div><div style="font:500 10.5px 'Geist Mono',monospace;color:var(--text-subtle)">${sess && sess.gid === g.id ? 'running' : rel(g.lastPlayed)}</div></div>
+        <div style="flex:1;min-width:0"><div style="font:600 12.5px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div><div style=${`font:500 10.5px 'Geist Mono',monospace;color:${upd ? upd.color : 'var(--text-subtle)'}`}>${sess && sess.gid === g.id ? 'running' : upd ? upd.label : rel(g.lastPlayed)}</div></div>
         ${dis ? null : html`<span class="tp-play" style="width:28px;height:28px;flex:none;border-radius:99px;background:var(--accent);color:var(--accent-contrast);display:grid;place-items:center;opacity:0;transition:opacity .15s"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"/></svg></span>`}
       </div>`;
     })}
