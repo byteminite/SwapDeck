@@ -43,7 +43,7 @@ function achievements(dir, accountId, appid) {
     const t = got && entry.AchievementTimes ? Number(entry.AchievementTimes[String(a.bit)]) || 0 : 0;
     // Like Steam, a hidden achievement keeps its name secret until it is unlocked.
     const secret = a.hidden && !got;
-    return { id: a.id, name: secret ? 'Hidden achievement' : a.name, desc: secret ? 'Keep playing to find out.' : a.desc, hidden: secret, icon: got ? a.icon : (a.iconGray || a.icon), got, at: t * 1000 };
+    return { id: a.id, name: secret ? 'Hidden achievement' : a.name, desc: secret ? 'Keep playing to find out.' : a.desc, hidden: secret, icon: secret ? null : got ? a.icon : (a.iconGray || a.icon), got, at: t * 1000 };
   });
   const unlocked = items.filter(a => a.got).sort((a, b) => b.at - a.at);
   return { known: !!cache, total: items.length, unlocked: unlocked.length, latest: unlocked.slice(0, 3), items: [...unlocked, ...items.filter(a => !a.got)] };

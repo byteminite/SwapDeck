@@ -79,4 +79,4 @@ function screenshotFile(dir, accountId, rel) {
 }
 const screenshotFolder = (dir, accountId, appid) => path.join(dir, 'userdata', String(accountId), '760', 'remote', String(appid), 'screenshots');
 
-module.exports = { updateStatus, stateOf, workshop, screenshots, screenshotFile, screenshotFolder };
+module.exports = { updateStatus, workshop, screenshots, screenshotFile, screenshotFolder };

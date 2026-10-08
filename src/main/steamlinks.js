@@ -28,4 +28,4 @@ function newsPage(appid, gid) {
   return web(`https://store.steampowered.com/news/app/${appid}/view/${gid}`);
 }
 
-module.exports = { steamPage, newsPage, PAGE_KINDS: Object.keys(PAGES) };
+module.exports = { steamPage, newsPage };

@@ -9,7 +9,8 @@ const KNOWN = new Set(['b', 'i', 'u', 's', 'strike', 'spoiler', 'h1', 'h2', 'h3'
   'quote', 'code', 'hr', 'table', 'tr', 'th', 'td', 'previewyoutube', 'video', 'expand', 'noparse']);
 const BLOCK = 'h[1-6]|list|olist|\\*|p|quote|hr|table|tr|td|th|previewyoutube|video|expand|code';
 const TAG_RE = /\[(\/?)([a-z0-9*]+)((?:=[^\]]*)|(?:\s[^\]]*))?\]/gi;
-const IMG_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(steamstatic\.com|akamaihd\.net)\/|^https:\/\/media\.steampowered\.com\//i;
+// akamaihd.net is shared by many companies, so only Steam's own hosts there.
+const IMG_HOSTS = /^https:\/\/(([a-z0-9-]+\.)*steamstatic\.com|steam(cdn|userimages)-a\.akamaihd\.net|media\.steampowered\.com)\//i;
 const ESC = '\u0001';
 
 // "[url=https://x]", "[img src="..."]", "[previewyoutube=id;full]" -> the one value that matters.
@@ -24,9 +25,9 @@ const clanUrl = s => s.replace(/\{STEAM_CLAN_(?:LOC_)?IMAGE\}/g, 'https://clan.a
 
 // BBCode -> tree of { tag, arg, kids } and strings. Unknown tags stay as text; unclosed tags close at the end.
 export function parseBBCode(src) {
-  const text = String(src || '').replace(/\r\n?/g, '\n').replace(/\\\[/g, ESC)
-    .replace(new RegExp('\\n*(\\[\\/?(?:' + BLOCK + ')(?:[ =][^\\]]*)?\\])\\n?', 'gi'), '$1')
-    .replace(/\n{3,}/g, '\n\n');
+  // Newline runs are collapsed first, so the block-tag pass never rescans a long run (a post of blank lines stays fast).
+  const text = String(src || '').replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/\\\[/g, ESC)
+    .replace(new RegExp('\\n{0,2}(\\[\\/?(?:' + BLOCK + ')(?:[ =][^\\]]*)?\\])\\n?', 'gi'), '$1');
   const root = { tag: 'root', kids: [] }, stack = [root];
   const top = () => stack[stack.length - 1];
   const pushText = s => { if (s) top().kids.push(s.split(ESC).join('[')); };

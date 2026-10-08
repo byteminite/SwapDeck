@@ -16,7 +16,6 @@ const ICONS = {
   warn: html`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>`,
   dash: html`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12"></path></svg>`,
 };
-export const ICON = ICONS;
 
 const bar = pct => html`<div style="height:4px;border-radius:99px;background:rgba(var(--fg-rgb),.1);margin-top:7px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .6s cubic-bezier(.22,1,.36,1)"></i></div>`;
 
@@ -27,7 +26,7 @@ const statCell = (s, i, all) => html`<div style=${`flex:${s.grow || 1};min-width
 ${s.action ? html`<button style="flex:none;border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px" onClick=${s.action.on} class="dch4">${s.action.label}</button>` : null}</div>`;
 
 // A card: title (uppercase label), optional aside on the right of the title, then the body.
-export const card = (title, body, aside) => html`<section style="border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);padding:16px 18px;position:relative;min-width:0">
+const card = (title, body, aside) => html`<section style="border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);padding:16px 18px;position:relative;min-width:0">
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style=${`flex:1;${LABEL}`}>${title}</span>${aside || null}</div>${body}</section>`;
 
 // p: { tabs: [{ label, on, pick }], hint }

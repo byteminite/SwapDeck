@@ -509,7 +509,7 @@ function ipc() {
     const res = await connected.forGame(String(sid), token, String(appid), dlc ? dlc.items.map(d => d.appid) : [], t2 => store.setToken(String(sid), t2));
     return { linked: true, ...res };
   });
-  ipcMain.handle('steam:post', (_, appid, gid) => steamweb.newsPost(String(appid), String(gid)).catch(() => null));
+  ipcMain.handle('steam:post', (_, appid, gid) => isAppid(appid) && /^\d{1,20}$/.test(String(gid)) ? steamweb.newsPost(String(appid), String(gid)).catch(() => null) : null);
   // Links inside a news post: https only. Steam's own pages open in the Steam client, everything else in the browser.
   ipcMain.handle('news:link', (_, url) => {
     let u;

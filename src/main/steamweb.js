@@ -7,16 +7,20 @@ const steam = require('./steam');
 const vdf = require('./vdf');
 const { get } = require('./profile');
 
-const HOUR = 3600e3, TTL = { news: HOUR, posts: HOUR, dlc: 24 * HOUR };
+const HOUR = 3600e3, TTL = { posts: HOUR, dlc: 24 * HOUR };
 const MAX_POST = 200000;
-const cache = new Map(); // `${kind}:${appid}` -> { at, value }
+const cache = new Map(); // `${kind}:${appid}` -> { at, value } where value is a promise, so parallel callers share one request
+const MAX_CACHED = 60; // full news posts can be a few MB per game, so old entries are dropped
 const isAppid = v => /^\d{1,10}$/.test(String(v));
 
 async function cached(kind, appid, load) {
   const key = kind + ':' + appid, hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL[kind]) return hit.value;
-  const value = await load();
+  const value = load();
+  cache.delete(key);
   cache.set(key, { at: Date.now(), value });
+  if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value);
+  value.catch(() => { if (cache.get(key) && cache.get(key).value === value) cache.delete(key); });
   return value;
 }
 
@@ -26,40 +30,38 @@ async function json(url) {
   return JSON.parse(body);
 }
 
-// Official announcements only (the community feed), newest first.
-function news(appid) {
-  if (!isAppid(appid)) return Promise.resolve([]);
-  return cached('news', appid, async () => {
-    const j = await json(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=12&maxlength=1&feeds=steam_community_announcements&format=json`);
+// Official announcements only (the community feed), newest first, with their full text (Steam's BBCode).
+// One download serves both the Activity list and the reader.
+function posts(appid) {
+  return cached('posts', appid, async () => {
+    const j = await json(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=12&maxlength=0&feeds=steam_community_announcements&format=json`);
     const items = (j.appnews && Array.isArray(j.appnews.newsitems)) ? j.appnews.newsitems : [];
-    return items
-      .filter(n => n && /^\d{1,20}$/.test(String(n.gid)) && typeof n.title === 'string')
-      .map(n => ({ gid: String(n.gid), title: n.title.slice(0, 200), at: (Number(n.date) || 0) * 1000, patch: Array.isArray(n.tags) && n.tags.includes('patchnotes') }))
-      .sort((a, b) => b.at - a.at);
+    return items.filter(n => n && /^\d{1,20}$/.test(String(n.gid)) && typeof n.title === 'string').map(n => ({
+      gid: String(n.gid), title: n.title.slice(0, 200), at: (Number(n.date) || 0) * 1000,
+      author: typeof n.author === 'string' ? n.author.slice(0, 80) : '', patch: Array.isArray(n.tags) && n.tags.includes('patchnotes'),
+      body: typeof n.contents === 'string' ? n.contents.slice(0, MAX_POST) : '',
+    })).sort((a, b) => b.at - a.at);
   });
 }
 
-// One announcement's full text (Steam's BBCode) for the in-app reader. Same feed as news(), fetched in full.
+async function news(appid) {
+  if (!isAppid(appid)) return [];
+  return (await posts(appid)).map(({ gid, title, at, patch }) => ({ gid, title, at, patch }));
+}
+
 async function newsPost(appid, gid) {
   if (!isAppid(appid) || !/^\d{1,20}$/.test(String(gid))) return null;
-  const posts = await cached('posts', appid, async () => {
-    const j = await json(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${appid}&count=12&maxlength=0&feeds=steam_community_announcements&format=json`);
-    const items = (j.appnews && Array.isArray(j.appnews.newsitems)) ? j.appnews.newsitems : [];
-    return items.filter(n => n && /^\d{1,20}$/.test(String(n.gid)) && typeof n.contents === 'string').map(n => ({
-      gid: String(n.gid), title: String(n.title || '').slice(0, 200), at: (Number(n.date) || 0) * 1000,
-      author: typeof n.author === 'string' ? n.author.slice(0, 80) : '', patch: Array.isArray(n.tags) && n.tags.includes('patchnotes'),
-      body: n.contents.slice(0, MAX_POST),
-    }));
-  });
-  return posts.find(p => p.gid === String(gid)) || null;
+  return (await posts(appid)).find(p => p.gid === String(gid)) || null;
 }
 
 // DLC appids installed with the game, from its app manifest (InstalledDepots … dlcappid).
 function installedDlc(dir, appid) {
   for (const lib of steam.libraryDirs(dir || '')) {
-    let text;
-    try { text = fs.readFileSync(path.join(lib, `appmanifest_${appid}.acf`), 'utf8'); } catch { continue; }
-    const depots = vdf.get(vdf.get(vdf.parse(text), 'AppState') || {}, 'InstalledDepots') || {};
+    let depots;
+    try {
+      const text = fs.readFileSync(path.join(lib, `appmanifest_${appid}.acf`), 'utf8');
+      depots = vdf.get(vdf.get(vdf.parse(text), 'AppState') || {}, 'InstalledDepots') || {};
+    } catch { continue; }
     return new Set(Object.values(depots).map(d => String(vdf.get(d, 'dlcappid') || '')).filter(Boolean));
   }
   return new Set();

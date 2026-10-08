@@ -723,16 +723,19 @@ class App extends Component {
   // Reads what Steam keeps on this PC for the open game, then keeps the update state fresh while it stays open.
   async loadGameInfo(id) {
     clearInterval(this._gTimer);
+    // Reopening a game quickly starts a second run; only the newest one may set state or a timer.
+    const run = this._gRun = (this._gRun || 0) + 1, live = () => this.state.gd === id && this._gRun === run;
     const g = this.gfind(id);
     if (!g || !g.steam) return;
-    const [status, local] = await Promise.all([api.gameStatus(g.appid), api.gameLocal(g.appid)]);
-    if (this.state.gd !== id) return;
-    this.setState({ gInfo: { id, status, local, web: null } });
+    const [status, local] = await Promise.all([api.gameStatus(g.appid), api.gameLocal(g.appid)]).catch(() => [null, null]);
+    if (!live()) return;
+    this.setState({ gInfo: { id, status: status || { state: 'missing' }, local, web: null } });
     this.loadGameWeb(id);
     this._gTimer = setInterval(async () => {
-      if (this.state.gd !== id) return clearInterval(this._gTimer);
-      const st = await api.gameStatus(g.appid);
-      if (this.state.gd === id && this.state.gInfo) this.setState(s => ({ gInfo: { ...s.gInfo, status: st } }));
+      if (!live()) return clearInterval(this._gTimer);
+      if (this.state.gdTab === 'setup') return;
+      const st = await api.gameStatus(g.appid).catch(() => null);
+      if (st && live() && this.state.gInfo) this.setState(s => ({ gInfo: { ...s.gInfo, status: st } }));
     }, 2000);
   }
   // News and DLC from Steam's servers (cached in the main process); web stays null while loading.
@@ -753,7 +756,7 @@ class App extends Component {
     if (!g || !I || I.id !== id || !who) return;
     if (I.conn && I.conn.sid === who.sid) return;
     this.setState(s => ({ gInfo: { ...s.gInfo, conn: { sid: who.sid, data: null } } }));
-    const data = await api.gameConnected(g.appid, who.sid).catch(e => ({ linked: true, friends: { ok: false, error: String(e && e.message || e) }, owned: null }));
+    const data = await api.gameConnected(g.appid, who.sid).catch(() => null) || { linked: true, friends: { ok: false, error: "SwapDeck couldn't ask Steam." }, owned: null };
     const cur = this.state.gInfo;
     if (this.state.gd === id && cur && cur.id === id && cur.conn && cur.conn.sid === who.sid) this.setState(s => ({ gInfo: { ...s.gInfo, conn: { sid: who.sid, data } } }));
   }
@@ -788,7 +791,8 @@ class App extends Component {
     // Every account is listed; ones not connected for stats lead to their Connect button instead.
     const pill = { acct: this.accountLook(who.sid), menuOpen: S.gFrMenu, onMenu: () => this.setState(s => ({ gFrMenu: !s.gFrMenu, gShotMenu: false, gAchMenu: false })),
       accounts: this.accts.map(a => ({ ...this.accountLook(a.id), count: a.linked ? '' : 'CONNECT', on: a.id === who.sid, pick: () => a.linked ? this.pickCardAccount(a.id) : this.connectFromGame(a.id) })) };
-    if (!F) return { pill, state: 'loading', recent: [], ever: [] };
+    if (conn && conn.data && !conn.data.linked) return { pill, state: 'none', recent: [], ever: [], onConnect: () => this.connectFromGame(who.sid) };
+    if (!F) return { pill, state: conn && conn.data ? 'error' : 'loading', error: "SwapDeck couldn't use this account's sign-in.", recent: [], ever: [] };
     if (!F.ok) return { pill, state: 'error', error: F.error, recent: [], ever: [] };
     return {
       pill, state: 'ok',
@@ -811,21 +815,30 @@ class App extends Component {
     if (web && D && !D.total) return null;
     const C = I && I.conn && I.conn.data, owned = C && C.owned && C.owned.ok ? new Set(C.owned.ids) : null, who = C ? this.accountLook(I.conn.sid).name : '';
     const items = D ? D.items.slice(0, 6).map(d => ({ name: d.name.replace(new RegExp('^' + g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[-:–]\\s*', 'i'), ''), art: d.art, badge: dlcBadge(d.installed, owned && owned.has(d.appid), !!owned) })) : [];
-    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: owned ? (C.owned.game === false ? who + " doesn't own " + g.name + ' on Steam, so none of its DLC either.' : 'Checked against ' + who + "'s Steam library: owns " + C.owned.ids.length + ' of ' + D.items.length + ' DLC checked.') : C && C.owned && !C.owned.ok ? "Couldn't check which DLC " + who + ' owns.' : !this.accts.some(a => a.linked) ? 'Connect an account for stats to see which DLC it owns.' : '', onStore: () => api.openSteamPage('dlc', g.appid) };
+    return { state: !web ? 'loading' : !D ? 'error' : 'ok', items, more: D && D.total > 6 ? 'and ' + (D.total - 6) + ' more in the store' : '', note: this.dlcNote(g, C, D, who), onStore: () => api.openSteamPage('dlc', g.appid) };
+  }
+  dlcNote(g, C, D, who) {
+    if (C && C.owned && C.owned.ok) {
+      if (C.owned.game === false) return who + " doesn't own " + g.name + ' on Steam, so none of its DLC either.';
+      return 'Checked against ' + who + "'s Steam library: owns " + C.owned.ids.length + ' of ' + D.items.length + ' DLC checked.';
+    }
+    if (C && C.owned) return "Couldn't check which DLC " + who + ' owns.';
+    return this.accts.some(a => a.linked) ? '' : 'Connect an account for stats to see which DLC it owns.';
   }
   gInfoOf(g) { const I = this.state.gInfo; return I && I.id === g.id ? I : null; }
   updating(g) { const I = this.gInfoOf(g); return !!I && ['queued', 'downloading', 'paused', 'verifying'].includes(I.status.state); }
   updateCell(g) {
     const I = this.gInfoOf(g), st = I ? I.status : null, size = st && st.bytes ? ' of ' + fmtBytes(st.bytes) : '';
     const C = { ok: 'var(--ok-fg)', warn: 'var(--warn-fg)', bad: 'var(--bad-fg)', run: 'var(--accent)' };
-    const cell = !st ? { icon: 'dash', value: 'Checking…' }
-      : st.state === 'ok' ? { icon: 'check', tint: C.ok, value: 'Up to date' }
-      : st.state === 'queued' ? { icon: 'clock', tint: C.warn, value: 'Update queued' + (st.bytes ? ' · ' + fmtBytes(st.bytes) : '') }
-      : st.state === 'downloading' ? { icon: 'download', tint: C.run, value: (st.staging ? 'Installing update · ' : 'Downloading · ') + st.pct + '%' + size, pct: st.pct }
-      : st.state === 'paused' ? { icon: 'pause', tint: C.warn, value: 'Paused at ' + st.pct + '% · resume in Steam', pct: st.pct }
-      : st.state === 'verifying' ? { icon: 'download', tint: C.run, value: 'Verifying files · ' + st.pct + '%', pct: st.pct }
-      : st.state === 'failed' ? { icon: 'warn', tint: C.bad, value: st.reason === 'files' ? 'Files missing · verify in Steam' : 'Update failed · retry in Steam' }
-      : { icon: 'dash', value: 'Not installed' };
+    const CELLS = {
+      ok: () => ({ icon: 'check', tint: C.ok, value: 'Up to date' }),
+      queued: () => ({ icon: 'clock', tint: C.warn, value: 'Update queued' + (st.bytes ? ' · ' + fmtBytes(st.bytes) : '') }),
+      downloading: () => ({ icon: 'download', tint: C.run, value: (st.staging ? 'Installing update · ' : 'Downloading · ') + st.pct + '%' + size, pct: st.pct }),
+      paused: () => ({ icon: 'pause', tint: C.warn, value: 'Paused at ' + st.pct + '% · resume in Steam', pct: st.pct }),
+      verifying: () => ({ icon: 'download', tint: C.run, value: 'Verifying files · ' + st.pct + '%', pct: st.pct }),
+      failed: () => ({ icon: 'warn', tint: C.bad, value: st.reason === 'files' ? 'Files missing · verify in Steam' : 'Update failed · retry in Steam' }),
+    };
+    const cell = !st ? { icon: 'dash', value: 'Checking…' } : CELLS[st.state] ? CELLS[st.state]() : { icon: 'dash', value: 'Not installed' };
     return { ...cell, label: 'Updates', grow: 1.5, action: { label: 'Open in Steam', on: () => api.openSteamPage('game', g.appid) } };
   }
   // Whose data a card shows: the account picked on either card, else the game's account, else the account
@@ -849,7 +862,7 @@ class App extends Component {
       shots: sel.items.slice(0, 6).map(s => { const title = 'Screenshot · ' + when(s.at) + (s.w ? ' · ' + s.w + ' × ' + s.h : ''); return { src: src(s.thumb), title, open: () => this.setState({ gShot: { src: src(s.file), caption: title } }) }; }),
       count: sel.count + ' screenshot' + (sel.count === 1 ? '' : 's') + ' by ' + name,
       empty: sel.count ? '' : 'No screenshots by ' + name + ' in this game yet. Press F12 in game to take one.',
-      onFolder: async () => { const r = await api.openShotFolder(g.appid, sel.sid); if (!r.ok) this.toast('info', 'No screenshot folder yet', 'Steam makes it when ' + name + ' takes the first screenshot of this game.'); },
+      onFolder: async () => { const r = await api.openShotFolder(g.appid, sel.sid); if (!r || !r.ok) this.toast('info', 'No screenshot folder yet', 'Steam makes it when ' + name + ' takes the first screenshot of this game.'); },
     };
   }
   achVals(g) {
@@ -875,7 +888,7 @@ class App extends Component {
   }
   async loadAllAchievements(g, sid) {
     this.setState({ gAchAll: { id: g.id, sid, items: null } });
-    const r = await api.gameAchievements(g.appid, sid);
+    const r = await api.gameAchievements(g.appid, sid).catch(() => null);
     if (this.state.gAchAll && this.state.gAchAll.sid === sid && this.state.gd === g.id) this.setState({ gAchAll: { id: g.id, sid, items: r ? r.items : [] } });
   }
   setGameNote(id, v) {

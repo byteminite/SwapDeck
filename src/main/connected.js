@@ -21,13 +21,20 @@ async function signIn(sid, refreshToken, onNewToken) {
   return pending.get(sid);
 }
 
+class Refused extends Error {}
+
 async function api(path, params) {
   const q = new URLSearchParams(params).toString();
   const { status, body } = await get(`https://api.steampowered.com/${path}?${q}`, { timeout: 8000 });
-  if (status === 401 || status === 403) throw new Error('Steam refused the saved sign-in. Connect the account again.');
+  if (status === 401 || status === 403) throw new Refused('Steam refused the saved sign-in. Connect the account again.');
   if (status !== 200) throw new Error('Steam returned HTTP ' + status);
   return JSON.parse(body);
 }
+
+const isSid = v => /^\d{17}$/.test(String(v));
+// Avatars end up in a CSS url(), so only plain Steam avatar addresses get through.
+const AVATAR = /^https:\/\/avatars\.(akamai|fastly|cloudflare)?\.?steamstatic\.com\/[\w/.-]+$/;
+const avatarOf = u => typeof u === 'string' && AVATAR.test(u) ? u : null;
 
 // Names and avatars: the Web API in one call, falling back to public profiles for a few friends.
 async function profiles(access, ids) {
@@ -35,15 +42,14 @@ async function profiles(access, ids) {
   try {
     const j = await api('ISteamUser/GetPlayerSummaries/v2/', { access_token: access, steamids: ids.join(',') });
     const out = {};
-    for (const p of (j.response && j.response.players) || []) out[p.steamid] = { name: String(p.personaname || '').slice(0, 64), avatar: p.avatarmedium || p.avatar || null };
+    for (const p of (j.response && j.response.players) || []) out[p.steamid] = { name: String(p.personaname || '').slice(0, 64), avatar: avatarOf(p.avatarmedium) || avatarOf(p.avatar) };
     if (Object.keys(out).length) return out;
   } catch {}
   const out = {};
-  for (const id of ids.slice(0, 8)) { try { const p = await fetchPublic(id); out[id] = { name: p.name, avatar: p.avatar }; } catch {} }
+  for (const id of ids.slice(0, 8)) { try { const p = await fetchPublic(id); out[id] = { name: p.name, avatar: avatarOf(p.avatar) }; } catch {} }
   return out;
 }
 
-const isSid = v => /^\d{17}$/.test(String(v));
 
 async function friendsWhoPlay(sid, refreshToken, appid, onNewToken) {
   const key = sid + ':' + appid, hit = friendsCache.get(key);
@@ -71,14 +77,17 @@ async function ownedApps(sid, refreshToken, onNewToken) {
   const { status, body } = await get('https://store.steampowered.com/dynamicstore/userdata/', { timeout: 8000, headers: { Cookie: cookie } });
   if (status !== 200) throw new Error('Steam store returned HTTP ' + status);
   const owned = new Set(((JSON.parse(body).rgOwnedApps) || []).map(String));
-  if (!owned.size) throw new Error('Steam store did not recognise the sign-in.');
+  if (!owned.size) throw new Refused('Steam store did not recognise the sign-in.');
   ownedCache.set(sid, { at: Date.now(), value: owned });
   return owned;
 }
 
 const fail = e => ({ ok: false, error: String((e && e.message) || e).slice(0, 160) });
 async function forGame(sid, refreshToken, appid, dlcIds, onNewToken) {
-  const [friends, owned] = await Promise.allSettled([friendsWhoPlay(sid, refreshToken, appid, onNewToken), dlcIds.length ? ownedApps(sid, refreshToken, onNewToken) : Promise.resolve(null)]);
+  const results = await Promise.allSettled([friendsWhoPlay(sid, refreshToken, appid, onNewToken), dlcIds.length ? ownedApps(sid, refreshToken, onNewToken) : Promise.resolve(null)]);
+  // A refused web session would otherwise be reused for its whole 15 minutes.
+  if (results.some(r => r.status === 'rejected' && r.reason instanceof Refused)) sessions.delete(sid);
+  const [friends, owned] = results;
   return {
     friends: friends.status === 'fulfilled' ? { ok: true, ...friends.value } : fail(friends.reason),
     owned: owned.status === 'fulfilled' ? (owned.value ? { ok: true, game: owned.value.has(appid), ids: dlcIds.filter(id => owned.value.has(id)) } : null) : fail(owned.reason),

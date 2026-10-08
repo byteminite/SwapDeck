@@ -337,7 +337,7 @@
     gameWeb: async () => ({ news: [{ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, patch: true }], dlc: { total: 0, items: [] } }),
     newsPost: async () => ({ gid: '1', title: 'Demo update', at: Date.now() - 2 * 864e5, author: 'SwapDeck', patch: true,
       body: '[p]In the app, this is where a game\'s real patch notes and news appear, straight from Steam.[/p][h3]What you can do[/h3][list][*]Read the whole post without leaving SwapDeck[*]Open links in Steam or your browser[*]Use Open in Steam for videos and polls[/list]' }),
-    gameConnected: async () => ({ linked: false }),
+    gameConnected: async () => ({ linked: true, friends: { ok: true, recent: [], recentTotal: 0, ever: [], everTotal: 0 }, owned: null }),
     openSteamPage: async () => no('Steam pages'), openSteamNews: async () => no('Steam pages'), openNewsLink: async () => no('Links'), openShotFolder: async () => no('Folders'),
     steamLaunchOpts: async id => { const g = findGame(id); return g && g.appid === '730' ? [{ sid: A('NightOwl').sid, name: 'NightOwl', opts: '-novid -high +fps_max 0' }] : []; },
     cs2Info: async sid => ({
