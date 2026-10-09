@@ -154,7 +154,7 @@
       const acct = accounts.find(x => x.sid === sid);
       if (!acct || !acct.linked) return { linked: false };
       const recent = appid === '730' ? [friend('Crosshair', AV.cross, 1530), friend('frostbyte', AV.snow, 640), friend('Pixel Pilot', AV.rocket, 95), friend('lantern_lit', AV.lantern, 28)]
-        : appid === '244210' ? [friend('ApexDrift', AV.helmet, 860)] : [];
+        : appid === '244210' ? [friend('frostbyte', AV.snow, 860), friend('Pixel Pilot', AV.rocket, 212)] : [];
       const ever = appid === '730' ? [AV.owl, AV.helmet, AV.snow, AV.rocket, AV.cross, AV.lantern].map((av, i) => friend('Steam friend ' + (i + 1), av, 0)) : [];
       const dlc = this.dlc[appid];
       return { linked: true, friends: { ok: true, recent, recentTotal: recent.length, ever, everTotal: ever.length + (ever.length ? 9 : 0) },
