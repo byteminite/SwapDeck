@@ -32,10 +32,10 @@ https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
-  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck switching to another account, then launching Assetto Corsa: it switches account, display and sound, starts SimHub and Content Manager">
+  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck switching to another account, filtering the Library by the Racing tag, opening Assetto Corsa's page with its DLC and patch notes, then pressing Play: it sets the display and sound, starts SimHub and Content Manager, and shows the game's note">
 </picture>
 
-<sub>The real app: switch account in one click, then Play sets up the account, monitor, sound and apps</sub>
+<sub>The real app: switch account in one click, find a game with tags, read its patch notes, then Play sets up the monitor, sound and apps</sub>
 
 </div>
 

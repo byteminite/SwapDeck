@@ -90,7 +90,7 @@
   const game = (appid, name, folder, acct, hours, ago, o = {}) => ({
     id: 'steam:' + appid, steam: true, appid, name, installed: true, folder: STEAMDIR + folder,
     acct: acct ? A(acct).sid : null, opts: o.opts || '', display: { mon: null, mode: 'primary', restore: true, res: null, ...(o.display || {}) },
-    audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: o.tags || [], fav: !!o.fav,
+    audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: o.tags || [], fav: !!o.fav, note: o.note || '',
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
   });
@@ -99,7 +99,8 @@
     game('244210', 'Assetto Corsa', 'assettocorsa', 'ApexDrift', 186.2, 2 * D, {
       display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset',
       apps: [{ path: 'C:\\Program Files (x86)\\SimHub\\SimHubWPF.exe', args: '', close: true }],
-      launcher: 'C:\\Games\\Content Manager\\Content Manager.exe', tags: ['racing', 'sim'], fav: true }),
+      launcher: 'C:\\Games\\Content Manager\\Content Manager.exe', tags: ['racing', 'sim'], fav: true,
+      note: 'League night: Spa, GT3, 45 min race\nSetup: spa_gt3_wet in Content Manager' }),
     game('2399420', 'Le Mans Ultimate', 'Le Mans Ultimate', 'ApexDrift', 41.7, 4 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset', tags: ['racing', 'sim'] }),
     game('805550', 'Assetto Corsa Competizione', 'Assetto Corsa Competizione', 'ApexDrift', 63.4, 9 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, tags: ['racing', 'sim'] }),
     game('1144200', 'Ready or Not', 'Ready Or Not', 'Crosshair', 17.3, 3 * D, { tags: ['fps', 'co-op'] }),
@@ -132,8 +133,9 @@
         [12 * D, 'Counter-Strike 2 Update', true, patchNote(['MISC', 'Workshop maps now download in the background', 'Fixed text overlapping in the settings menu'])],
       ],
       '244210': [
+        [20 * 60e3, 'Assetto Corsa Update 1.16.6', true, patchNote(['PHYSICS', 'Improved tyre temperatures on long stints', 'Fixed a rare force feedback spike when hitting kerbs', 'Brake balance now saves with the setup'])
+          + patchNote(['TRACKS', 'Spa: smoother kerbs at Eau Rouge', 'Monza: updated pit lane speed limit']) + patchNote(['MISC', 'Faster loading on large mod folders', 'Fixed the replay camera jumping after a restart'])],
         [3 * D, 'Assetto Corsa: summer racing weekend', false, '[h3]Race with the community[/h3][p]Join the weekend events on the official servers and try the new community liveries.[/p]'],
-        [20 * D, 'Assetto Corsa Update 1.16.5', true, patchNote(['PHYSICS', 'Improved tyre temperatures on long stints', 'Fixed a rare FFB spike when hitting kerbs'])],
       ],
     },
     news(appid) {
@@ -337,6 +339,7 @@
       if (Array.isArray(patch.apps)) g.apps = patch.apps;
       if (Array.isArray(patch.tags)) g.tags = patch.tags.map(String).slice(0, 12);
       if ('fav' in patch) g.fav = !!patch.fav;
+      if ('note' in patch) g.note = String(patch.note || '').slice(0, 1000);
       return clone(g);
     },
     libPickExe: () => pick('exe', 'Choosing files'), libPickImage: () => pick('image', 'Choosing files'), libPickApp: () => pick('app', 'Choosing files'),
