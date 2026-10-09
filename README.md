@@ -13,8 +13,6 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 
 </div>
 
-https://github.com/user-attachments/assets/4ff0eb41-04a6-4f8b-8f18-f7677fd23927
-
 ## Why SwapDeck
 
 <table>
@@ -291,7 +289,7 @@ Installed copies pick it up automatically. Drafts are ignored.
 SwapDeck is vibe coded: it was designed, directed and tested by me ([@byteminite](https://github.com/byteminite)), and the code was
 written by **Claude**, Anthropic's AI, using [Claude Code](https://claude.com/claude-code) running in
 [Munder Difflin](https://munderdiffl.in/), a free, open source multi-agent harness. That includes the app, the native display
-and sound helpers, the browser demo, this README and the promo video. Every feature was tried on a real setup (multiple
+and sound helpers, the browser demo, this README and its animated demo. Every feature was tried on a real setup (multiple
 accounts, three monitors, sim racing gear) before it shipped, and the full source is here for anyone to read.
 
 ## License
