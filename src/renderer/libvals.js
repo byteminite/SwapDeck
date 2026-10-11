@@ -7,6 +7,8 @@ import { launchVals, switchVals } from './liblaunchvals.js';
 import { libRecentVals, recentPage } from './librecent.js';
 import { libFavVals, favPage } from './libfav.js';
 import { libUpdVals, updPage, updatingGames } from './libupd.js';
+import { acctMenuVals, acctPageVals } from './libacctvals.js';
+import { acctMenu, acctPage } from './libacct.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -25,24 +27,25 @@ function gameSub(app, id) {
   return !g ? '' : !g.steam ? 'No Steam account needed' : a ? 'Plays as ' + a.name : 'Plays on whoever is signed in';
 }
 
-export function libShellVals(app, gv) {
+export function libShellVals(app, gv, dw) {
   if (!isLibLayout(app)) return { libLayout: false };
   const S = app.state, page = S.libPage || 'games', me = app.accts.find(a => a.current) || app.accts[0];
   const meta = PAGES.find(p => p[0] === page) || PAGES[0];
-  const go = k => app.setState({ libPage: k, gd: null, lgTab: 'ov', gdTab: 'ov' });
+  const go = k => app.setState({ libPage: k, gd: null, drawerId: null, lsMenu: false, lgTab: 'ov', gdTab: 'ov' });
+  const onGame = !!(S.gd && gv && gv.gdOn), ap = !onGame && dw ? acctPageVals(app, dw) : null;
   const updCount = updatingGames(app).length;
   return {
     libLayout: true,
     ls: {
       page, go, updCount: updCount || null,
-      hiName: me ? 'Hi, ' + me.name + '!' : 'Hi there!', hiSub: S.gd && gv && gv.gdOn ? gameSub(app, S.gd) : meta[2], pageTitle: meta[1],
-      pills: PAGES.map(([k, label]) => ({ label, on: page === k, go: () => go(k) })),
+      hiName: me ? 'Hi, ' + me.name + '!' : 'Hi there!', hiSub: onGame ? gameSub(app, S.gd) : ap ? 'Account details' : meta[2], pageTitle: meta[1],
+      pills: PAGES.map(([k, label]) => ({ label, on: page === k && !ap, go: () => go(k) })),
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',
       meOnline: !!(me && me.current),
-      onSettings: () => app.openSettings(), onMe: () => me && app.openDetails && app.openDetails(me.id),
+      onSettings: () => app.openSettings(), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => {}, onBell: () => {},
       ...launchVals(app), sw: switchVals(app),
-      contentRef: app.lsContentRef, content: S.gd && gv && gv.gdOn ? gamePage(libGamePageVals(app, gv)) : (CONTENT[page] || CONTENT.games)(app),
+      contentRef: app.lsContentRef, content: onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },
   };
 }

@@ -143,7 +143,7 @@ ${b.showGallery ? html`
 ` : null}
 </div>`}
 
-${b.drawerOn ? html`
+${b.drawerOn && !b.libLayout ? html`
 <div class="pd-root" style="${b.dBehindGd ? 'filter:blur(6px);pointer-events:none;' : ''}">
 <div class="pd-sidebar">
 <div class="pd-sb-close" onClick=${b.onDrawerClose} aria-label="Close details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></div>

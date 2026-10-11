@@ -423,6 +423,7 @@ class App extends Component {
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
       if (S.lsDd) return this.setState({ lsDd: null });
+      if (S.lsMenu) return this.setState({ lsMenu: false });
       if (S.gNews) return this.setState({ gNews: null });
       if (S.gShot) return this.setState({ gShot: null });
       if (S.gShotMenu || S.gAchMenu || S.gFrMenu || S.gCsMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false, gCsMenu: false });
@@ -1695,7 +1696,7 @@ class App extends Component {
     LIGHT = (S.settings.base || 'dark') === 'light';
     TAGCOL = S.settings.tagColors || {};
     const running = this.steamState === 'running', isLib = S.view === 'lib';
-    const b = this.baseVals(), lv = this.launchVals(b), nm = this.normMon(), tm = this.testMon(), gv = this.gameVals();
+    const b = this.baseVals(), lv = this.launchVals(b), nm = this.normMon(), tm = this.testMon(), gv = this.gameVals(), dw = this.drawerVals(running);
     const vt = (k, label, n) => { const on = S.view === k; return { label, n, isAcc: k === 'acc', isLib: k === 'lib', bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', nFg: on ? 'var(--text-muted)' : 'var(--text-subtle)', on: () => this.setView(k) }; };
     const rmG = S.rmId ? this.gfind(S.rmId) : null;
     const dv = displayVals(
@@ -1704,8 +1705,8 @@ class App extends Component {
       { setNormal: p => this.setCfg(p), apply: () => this.applyNormal() },
     );
     return {
-      ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...gv, ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv), ...layoutVals(this),
+      ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...this.libraryVals(), ...gv, ...lv, ...this.addGameVals(),
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

@@ -25,7 +25,7 @@ function top(L) {
 <div class="ls-pills">${L.pills.map(p => html`<button class=${'ls-pill' + (p.on ? ' on' : '')} aria-current=${p.on ? 'page' : null} onClick=${p.go}>${p.label}</button>`)}</div>
 <div class="ls-topr">
 <button class="ls-circ" aria-label="Notifications" onClick=${L.onBell}>${icon('bell', 17)}</button>
-<button class="ls-me" aria-label="Accounts" style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}</button>
+<button class="ls-me" aria-label="Accounts" aria-haspopup="dialog" aria-expanded=${!!L.menu} style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}</button>
 </div>
 </header>`;
 }
@@ -36,5 +36,5 @@ function placeholder(L) {
 
 export function libShell(b) {
   const L = b.ls;
-  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.content || placeholder(L)}</main></div>${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
+  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.content || placeholder(L)}</main></div>${L.menu}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
 }
