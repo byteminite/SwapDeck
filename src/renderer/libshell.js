@@ -2,6 +2,7 @@
 // Each page renders into the content area; Classic's overlays (settings, profile, launch, toasts) stay on top.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { launchScreen, switchScreen, nowPlaying } from './liblaunch.js';
 
 function rail(L) {
   const btn = (k, ic, tip, on, badge) => html`<button class=${'ls-rbtn' + (L.page === k ? ' on' : '')} aria-label=${tip} aria-current=${L.page === k ? 'page' : null} onClick=${on}>${icon(ic)}${badge ? html`<span class="ls-badge">${badge}</span>` : null}<span class="ls-tip">${tip}</span></button>`;
@@ -35,5 +36,5 @@ function placeholder(L) {
 
 export function libShell(b) {
   const L = b.ls;
-  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.content || placeholder(L)}</main></div></div>`;
+  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.content || placeholder(L)}</main></div>${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
 }

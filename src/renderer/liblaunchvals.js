@@ -1,0 +1,50 @@
+// Props for the Library layout's start screen, switch screen and Now playing bar, from the launch session
+// (src/main/play.js steps) and the account switch progress.
+
+const STEP_IC = { acct: 'user', disp: 'monitor', audio: 'headphones', apps: 'app', launch: 'rocket', run: 'gamepad' };
+const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
+
+// A skipped step is usually good news (already signed in, already the main display): show it as READY.
+function stepRow(s, i, L) {
+  const k = s.k || (/Switching|account/.test(s.label) ? 'acct' : /display/i.test(s.label) ? 'disp' : /sound/i.test(s.label) ? 'audio' : /apps/i.test(s.label) ? 'apps' : /Launching/.test(s.label) ? 'launch' : 'run');
+  const sub = (s.sub || '').replace(/ · skipped$/, '');
+  const missing = s.skip && /isn't connected/.test(s.sub || '');
+  const st = i < L.step || (L.running && i === L.step) ? (s.skip ? 'skip' : 'done') : i === L.step ? 'active' : 'wait';
+  const row = { ic: STEP_IC[k] || 'check', label: s.label, sub: st === 'wait' && s.skip ? '' : sub, st };
+  if (st === 'skip') Object.assign(row, missing ? { tag: 'NOT CONNECTED', tagCls: 'warn' } : { tag: 'READY', tagCls: 'ok' });
+  return row;
+}
+
+export function launchVals(app) {
+  const S = app.state, L = S.launch, g = L && app.gfind(L.gid);
+  if (!L || !g) return { lnScreen: null, lnBar: null };
+  const shown = L.steps.filter(s => s.k !== 'run' && s.label !== 'Game running');
+  const a = L.acct && app.find(L.acct), from = app.accts.find(x => x.current);
+  const switching = !!(a && from && a.id !== from.id && !L.running);
+  const pct = Math.round(Math.min(L.step, shown.length) / Math.max(1, shown.length) * 100);
+  const hide = () => app.setState(s => ({ launch: s.launch && { ...s.launch, hidden: true } }));
+  const show = () => app.setState(s => ({ launch: s.launch && { ...s.launch, hidden: false } }));
+  const hint = L.changed ? (L.restore ? 'Back to library keeps the game running. Quitting the game puts your display back. Stop never closes the game.' : 'Restore is off, so the display stays as it is after you quit.') : 'Back to library keeps the game running. Stop never closes the game.';
+  const screen = L.hidden ? null : {
+    name: g.name, bg: g.steam && g.hero ? 'url("' + g.hero + '") center/cover no-repeat,' + app.gradOf(g) : app.cardBg(g), cover: app.cardBg(g),
+    running: !!L.running, pct, steps: shown.map((s, i) => stepRow(s, i, L)), hint,
+    asPill: !g.steam ? [] : switching ? [{ bg: avBg(from), ini: from.avatar ? '' : from.ini }, { bg: avBg(a), ini: a.avatar ? '' : a.ini }] : a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [],
+    asArrow: switching, asText: !g.steam ? 'No Steam account needed' : switching ? 'Switching to ' + a.name : a ? 'Playing as ' + a.name : 'Playing on the signed-in account',
+    note: (g.note || '').trim(), noteCopied: !!S.lNoteCopied, onCopy: () => app.copyNote(g.note),
+    onStop: () => app.stopGame(), onHide: hide,
+  };
+  const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => app.stopGame() } : null;
+  return { lnScreen: screen, lnBar: bar };
+}
+
+export function switchVals(app) {
+  const sw = app.state.sw;
+  if (!sw) return null;
+  const from = app.accts.find(x => x.current && x.id !== sw.sid);
+  const n = sw.steps.length, rows = sw.steps.map((label, i) => ({ ic: i === 0 ? 'power' : i === n - 1 ? 'gamepad' : 'key', label, sub: '', st: i < sw.step ? 'done' : i === sw.step ? 'active' : 'wait' }));
+  return {
+    name: sw.name, ini: sw.avatar ? '' : sw.ini, bg: sw.avatar ? 'url("' + sw.avatar + '") center/cover' : sw.grad,
+    from: from ? { bg: avBg(from), ini: from.avatar ? '' : from.ini } : null,
+    pct: Math.round((sw.step + 1) / Math.max(1, n) * 100), steps: rows,
+  };
+}

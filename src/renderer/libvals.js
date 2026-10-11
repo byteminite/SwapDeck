@@ -3,6 +3,7 @@ import { libGamesVals } from './libgamesvals.js';
 import { gamesPage } from './libgames.js';
 import { gamePage } from './libgamepage.js';
 import { libGamePageVals } from './libgamepagevals.js';
+import { launchVals, switchVals } from './liblaunchvals.js';
 const PAGES = [['games', 'My games', "Here's your game library"], ['recent', 'Recently played', "Here's your last progress"], ['fav', 'Favourites', 'Your favourite games'], ['upd', 'Updates', "Here's what Steam is updating"]];
 
 export function isLibLayout(app) {
@@ -31,6 +32,7 @@ export function libShellVals(app, gv) {
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings(), onMe: () => me && app.openDetails && app.openDetails(me.id),
       onSearch: () => {}, onBell: () => {},
+      ...launchVals(app), sw: switchVals(app),
       contentRef: app.lsContentRef, content: S.gd && gv && gv.gdOn ? gamePage(libGamePageVals(app, gv)) : page === 'games' ? gamesPage(libGamesVals(app).lsGames) : null,
     },
   };
