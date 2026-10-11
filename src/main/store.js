@@ -22,6 +22,7 @@ const DEFAULTS = {
     reduceMotion: false,
     startView: 'acc',        // acc | lib: the screen SwapDeck opens on
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
+    layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)
     hotkey: require('./hotkey').DEFAULT_KEY, // Electron accelerator, checked by hotkey.isValidKey

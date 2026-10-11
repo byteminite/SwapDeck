@@ -1,0 +1,48 @@
+/* Library layout. Its own palette is derived from the app theme, so Dark, OLED and Light all work. */
+.ls{
+  --ls-rail:rgba(var(--fg-rgb),.045); --ls-surface:rgba(var(--fg-rgb),.07); --ls-surface-2:rgba(var(--fg-rgb),.1); --ls-surface-3:rgba(var(--fg-rgb),.15);
+  --ls-line:rgba(var(--fg-rgb),.07); --ls-line-strong:rgba(var(--fg-rgb),.13); --ls-good:#7ee8a6; --ls-warn:#ffd27a; --ls-radius:16px;
+  --ls-ease:cubic-bezier(.23,1,.32,1);
+  flex:1; min-height:0; display:flex; gap:14px; padding:14px; box-sizing:border-box; font-family:'Geist',system-ui,sans-serif; color:var(--text);
+}
+.ls *{box-sizing:border-box}
+.ls button{font-family:inherit;color:inherit}
+.ls svg{display:block}
+
+.ls-rail{width:62px;flex:none;border-radius:20px;background:var(--ls-rail);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px}
+.ls-logo{position:relative;width:40px;height:40px;border-radius:13px;border:0;cursor:pointer;margin-bottom:14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;box-shadow:0 0 18px rgba(var(--accent-rgb),.3)}
+.ls-logo i{width:15px;height:15px;border-radius:5px;background:rgba(255,255,255,.95);box-shadow:6px 6px 0 -1px rgba(10,10,14,.45)}
+.ls-rbtn{position:relative;width:40px;height:40px;border-radius:12px;border:0;background:transparent;display:grid;place-items:center;color:var(--text-muted);cursor:pointer;transition:background .15s var(--ls-ease),color .15s var(--ls-ease)}
+.ls-rbtn:hover{background:var(--ls-surface);color:var(--text)}
+.ls-rbtn.on{background:var(--ls-surface-2);color:var(--text)}
+.ls-badge{position:absolute;right:3px;top:3px;min-width:15px;height:15px;padding:0 4px;border-radius:9px;background:var(--accent);color:var(--accent-contrast);font:700 9px 'Geist',sans-serif;display:grid;place-items:center}
+.ls-tip{position:absolute;left:52px;top:50%;transform:translateY(-50%) scale(.96);opacity:0;pointer-events:none;white-space:nowrap;padding:6px 10px;border-radius:9px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);font:600 12px 'Geist',sans-serif;color:var(--text);transition:opacity .12s var(--ls-ease),transform .12s var(--ls-ease);z-index:30}
+.ls-rbtn:hover .ls-tip,.ls-rbtn:focus-visible .ls-tip{opacity:1;transform:translateY(-50%) scale(1)}
+.ls-rlabel{font:600 9px 'Geist',sans-serif;letter-spacing:.09em;color:var(--text-subtle);margin:12px 0 4px}
+.ls-grow{flex:1}
+
+.ls-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.ls-top{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px;height:52px;flex:none}
+.ls-hi{min-width:0}
+.ls-hi b,.ls-hi span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-hi b{font:700 15px 'Geist',sans-serif}
+.ls-hi span{font:500 12px 'Geist',sans-serif;color:var(--text-muted)}
+.ls-pills{display:flex;gap:8px;justify-self:center}
+.ls-pill{height:36px;padding:0 18px;border-radius:99px;border:1px solid var(--ls-line-strong);background:transparent;font:500 13px 'Geist',sans-serif;color:var(--text-soft);cursor:pointer;white-space:nowrap;transition:background .15s var(--ls-ease)}
+.ls-pill:hover{background:var(--ls-surface)}
+.ls-pill.on{background:var(--ls-surface-2);border-color:transparent;color:var(--text)}
+.ls-topr{display:flex;align-items:center;gap:10px;justify-self:end}
+.ls-circ{width:38px;height:38px;border-radius:99px;border:1px solid var(--ls-line-strong);background:transparent;display:grid;place-items:center;color:var(--text-soft);cursor:pointer;position:relative}
+.ls-circ:hover{background:var(--ls-surface)}
+.ls-me{position:relative;width:40px;height:40px;border-radius:99px;border:0;cursor:pointer;display:grid;place-items:center;font:800 13px 'Geist',sans-serif;color:#101012}
+.ls-me i{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:9px;background:var(--ls-good);border:2px solid var(--background)}
+
+.ls-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:8px 4px 24px 0}
+.ls-soon{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:var(--text-muted);font:500 13px/1.5 'Geist',sans-serif}
+.ls-soon b{font:700 20px 'Geist',sans-serif;color:var(--text)}
+.ls-soon span:last-child{max-width:380px}
+.ls-soon-ic{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:6px}
+
+.ls-rbtn:focus-visible,.ls-pill:focus-visible,.ls-circ:focus-visible,.ls-me:focus-visible,.ls-logo:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:1100px){.ls-pill{padding:0 13px}}
+@media (prefers-reduced-motion:reduce){.ls *{transition:none !important}}

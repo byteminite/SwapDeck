@@ -11,6 +11,7 @@ import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
 import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard, cs2StatsCard } from './gamepage.js';
 import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
+import { libShellVals, layoutVals } from './libvals.js';
 
 const api = window.api;
 
@@ -139,7 +140,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, libPage: 'games', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, linkQueue: null, menu: null, menuUp: false, wn: false,
   };
@@ -250,6 +251,7 @@ class App extends Component {
     document.body.style.background = t.background;
   }
   rootRef = el => { this._root = el; if (el) this.applyTheme(); };
+  lsContentRef = el => { this._lsContent = el; };
   componentDidUpdate() {
     this.applyTheme();
   }
@@ -1698,7 +1700,7 @@ class App extends Component {
     );
     return {
       ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...this.gameVals(), ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv,
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this), ...layoutVals(this),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

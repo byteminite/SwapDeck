@@ -412,6 +412,7 @@ function ipc() {
     for (const k of ['launchAfter', 'defaultGame', 'closeAfter', 'steamArgs', 'base', 'accent', 'customAccent', 'followTag', 'reduceMotion', 'normalMon']) if (k in patch) allowed[k] = patch[k];
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
+    if ('layout' in patch) allowed.layout = patch.layout === 'library' ? 'library' : 'classic';
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
