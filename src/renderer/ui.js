@@ -8,7 +8,7 @@ import { galleryEl } from './gallery.js';
 import { CHANGELOG, newer } from './changelog.js';
 import { BASES, ACCENTS, WIN_ACCENT, hx, toHex, mixc, themeTokens } from './theme.js';
 import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
-import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard } from './gamepage.js';
+import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard, cs2StatsCard } from './gamepage.js';
 import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
 
@@ -139,7 +139,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, menu: null, menuUp: false, wn: false,
   };
@@ -421,7 +421,7 @@ class App extends Component {
     if (e.key === 'Escape') {
       if (S.gNews) return this.setState({ gNews: null });
       if (S.gShot) return this.setState({ gShot: null });
-      if (S.gShotMenu || S.gAchMenu || S.gFrMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false });
+      if (S.gShotMenu || S.gAchMenu || S.gFrMenu || S.gCsMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false, gCsMenu: false });
       if (S.colorFor) return this.setState({ colorFor: null });
       if (S.tagPop) return this.setState({ tagPop: null });
       if (S.defMenu) return this.setState({ defMenu: false });
@@ -794,7 +794,7 @@ class App extends Component {
       onBack: () => this.setState({ gNews: null }), onSteam: () => api.openSteamNews(g.appid, N.gid), onLink: url => api.openNewsLink(url),
     });
   }
-  pickCardAccount(sid) { this.setState({ gShotAcct: sid, gShotMenu: false, gAchMenu: false, gFrMenu: false, gAchAll: null }, () => this.loadConnected(this.state.gd)); }
+  pickCardAccount(sid) { this.setState({ gShotAcct: sid, gShotMenu: false, gAchMenu: false, gFrMenu: false, gCsMenu: false, gAchAll: null }, () => this.loadConnected(this.state.gd)); }
   friendsVals(g) {
     const S = this.state, I = this.gInfoOf(g), who = this.connectedAccount(g), mine = this.accts.find(a => a.current) || this.accts[0];
     if (!who) return { pill: null, state: 'none', recent: [], ever: [], onConnect: () => this.connectFromGame(g.acct || (mine && mine.id)) };
@@ -811,6 +811,34 @@ class App extends Component {
       pill, state: 'ok',
       recent: F.recent.map(f => ({ name: f.name, avatar: f.avatar, sub: hrs(f.minutes), open: open(f.sid) })), recentLabel: F.recentTotal + ' friend' + (F.recentTotal === 1 ? '' : 's') + ' played recently',
       ever: F.ever.map(f => ({ name: f.name, avatar: f.avatar, open: open(f.sid) })), everLabel: F.everTotal + ' friend' + (F.everTotal === 1 ? '' : 's') + ' played before',
+    };
+  }
+  // CS2 stats on CS2's Overview, for one connected account (picked like the other cards).
+  cs2StatsVals(g) {
+    const S = this.state, linked = this.accts.filter(a => a.linked), mine = this.accts.find(a => a.current) || this.accts[0];
+    if (!linked.length) return { pill: null, state: 'none', onConnect: () => this.connectFromGame(g.acct || (mine && mine.id)) };
+    const csOf = a => a.stats && a.stats.cs2;
+    const sel = this.cardAccount(g, linked.map(a => ({ sid: a.id, a })), x => csOf(x.a) ? (csOf(x.a).premier || 0) + 1 : 0), a = sel.a;
+    const pill = { acct: this.accountLook(a.id), menuOpen: S.gCsMenu, onMenu: () => this.setState(s => ({ gCsMenu: !s.gCsMenu, gShotMenu: false, gAchMenu: false, gFrMenu: false })),
+      accounts: this.accts.map(x => ({ ...this.accountLook(x.id), count: !x.linked ? 'CONNECT' : csOf(x) && csOf(x).premier != null ? fmt(csOf(x).premier) : '', on: x.id === a.id, pick: () => x.linked ? this.pickCardAccount(x.id) : this.connectFromGame(x.id) })) };
+    const c = csOf(a), st = a.stats;
+    if (!c) {
+      if (S.fetching[a.id] !== undefined) return { pill, state: 'loading' };
+      const note = st && st.cs2Note;
+      const emptyText = note === 'in-game' ? a.name + ' is in a game on another session. Asking CS2 would kick it, so SwapDeck waits. Refresh when you are out of the game.'
+        : note === 'not-played' ? a.name + " hasn't played CS2 yet." : 'No CS2 stats for ' + a.name + ' yet.';
+      return { pill, state: 'empty', emptyText, onRefresh: () => this.fetchStats(a.id) };
+    }
+    const prFg = tier(c.premier), cd = c.cd && c.cd.until > Date.now() ? c.cd : null, com = c.com || {};
+    return {
+      pill, state: 'ok',
+      cd: cd ? { kind: cd.kind, reason: cd.reason, left: left(cd.until) } : null,
+      premier: { text: c.premier == null ? 'Unrated' : fmt(c.premier), fg: prFg, bg: hexA(prFg, .1), bd: hexA(prFg, .4), wins: c.premier == null ? (c.vacBanned ? 'Account is VAC banned' : 'Win 10 Premier matches for a rating') : c.premierWins + ' wins' },
+      ranks: [['Competitive', c.comp], ['Wingman', c.wing]].map(([label, r]) => { const i = r ? r.i : 0, name = r ? r.name : 'Unranked', col = rankCol(i); return { label, name, ab: r && i ? abbr(name) : '-', col, artBg: G(col, '#1f2937'), wins: r ? r.wins + ' wins' : 'No ranked wins yet' }; }),
+      lvl: c.level, xpText: fmt(c.xp) + ' / ' + fmt(c.xpMax) + ' XP', xpPct: Math.round(c.xp / (c.xpMax || 1) * 100), xpLeft: fmt(c.xpMax - c.xp) + ' XP to level ' + (c.level + 1),
+      coms: [['Friendly', com.f, '#4ade80'], ['Teacher', com.t, '#38bdf8'], ['Leader', com.l, '#fbbf24']].map(([label, n, color]) => ({ label, n: fmt(n || 0), color })),
+      medals: (c.medals || []).map(m => { const col = GAMECOL[hash(m.name) % GAMECOL.length]; return m.icon ? { name: m.name, ab: '', bg: 'url("' + m.icon + '") center/contain no-repeat', bd: 'transparent' } : { name: m.name, ab: abbr(m.name), bg: 'radial-gradient(circle at 35% 30%,' + hexA(col, .95) + ',' + hexA(col, .35) + ' 60%,rgba(0,0,0,.4))', bd: hexA(col, .6) }; }),
+      medalCount: c.medals ? c.medals.length + ' in inventory' : 'Inventory unavailable',
     };
   }
   activityVals(g) {
@@ -969,7 +997,7 @@ class App extends Component {
           ach ? ach.cell : null,
         ].filter(Boolean),
         links: [['Store page', 'store'], ['DLC', 'dlc'], ['Community hub', 'hub'], ['Discussions', 'discussions'], ['Guides', 'guides'], ['Workshop', 'workshop'], ['Market', 'market'], ['Support', 'support']].map(([label, kind]) => ({ label, on: page(kind) })),
-        left: [I ? activityCard(this.activityVals(g)) : null, shots ? screenshotsCard(shots) : null],
+        left: [isCs2(g) ? cs2StatsCard(this.cs2StatsVals(g)) : null, I ? activityCard(this.activityVals(g)) : null, shots ? screenshotsCard(shots) : null],
         right: [
           ach ? achievementsCard(ach.card) : null,
           tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : ''),
@@ -1014,7 +1042,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCs2Sid: null, cs2: null });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));

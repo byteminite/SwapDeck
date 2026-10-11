@@ -5,13 +5,13 @@ export const CHANGELOG = [
   {
     v: '1.4.0', date: '11 Oct 2026',
     title: 'A new account profile',
-    intro: 'Account details open as a full profile with everything at a glance, every game the account owns, and CS2 settings on CS2\'s own page.',
+    intro: 'Account details open as a full profile with everything at a glance and every game the account owns, and everything CS2 now lives on CS2\'s own page.',
     highlights: [
       ['New profile', 'Account details fill the window: the account on the left, its games, sessions and status on the right.'],
       ['At a glance', 'Hours through SwapDeck, games owned, Steam wallet and member since, right at the top.'],
       ['All games', 'See every game the account owns, sorted by hours, the last 2 weeks or name.'],
       ['Any game\'s page', 'The ⓘ next to a game opens its page, even if it isn\'t installed on this PC.'],
-      ['CS2 settings', 'The per-account autoexec and copying settings now live on CS2\'s page, behind the gear.'],
+      ['CS2 in one place', 'Premier rating, ranks and medals are on CS2\'s page, with its per-account settings behind the gear.'],
     ],
     sections: [
       ['Account profile', [
@@ -28,12 +28,13 @@ export const CHANGELOG = [
         'Games that aren\'t installed on this PC open too, and join the Library as Not installed',
       ]],
       ['CS2', [
+        'CS2 stats moved from the account to CS2\'s Overview: Premier rating, Competitive and Wingman ranks, level, commendations, medals and any cooldown',
+        'Pick whose stats in the card\'s corner, like Achievements and Friends who play',
         'CS2 settings moved to CS2\'s page, behind the gear: the per-account autoexec and Copy settings from another account',
-        'Pick the account in the card. It starts on the game\'s account, or the one signed in',
+        'Pick the account in the settings card. It starts on the game\'s account, or the one signed in',
       ]],
       ['Good to know', [
-        'The CS2 tab is gone, so Premier rating, ranks, level and medals aren\'t shown anymore',
-        'The Steam account card is gone too. Level, wallet, games owned and friends are on the profile, CS2 Prime status isn\'t',
+        'The account\'s CS2 tab and Steam account card are gone. Level, wallet, games owned and friends are on the profile, CS2 Prime status isn\'t shown anymore',
         'Games owned, All games, wallet and level need Connect for stats, like before',
       ]],
     ],

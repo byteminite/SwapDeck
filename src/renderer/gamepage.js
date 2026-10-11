@@ -112,6 +112,31 @@ export function dlcCard(p) {
   return card('DLC', body, html`<button style="border:0;background:transparent;color:var(--accent-strong);font:500 12px 'Geist',sans-serif;cursor:pointer;padding:2px 4px;border-radius:6px" onClick=${p.onStore} class="dch4">View in store</button>`);
 }
 
+// CS2's own stats for one account (Premier, ranks, level, commendations, medals), on CS2's Overview.
+// p: { pill | null, state: 'none' | 'loading' | 'empty' | 'ok', emptyText, onConnect, onRefresh,
+//      cd: { kind, reason, left } | null, premier: { text, fg, bg, bd, wins }, ranks: [{ label, name, ab, col, artBg, wins }],
+//      lvl, xpText, xpPct, xpLeft, coms: [{ label, n, color }], medals: [{ name, ab, bg, bd }], medalCount }
+const tile = (body, extra = '') => html`<div style=${`border-radius:12px;border:1px solid rgba(var(--fg-rgb),.08);background:rgba(var(--fg-rgb),.02);padding:12px 14px;min-width:0;${extra}`}>${body}</div>`;
+export function cs2StatsCard(p) {
+  const aside = p.pill ? acctPill(p.pill) : null;
+  if (p.state === 'none') return card('CS2 stats', html`<div style=${MUTED}>Premier rating, ranks, level and medals come from CS2's servers for accounts connected for stats.</div><div style="margin-top:10px"><button style=${BTN} onClick=${p.onConnect} class="dcha">Connect for stats</button></div>`, aside);
+  if (p.state === 'loading') return card('CS2 stats', html`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${[0, 1, 2].map(i => html`<div style=${`height:92px;border-radius:12px;background:rgba(var(--fg-rgb),.05);animation:shim 1.2s ease-in-out ${i / 10}s infinite`}></div>`)}</div><div style=${`${MUTED};margin-top:10px`}>Asking CS2's servers… usually 5 to 10 seconds</div>`, aside);
+  if (p.state === 'empty') return card('CS2 stats', html`<div style=${MUTED}>${p.emptyText}</div><div style="margin-top:10px"><button style=${BTN} onClick=${p.onRefresh} class="dcha">Refresh stats</button></div>`, aside);
+  const small = (t, c = 'var(--text-subtle)') => html`<div style=${`font:500 11.5px 'Geist',sans-serif;color:${c};margin-top:6px`}>${t}</div>`;
+  const head = t => html`<div style=${LABEL}>${t}</div>`;
+  const cd = p.cd ? html`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.4);margin-bottom:12px"><div style="flex:1;min-width:0"><div style="font:600 13px 'Geist',sans-serif;color:var(--warn-fg)">${p.cd.kind} active</div><div style="font:400 12px 'Geist',sans-serif;color:var(--text-soft);margin-top:1px">Reason: ${p.cd.reason}</div></div><div style="font:700 15px 'Geist Mono',monospace;color:var(--warn-fg)">${p.cd.left}</div></div>`
+    : html`<div style="display:inline-flex;align-items:center;gap:7px;margin-bottom:12px;font:600 10.5px 'Geist Mono',monospace;padding:4px 10px;border-radius:99px;background:rgba(74,222,128,.1);color:var(--ok-fg);border:1px solid rgba(74,222,128,.35);text-transform:uppercase"><span style="width:6px;height:6px;border-radius:99px;background:#4ade80"></span>No cooldown or penalty</div>`;
+  const pr = p.premier;
+  const top = html`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+${tile(html`${head('Premier')}<div style=${`font:800 26px/1.15 'Geist Mono',monospace;color:${pr.fg};margin-top:8px`}>${pr.text}</div>${small(pr.wins)}`, `border-color:${pr.bd};background:${pr.bg};border-left:3px solid ${pr.fg}`)}
+${p.ranks.map(r => tile(html`${head(r.label)}<div style="display:flex;align-items:center;gap:8px;margin-top:10px"><span style=${`width:46px;height:22px;flex:none;border-radius:6px;background:${r.artBg};border:1px solid ${r.col};display:grid;place-items:center;font:700 10px 'Geist Mono',monospace;color:#fff`}>${r.ab}</span><span style="font:600 12.5px/1.25 'Geist',sans-serif;min-width:0">${r.name}</span></div>${small(r.wins)}`))}</div>`;
+  const mid = html`<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px;margin-top:10px">
+${tile(html`<div style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;flex:none;border-radius:99px;border:2px solid var(--accent);display:grid;place-items:center;font:700 13px 'Geist Mono',monospace">${p.lvl}</span><div style="flex:1;min-width:0">${head('Profile level')}<div style="font:600 13px 'Geist',sans-serif;margin-top:2px">Level ${p.lvl}</div></div><span style="font:500 11px 'Geist Mono',monospace;color:var(--text-muted)">${p.xpText}</span></div>${bar(p.xpPct)}${small(p.xpLeft)}`)}
+${tile(html`${head('Commendations')}<div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">${p.coms.map(c => html`<div style="display:flex;align-items:center;gap:7px;font:500 12px 'Geist',sans-serif;color:var(--text-soft)"><span style=${`width:7px;height:7px;border-radius:99px;background:${c.color}`}></span>${c.label}<span style="margin-left:auto;font:700 12.5px 'Geist Mono',monospace;color:var(--text)">${c.n}</span></div>`)}</div>`)}</div>`;
+  const medals = p.medals.length ? html`<div style="margin-top:14px"><div style="display:flex;align-items:baseline;margin-bottom:10px">${head('Medals & service coins')}<span style="margin-left:auto;font:400 11px 'Geist',sans-serif;color:var(--text-subtle)">${p.medalCount}</span></div><div style="display:flex;gap:12px;flex-wrap:wrap">${p.medals.map(m => html`<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:5px" title=${m.name}><span style=${`width:42px;height:42px;border-radius:99px;background:${m.bg};border:1.5px solid ${m.bd};display:grid;place-items:center;font:700 10px 'Geist Mono',monospace;color:#fff`}>${m.ab}</span><span style="font:400 10.5px/1.3 'Geist',sans-serif;color:var(--text-muted);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${m.name}</span></div>`)}</div></div>` : null;
+  return card('CS2 stats', html`${cd}${top}${mid}${medals}`, aside);
+}
+
 // p: { pill | null, state: 'none' | 'loading' | 'error' | 'ok', error, recent: [{ name, avatar, sub, open }], recentLabel,
 //      ever: [{ name, avatar, open }], everLabel, onConnect }
 export function friendsCard(p) {

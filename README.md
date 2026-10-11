@@ -75,6 +75,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <li><b>Last played, playtime and achievements</b> at a glance, per account</li>
 <li><b>Screenshots</b>, <b>workshop</b> items and <b>DLC</b>, with one-click links to the store, hub, guides and more</li>
 <li><b>Friends who play</b> it, and which DLC the account owns (for accounts connected for stats)</li>
+<li>On CS2's page: <b>Premier rating, ranks, level and medals</b> per account, and its per-account settings behind the gear</li>
 <li>A <b>note</b> for each game: a crosshair code, a server IP…</li>
 </ul>
 </td>
@@ -135,6 +136,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <ul>
 <li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
 <li><b>Every game the account owns</b>, with total hours, the last 2 weeks and VAC bans marked</li>
+<li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals, on CS2's page</li>
 <li>The <b>ⓘ</b> next to a game opens its page, even if it isn't installed on this PC</li>
 <li>Steam level, wallet balance, friends, and <b>friends who play</b> each game with the DLC the account owns</li>
 <li>Completely optional. Switching works without it</li>
@@ -266,6 +268,7 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 
 - Steam's **"Ask which account to use each time Steam starts"** blocks automatic sign-in, so SwapDeck turns it off when you switch.
 - If Steam asks for a password after a switch, that account's saved login expired. Sign in once with **Remember me** ticked.
+- CS2 stats aren't refreshed while that account is in a game, because it would kick the game session.
 - Opening the page of a game that isn't installed adds it to the Library as **Not installed**, so its tags and notes have a home.
 - A game's **news, DLC and friends** load when you open its page and are cached for a while, so the first open takes a second.
 - **Monitors** only need to be plugged in and powered. SwapDeck can switch one on that's turned off in Windows.
