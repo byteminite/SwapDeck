@@ -140,7 +140,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, libPage: 'games', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, libPage: 'games', lgTab: 'ov', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, linkQueue: null, menu: null, menuUp: false, wn: false,
   };
@@ -1068,7 +1068,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
+    this.setState({ gd: id, gdTab: 'ov', lgTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
@@ -1695,7 +1695,7 @@ class App extends Component {
     LIGHT = (S.settings.base || 'dark') === 'light';
     TAGCOL = S.settings.tagColors || {};
     const running = this.steamState === 'running', isLib = S.view === 'lib';
-    const b = this.baseVals(), lv = this.launchVals(b), nm = this.normMon(), tm = this.testMon();
+    const b = this.baseVals(), lv = this.launchVals(b), nm = this.normMon(), tm = this.testMon(), gv = this.gameVals();
     const vt = (k, label, n) => { const on = S.view === k; return { label, n, isAcc: k === 'acc', isLib: k === 'lib', bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', nFg: on ? 'var(--text-muted)' : 'var(--text-subtle)', on: () => this.setView(k) }; };
     const rmG = S.rmId ? this.gfind(S.rmId) : null;
     const dv = displayVals(
@@ -1704,8 +1704,8 @@ class App extends Component {
       { setNormal: p => this.setCfg(p), apply: () => this.applyNormal() },
     );
     return {
-      ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...this.gameVals(), ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this), ...layoutVals(this),
+      ...b, ...this.tileVals(), ...this.drawerVals(running), ...this.linkVals(), ...this.libraryVals(), ...gv, ...lv, ...this.addGameVals(),
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv), ...layoutVals(this),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,
