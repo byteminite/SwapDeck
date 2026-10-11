@@ -1,0 +1,161 @@
+/* Profile drawer (account detail): sidebar + two-column content layout. */
+
+.pd-root { position: absolute; inset: 44px 0 0 0; z-index: 40; background: var(--background); display: flex; animation: fade .15s ease; }
+
+.pd-sidebar { width: 280px; flex: none; background: var(--surface-raised); border-right: 1px solid var(--border); padding: 28px 22px; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; position: relative; }
+.pd-sb-close { position: absolute; top: 20px; right: 20px; width: 30px; height: 30px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; }
+.pd-sb-close svg { width: 14px; height: 14px; }
+
+.pd-sb-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; padding-right: 36px; }
+.pd-chip { display: flex; align-items: center; gap: 6px; font: 600 10.5px 'Geist Mono', monospace; letter-spacing: .07em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; }
+.pd-chip-current { background: var(--accent-chip); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), .5); }
+.pd-chip-connected { background: rgba(var(--fg-rgb), .08); color: var(--ok-fg); border: 1px solid rgba(74, 222, 128, .35); }
+.pd-chip-not { background: rgba(var(--fg-rgb), .06); color: var(--text-soft); border: 1px solid var(--border); }
+.pd-chip-dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+
+.pd-sb-avatar { width: 72px; height: 72px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font: 600 24px 'Geist Mono', monospace; color: #fff; border: 1px solid rgba(var(--fg-rgb), .15); margin-bottom: 14px; flex: none; }
+.pd-sb-name { font: 700 19px 'Geist', sans-serif; letter-spacing: -.01em; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-sb-login { font: 500 11px 'Geist Mono', monospace; color: var(--text-subtle); margin-bottom: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-sb-status { display: flex; align-items: center; gap: 7px; font: 500 12.5px 'Geist', sans-serif; color: var(--text-soft); margin-bottom: 20px; }
+.pd-dot { width: 7px; height: 7px; border-radius: 999px; flex: none; }
+
+.pd-sb-actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.pd-btn { height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent; font: 600 12.5px 'Geist', sans-serif; display: flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; }
+.pd-btn svg { width: 14px; height: 14px; flex: none; }
+.pd-btn-primary { background: var(--btn-bg); color: var(--btn-fg); }
+.pd-btn-ghost { background: var(--surface); border: 1px solid var(--border-strong); color: var(--text-soft); }
+.pd-btn-small { height: 32px; font-size: 11.5px; }
+.pd-btn-icon { width: 36px; padding: 0; flex: none; }
+.pd-btn-row { display: flex; align-items: center; gap: 7px; }
+
+.pd-sb-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 500 10.5px 'Geist Mono', monospace; color: var(--text-muted); margin-top: 4px; margin-bottom: 18px; }
+
+.pd-sb-label { font: 600 10.5px 'Geist Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--text-subtle); margin: 0 0 9px; }
+.pd-sb-tags { margin-bottom: 18px; }
+.pd-sb-note { font: 400 11.5px/1.5 'Geist', sans-serif; color: var(--text-subtle); margin-bottom: 18px; }
+
+.pd-locked-note { display: flex; align-items: center; gap: 7px; font: 500 12px 'Geist', sans-serif; color: var(--text-subtle); margin-bottom: 18px; }
+.pd-locked-note svg { width: 13px; height: 13px; flex: none; }
+
+.pd-sb-stats { display: flex; flex-direction: column; gap: 9px; margin-top: auto; padding-top: 18px; border-top: 1px solid var(--border); }
+.pd-sb-stats .pd-row { display: flex; align-items: center; justify-content: space-between; font: 500 12.5px 'Geist', sans-serif; }
+.pd-sb-stats .pd-k { color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
+.pd-sb-stats .pd-k svg { width: 13px; height: 13px; color: var(--text-subtle); flex: none; }
+.pd-sb-stats .pd-v { font: 600 12.5px 'Geist Mono', monospace; color: var(--text-soft); }
+
+.pd-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+.pd-tabs { display: flex; gap: 22px; padding: 0 28px; border-bottom: 1px solid var(--border); flex: none; }
+.pd-tab { flex: none; white-space: nowrap; display: flex; align-items: center; gap: 6px; padding: 16px 0 12px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: var(--text-subtle); font: 600 12.5px 'Geist', sans-serif; cursor: pointer; }
+.pd-tab svg { width: 11px; height: 11px; }
+.pd-tab.pd-active { color: var(--text); border-bottom-color: var(--accent); }
+.pd-tab.pd-locked { color: var(--text-subtle); }
+
+.pd-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 22px 28px 28px; }
+
+.pd-banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: linear-gradient(135deg, var(--accent-soft), rgba(var(--accent2-rgb), .08)); border: 1px solid var(--border-strong); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
+.pd-banner .pd-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pd-banner .pd-left svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.pd-banner .pd-t1 { font: 700 13.5px 'Geist', sans-serif; color: var(--text); }
+.pd-banner .pd-t2 { font: 500 11.5px 'Geist', sans-serif; color: var(--text-muted); margin-top: 1px; }
+
+.pd-section { margin-bottom: 22px; }
+.pd-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.pd-section-title { font: 700 14px 'Geist', sans-serif; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.pd-section-title svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
+.pd-section-sub { font: 500 11.5px 'Geist Mono', monospace; color: var(--text-subtle); }
+.pd-link-btn { margin-left: auto; border: 0; background: transparent; padding: 0; color: var(--accent); font: 500 12px 'Geist', sans-serif; cursor: pointer; white-space: nowrap; }
+
+.pd-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.pd-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 15px; }
+.pd-stat-card .pd-label { font: 600 10px 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin-bottom: 7px; }
+.pd-stat-card .pd-value { font: 700 19px 'Geist Mono', monospace; color: var(--text); }
+
+.pd-two-col { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.pd-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.pd-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.pd-full { grid-column: 1 / -1; }
+
+.pd-games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px; }
+.pd-game-tile { display: flex; flex-direction: column; gap: 7px; border: 0; background: transparent; padding: 0; cursor: pointer; text-align: left; min-width: 0; color: inherit; }
+.pd-game-tile .pd-art { position: relative; display: grid; place-items: center; aspect-ratio: 2/3; border-radius: 10px; box-shadow: 0 0 0 1px var(--border); font: 700 15px 'Geist Mono', monospace; color: #fff; overflow: hidden; }
+.pd-game-tile .pd-mon { position: absolute; top: 6px; right: 6px; width: 20px; height: 18px; border-radius: 6px; background: rgba(0, 0, 0, .6); color: var(--accent-2); display: grid; place-items: center; }
+.pd-game-tile .pd-mon svg { width: 11px; height: 11px; }
+.pd-game-tile .pd-name { font: 600 12px 'Geist', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pd-games-list { display: flex; flex-direction: column; gap: 2px; }
+.pd-game-row { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 8px; }
+.pd-game-thumb { width: 22px; height: 30px; flex: none; border-radius: 5px; }
+.pd-game-row .pd-name { font: 600 12.5px 'Geist', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-game-row .pd-meta { font: 500 10.5px 'Geist Mono', monospace; color: var(--text-subtle); }
+.pd-game-row .pd-hours { font: 600 12px 'Geist Mono', monospace; color: var(--text-soft); flex: none; }
+.pd-game-row .pd-info { flex: 1; min-width: 0; }
+
+.pd-session-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font: 500 12.5px 'Geist', sans-serif; }
+.pd-session-row:first-of-type { border-top: none; padding-top: 0; }
+.pd-session-row .pd-icon { width: 26px; height: 26px; border-radius: 7px; background: var(--surface-raised); display: grid; place-items: center; color: var(--accent); flex: none; }
+.pd-session-row .pd-icon svg { width: 12px; height: 12px; }
+.pd-session-row .pd-info { flex: 1; min-width: 0; }
+.pd-session-row .pd-name { font: 600 12.5px 'Geist', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-session-row .pd-meta { font: 500 11px 'Geist Mono', monospace; color: var(--text-subtle); }
+.pd-session-row .pd-dur { font: 600 12px 'Geist Mono', monospace; color: var(--text-soft); flex: none; }
+
+.pd-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pd-status-tile { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 12px 13px; }
+.pd-status-tile .pd-k { font: 600 10px 'Geist Mono', monospace; text-transform: uppercase; letter-spacing: .05em; color: var(--text-subtle); margin-bottom: 6px; }
+.pd-pill { font: 600 10.5px 'Geist Mono', monospace; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; display: inline-block; }
+.pd-pill-ok { background: rgba(74, 222, 128, .14); color: var(--ok-fg); }
+.pd-pill-warn { background: rgba(251, 191, 36, .14); color: var(--warn-fg); }
+.pd-pill-bad { background: rgba(248, 113, 113, .14); color: var(--bad-fg); }
+.pd-pill-neutral { background: rgba(var(--fg-rgb), .07); color: var(--text-subtle); }
+
+.pd-note-textarea { width: 100%; box-sizing: border-box; resize: none; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(var(--fg-rgb), .03); color: var(--text-soft); font: 400 12.5px/1.55 'Geist', sans-serif; outline: none; }
+.pd-count { font: 400 11px 'Geist Mono', monospace; color: var(--text-subtle); }
+
+.pd-row-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+.pd-row-line:first-child { border-top: none; padding-top: 0; }
+.pd-row-line .pd-rlabel { font: 500 12.5px 'Geist', sans-serif; color: var(--text-soft); }
+.pd-row-line .pd-rval { font: 500 12.5px 'Geist Mono', monospace; color: var(--text); }
+
+.pd-select-row { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.pd-select-row .pd-left { display: flex; align-items: center; gap: 9px; color: var(--text-soft); font: 500 12.5px 'Geist', sans-serif; min-width: 0; }
+.pd-select-row .pd-chg { color: var(--text-subtle); font: 500 11.5px 'Geist Mono', monospace; display: flex; align-items: center; gap: 5px; flex: none; }
+
+.pd-connect-card { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+.pd-connect-card .pd-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); border: 1px solid rgba(var(--accent-rgb), .3); display: grid; place-items: center; color: var(--accent); }
+.pd-connect-card .pd-icon svg { width: 15px; height: 15px; }
+.pd-connect-card .pd-title { font: 600 13px 'Geist', sans-serif; color: var(--text); }
+.pd-connect-card .pd-desc { font: 400 11.5px/1.5 'Geist', sans-serif; color: var(--text-muted); }
+
+.pd-expander { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 10px 2px; font: 500 12.5px 'Geist', sans-serif; color: var(--text-muted); cursor: pointer; text-align: left; }
+.pd-expander svg { width: 13px; height: 13px; flex: none; transition: transform .15s ease; }
+.pd-expander.pd-open svg { transform: rotate(90deg); }
+
+.pd-footer { padding: 14px 28px; border-top: 1px solid var(--border); flex: none; display: flex; align-items: center; gap: 8px; }
+.pd-footer .pd-hint { font: 400 11px/1.4 'Geist', sans-serif; color: var(--text-subtle); flex: 1; min-width: 0; }
+.pd-btn-danger { border: 1px solid rgba(248, 113, 113, .35); background: transparent; color: var(--bad-fg); }
+
+/* Games screen */
+.pd-games-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.pd-games-head .pd-title-block { display: flex; flex-direction: column; gap: 6px; }
+.pd-games-head h2 { margin: 0; font: 700 19px 'Geist', sans-serif; color: var(--text); letter-spacing: -.01em; }
+.pd-games-sub { font: 500 12px 'Geist Mono', monospace; color: var(--text-subtle); }
+.pd-seg { display: inline-flex; gap: 2px; background: rgba(var(--fg-rgb), .04); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+.pd-seg button { padding: 6px 12px; border-radius: 8px; border: 0; font: 500 11.5px 'Geist', sans-serif; cursor: pointer; }
+
+.pd-glist { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.pd-glist-header { display: grid; grid-template-columns: 1fr 90px 90px 36px; gap: 14px; align-items: center; padding: 10px 16px; font: 600 10.5px 'Geist Mono', monospace; letter-spacing: .07em; text-transform: uppercase; color: var(--text-subtle); border-bottom: 1px solid var(--border); }
+.pd-grow { display: grid; grid-template-columns: 1fr 90px 90px 36px; gap: 14px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--border); }
+.pd-grow:first-child { border-top: none; }
+.pd-grow:hover { background: rgba(var(--fg-rgb), .025); }
+.pd-gname-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pd-gicon { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; font: 700 12px 'Geist Mono', monospace; color: #fff; box-shadow: 0 0 0 1px var(--border); }
+.pd-gname-col { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pd-gname { font: 600 13.5px 'Geist', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pd-gbar-track { height: 3px; border-radius: 99px; background: rgba(var(--fg-rgb), .07); overflow: hidden; width: 100%; max-width: 160px; }
+.pd-gbar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.pd-ghours { text-align: right; font: 600 13px 'Geist Mono', monospace; color: var(--text); }
+.pd-grecent { text-align: right; font: 500 12px 'Geist Mono', monospace; }
+.pd-ginfo { width: 28px; height: 28px; flex: none; border-radius: 8px; border: 1px solid var(--border); background: rgba(var(--fg-rgb), .03); color: var(--text-muted); display: grid; place-items: center; cursor: pointer; justify-self: end; }
+.pd-ginfo:hover { color: var(--text); border-color: var(--border-strong); }
+.pd-vac-tag { flex: none; font: 700 10px 'Geist Mono', monospace; letter-spacing: .06em; padding: 2px 7px; border-radius: 99px; background: rgba(248, 113, 113, .15); color: var(--bad-fg); border: 1px solid rgba(248, 113, 113, .45); }

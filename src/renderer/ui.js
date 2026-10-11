@@ -37,6 +37,7 @@ const initials = name => {
 };
 const SHORT = { 'Counter-Strike 2': 'CS2', "Baldur's Gate 3": 'BG3', 'Deep Rock Galactic': 'DRG', 'Rocket League': 'RL', 'Apex Legends': 'Apex', 'Assetto Corsa Competizione': 'ACC', 'Assetto Corsa': 'AC', 'Automobilista 2': 'AMS2', 'Le Mans Ultimate': 'LMU', 'DiRT Rally 2.0': 'DR2', 'Ready or Not': 'RoN', 'Phasmophobia': 'Phasmo', 'Lethal Company': 'Lethal', 'Dead by Daylight': 'DBD' };
 const shortName = n => SHORT[n] || (n.length <= 12 ? n : abbr(n));
+const isCs2 = g => !!g && g.steam && String(g.appid) === '730';
 const iniOf = g => { const a = abbr(g.name); return a.length > 1 ? a.slice(0, 3) : g.name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase(); };
 const rankCol = i => i < 7 ? '#94a3b8' : i < 11 ? '#fbbf24' : i < 15 ? '#60a5fa' : i < 18 ? '#a78bfa' : '#f472b6';
 const tier = r => r == null ? '#8e8e99' : r < 5000 ? '#b0c3d9' : r < 10000 ? '#8cc6ff' : r < 15000 ? '#6a7dff' : r < 20000 ? '#c166ff' : r < 25000 ? '#f03cff' : r < 30000 ? '#eb4b4b' : '#fed700';
@@ -140,7 +141,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
-    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, menu: null, menuUp: false, wn: false,
+    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, menu: null, menuUp: false, wn: false,
   };
   _t = []; _tid = 0;
 
@@ -220,6 +221,15 @@ class App extends Component {
   }
   closeWn() { this.setState({ wn: false }); this.setCfg({ lastSeenVersion: this.state.version }); }
   async reloadLib() { const lib = await api.libList(); if (lib) this.setState({ lib }); }
+  async openGameInfo(game, lg) {
+    if (lg) return this.openGame(lg.id);
+    const added = await api.libAddSteamGame(game.appid, game.n);
+    if (!added) return;
+    this.setState(
+      st => ({ lib: st.lib.some(x => x.id === added.id) ? st.lib : [...st.lib, added] }),
+      () => this.openGame(added.id)
+    );
+  }
   async reloadMonitors() { const monitors = await api.displays(); if (monitors && monitors.length) this.setState({ monitors }); }
 
   // ---------- theme ----------
@@ -507,8 +517,7 @@ class App extends Component {
   cancelAdd() { api.cancelAdd(); this.setState({ addOpen: false }); }
   openDetails(id) {
     const a = this.find(id);
-    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dKeep: [], colorFor: null, tagPop: null, dAdv: false, dLaunchMenu: false, cs2: null });
-    api.cs2Info(id).then(info => { if (this.state.drawerId === id) this.setState({ cs2: { sid: id, ...info, from: info.sources[0] ? info.sources[0].sid : null } }); });
+    this.setState({ drawerId: id, tab: 'overview', tagDraft: '', dKeep: [], colorFor: null, tagPop: null, dAdv: false, dLaunchMenu: false });
     if (a && (!a.pubAt || (a.linked && !a.statsAt))) this.fetchStats(id);
   }
   async fetchStats(id) {
@@ -900,6 +909,47 @@ class App extends Component {
     clearTimeout(this._gNoteT);
     this._gNoteT = setTimeout(() => api.libSet(id, { note: v }), 400);
   }
+  // ---------- CS2 settings on CS2's setup page (they belong to an account, so the card has its own account picker) ----------
+  cs2Sid(g) {
+    const S = this.state, has = sid => this.accts.some(a => a.id === sid);
+    if (S.gCs2Sid && has(S.gCs2Sid)) return S.gCs2Sid;
+    if (g.acct && has(g.acct)) return g.acct;
+    const cur = this.accts.find(a => a.current) || this.accts[0];
+    return cur ? cur.id : null;
+  }
+  loadCs2(sid) {
+    if (!sid) return;
+    this._cs2Want = sid;
+    this.setState({ cs2: null });
+    api.cs2Info(sid).then(info => { if (info && this._cs2Want === sid) this.setState({ cs2: { sid, ...info, from: info.sources[0] ? info.sources[0].sid : null } }); });
+  }
+  cs2Vals(g) {
+    const S = this.state;
+    if (!isCs2(g) || S.gdTab !== 'setup') return { gCs2: null };
+    const sid = this.cs2Sid(g), a = this.find(sid), c = S.cs2 && S.cs2.sid === sid ? S.cs2 : null;
+    const bd = k => S.menu === k ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)';
+    const opt = (label, sel, on) => ({ label, sel, on, bg: sel ? 'rgba(var(--accent-rgb),.1)' : 'transparent' });
+    const from = c && c.sources.find(o => o.sid === c.from);
+    return { gCs2: {
+      acctName: a ? a.name : 'Pick an account', acctMenu: S.menu === 'gcs2acct', acctBd: bd('gcs2acct'), up: S.menuUp,
+      onAcctMenu: e => this.toggleMenu('gcs2acct', e),
+      acctOpts: this.accts.map(x => opt(x.name, x.id === sid, () => { this.setState({ menu: null, gCs2Sid: x.id }); this.loadCs2(x.id); })),
+      loading: !c, ready: !!(c && c.installed), missing: !!(c && !c.installed),
+      state: c && c.installed ? (c.hasSettings ? 'Has its own settings' : 'No settings yet: play CS2 once on it') : '',
+      auto: c ? c.autoexec : '', ph: '// e.g.\nfps_max 0\ncl_crosshairsize 2\nbind "mwheeldown" "+jump"',
+      onAuto: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, autoexec: v } })); clearTimeout(this._cs2T); this._cs2T = setTimeout(() => api.cs2Autoexec(sid, v), 500); },
+      canCopy: !!(c && c.sources.length),
+      copyOpts: c ? c.sources.map(o => opt(o.name, o.sid === c.from, () => this.setState(st => ({ menu: null, cs2: st.cs2 && { ...st.cs2, from: o.sid } })))) : [],
+      copyLabel: from ? from.name : 'Pick an account', copyMenu: S.menu === 'cs2', copyBd: bd('cs2'), onCopyMenu: e => this.toggleMenu('cs2', e),
+      onCopy: async () => {
+        if (!from) return;
+        const r = await api.cs2Copy(from.sid, sid);
+        if (!r.ok) { this.toast('error', "Couldn't copy CS2 settings", r.error); return; }
+        this.toast('success', 'CS2 settings copied', 'From ' + from.name + ' to ' + (a ? a.name : 'this account') + (r.backup ? '. The old ones are backed up in the cfg folder.' : '.'));
+        this.loadCs2(sid);
+      },
+    } };
+  }
   overviewVals(g) {
     // Non-Steam games have no Overview, so their note sits on the settings page.
     if (!g.steam) return { gGear: null, gOv: null, gNoteSetup: { value: g.note || '', count: (g.note || '').length + ' / 1000', onInput: e => this.setGameNote(g.id, e.target.value) } };
@@ -910,7 +960,7 @@ class App extends Component {
     return {
       gNoteSetup: null,
       // The gear next to the close button swaps between the Overview and the game's setup.
-      gGear: { on: !ov, title: ov ? 'Setup: account, display, sound and apps' : 'Back to the overview', onClick: tab(ov ? 'setup' : 'ov') },
+      gGear: { on: !ov, title: ov ? 'Setup: account, display, sound and apps' : 'Back to the overview', onClick: () => { tab(ov ? 'setup' : 'ov')(); if (ov && isCs2(g)) this.loadCs2(this.cs2Sid(g)); } },
       gOv: !ov ? null : {
         stats: [
           this.updateCell(g),
@@ -964,7 +1014,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false });
+    this.setState({ gd: id, gdTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCs2Sid: null, cs2: null });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
@@ -1279,6 +1329,7 @@ class App extends Component {
       gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
       gTagN: g.tags.length ? g.tags.length + ' selected' : '',
       ...this.overviewVals(g),
+      ...this.cs2Vals(g),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
       gPlaySub: this.updating(g) ? 'Steam finishes the update first' : [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null, gNews: null }); },
@@ -1412,21 +1463,20 @@ class App extends Component {
     const f = S.fetching[d.id], ld = i => f !== undefined && f <= i, L = d.linked, st = d.stats || null, ac = (st && st.acct) || null, c = (st && st.cs2) || null, p = d.pub || null;
     const dCanSw = !(d.current && running), g = this.launchOf(d);
     const tradeC = p && p.trade === 'banned' ? BAD : p && p.trade === 'probation' ? WARN : OK;
-    const hasCs2Tab = !(L && st && !c && st.cs2Note === 'not-played');
-    const tabsDef = [['overview', 'Overview', false], ...(hasCs2Tab ? [['cs2', 'CS2', !L]] : []), ['games', 'Games' + (L && st ? ' · ' + st.games.length : ''), !L]];
+    const tabsDef = [['overview', 'Overview', false], ['games', 'Games' + (L && st ? ' · ' + st.games.length : ''), !L]];
     const tab = tabsDef.some(t => t[0] === S.tab) ? S.tab : 'overview';
     const updatedAt = L ? d.statsAt : d.pubAt;
     const games = st ? st.games.slice().sort(S.gSort === 'name' ? (x, y) => x.n.localeCompare(y.n) : S.gSort === 'recent' ? (x, y) => y.w - x.w || y.h - x.h : (x, y) => y.h - x.h) : [];
     const maxH = Math.max(1, ...games.map(x => x.h)), totH = games.reduce((s, x) => s + x.h, 0);
     const vac = new Set((ac && ac.vacGames) || []);
-    const cd = c && c.cd && c.cd.until > Date.now() ? c.cd : null;
     const seg = (cur, k, l, on) => ({ label: l, bg: cur === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: cur === k ? 'var(--text)' : 'var(--text-subtle)', on });
     const dash = '—';
     const instSteam = S.lib.filter(x => x.steam && x.installed);
-    const gameIc = x => { const lg = S.lib.find(y => y.steam && String(y.appid) === String(x.appid)); const base = G(GAMECOL[hash(x.appid || x.n) % GAMECOL.length], '#111'); return x.icon ? 'url("' + fixIcon(x.icon) + '") center/cover no-repeat,' + base : lg ? this.cardBg(lg) : base; };
-    const xpMax = c && c.xpMax ? c.xpMax : 1;
+    const libGame = x => S.lib.find(y => y.steam && String(y.appid) === String(x.appid));
+    const gameIc = x => { const lg = libGame(x); const base = G(GAMECOL[hash(x.appid || x.n) % GAMECOL.length], '#111'); return x.icon ? 'url("' + fixIcon(x.icon) + '") center/cover no-repeat,' + base : lg ? this.cardBg(lg) : base; };
     return {
-      drawerOn: true, onDrawerClose: () => this.setState({ drawerId: null }),
+      drawerOn: true, onDrawerClose: () => this.setState({ drawerId: null }), dBehindGd: !!S.gd,
+      onDSeeAllGames: () => this.setState({ tab: 'games' }), onGamesBack: () => this.setState({ tab: 'overview' }),
       dName: d.name, dLogin: d.login, dIni: d.ini, dLast: d.last, dSid: d.sid,
       dBg: 'radial-gradient(120% 120% at 10% 0%,rgba(var(--fg-rgb),.22),transparent 55%),' + d.grad,
       dHasAv: !!d.avatar, dAvBg: d.avatar ? 'url("' + d.avatar + '") center/cover no-repeat,#111' : 'rgba(0,0,0,.28)',
@@ -1439,8 +1489,7 @@ class App extends Component {
       dFetching: f !== undefined, dIdle: f === undefined,
       dUpd: f !== undefined ? 'Updating… ' + (f + 1) + '/' + (L ? 4 : 1) : (updatedAt ? 'Updated ' + rel(updatedAt) : 'Never updated'),
       onDRefresh: () => this.fetchStats(d.id), onDLink: () => this.openLink(d.id), onDUnlink: () => this.setState({ unlinkId: d.id }),
-      tabs: tabsDef.map(([k, l, lock]) => ({ label: l, lock, fg: tab === k ? 'var(--text)' : 'var(--text-subtle)', bd: tab === k ? 'var(--accent)' : 'transparent', on: () => this.setState({ tab: k }) })),
-      tabOv: tab === 'overview', tabCs: tab === 'cs2', tabGm: tab === 'games',
+      tabOv: tab === 'overview', tabGm: tab === 'games',
       pubRows: [
         this.row('Online status', stText(p), !p || p.st === 'offline' ? NEU : p.st === 'away' ? WARN : OK, false, ld(0)),
         this.row('Profile visibility', !p ? dash : p.priv ? 'Private' : 'Public', !p ? NEU : p.priv ? WARN : OK, false, ld(0)),
@@ -1448,15 +1497,6 @@ class App extends Component {
         this.row('Trade ban', !p ? dash : p.trade === 'none' ? 'None' : p.trade === 'banned' ? 'Banned' : 'Probation', !p ? NEU : tradeC, false, ld(0)),
         this.row('Limited account', !p ? dash : p.lim ? 'Yes' : 'No', !p ? NEU : p.lim ? WARN : OK, false, ld(0)),
         this.row('Member since', (p && p.since) || dash, null, true, ld(0)),
-      ],
-      acctRows: [
-        this.row('Steam level', ac && ac.level != null ? String(ac.level) : dash, null, true, ld(1)),
-        this.row('Wallet balance', (ac && ac.wallet) || dash, null, true, ld(1)),
-        this.row('Games owned', st ? fmt(st.games.length) : dash, null, true, ld(1)),
-        this.row('Friends', ac && ac.friends != null ? fmt(ac.friends) : dash, null, true, ld(1)),
-        this.row('CS2 Prime', !ac || ac.prime == null ? 'Unknown' : ac.prime ? 'Prime' : 'Not Prime', ac && ac.prime ? OK : NEU, false, ld(1)),
-        this.row('VAC bans', ac && ac.vacCount ? (ac.vacGames.length ? 'VAC banned in: ' + ac.vacGames.map(shortName).join(', ') : ac.vacCount + ' ban' + (ac.vacCount === 1 ? '' : 's')) : 'None', ac && ac.vacCount ? BAD : OK, false, ld(1)),
-        this.row('Community ban', ac && ac.communityBanned ? 'Yes' : 'No', ac && ac.communityBanned ? BAD : OK, false, ld(1)),
       ],
       pcRows: [
         this.row('Login name', d.login, null, true),
@@ -1471,60 +1511,42 @@ class App extends Component {
       dLaunchNow: g ? 'Launches ' + g + ' after switching' : 'Only signs in, no game launches',
       dTagEd: this.tagEditVals({ tags: d.tags, keep: S.dKeep, where: 'acct', setTags: tags => this.setAcctTags(d.id, tags), draftKey: 'tagDraft' }),
       dNote: d.note, dNoteCount: d.note.length + ' / 140', onDNote: e => this.editNote(d.id, e.target.value),
-      acctLoading: L && ld(1), acctReady: L,
-      csLoading: L && ld(3), csReady: L && !ld(3) && !!c, gmLoading: L && ld(2), gmReady: L && !ld(2) && !!st,
-      csEmpty: L && !ld(3) && !c, csEmptyTitle: st && st.cs2Note === 'in-game' ? 'In a game right now' : 'No CS2 stats yet',
-      csEmptyText: st && st.cs2Note === 'in-game' ? 'This account is playing on another session. Asking CS2 would kick it, so SwapDeck waits. Refresh when you are out of the game.' : 'Hit "Refresh stats" to ask CS2\'s servers for ranks, level and medals.',
+      gmLoading: L && ld(2), gmReady: L && !ld(2) && !!st,
       gmEmpty: L && !ld(2) && !st, gmEmptyTitle: 'No game list yet', gmEmptyText: 'Hit "Refresh stats" to load owned games and hours.',
-      cdOn: !!cd, cdOff: !cd, cdKind: cd ? cd.kind : '', cdReason: cd ? cd.reason : '', cdLeft: cd ? left(cd.until) : '',
-      prText: !c || c.premier == null ? 'Unrated' : fmt(c.premier), prFg: tier(c && c.premier), prBg: hexA(tier(c && c.premier), .1), prBd: hexA(tier(c && c.premier), .4),
-      prWins: !c ? '' : c.premier == null ? (c.vacBanned ? 'Account is VAC banned' : 'Win 10 Premier matches for a rating') : c.premierWins + ' wins',
       dGames: S.lib.filter(x => x.steam && x.acct === d.id).map(x => ({ name: x.name, bg: this.cardBg(x), iniTxt: this.coverOf(x) ? '' : iniOf(x), hasMon: !!x.display.mon, on: () => this.setState({ gd: x.id, drawerId: null }) })),
       dHasGames: S.lib.some(x => x.steam && x.acct === d.id), dNoGames: !S.lib.some(x => x.steam && x.acct === d.id),
+      dSideLevel: ac && ac.level != null ? String(ac.level) : dash,
+      dSideOwned: st ? fmt(st.games.length) : dash,
+      dSideFriends: ac && ac.friends != null ? fmt(ac.friends) : dash,
+      dSideBans: !ac ? dash : ac.vacCount || ac.communityBanned ? 'Yes' : 'None',
+      dOwnedReady: L && !!st, dOwnedCount: st ? fmt(st.games.length) : dash,
+      dOwnedTop: st ? st.games.slice().sort((x, y) => y.h - x.h).slice(0, 5).map(x => ({ n: x.n, ab: x.icon ? '' : shortName(x.n).slice(0, 4), icBg: gameIc(x), h: fmt(x.h) + ' h', meta: x.w ? fmt(x.w) + ' h recently' : 'No recent playtime' })) : [],
       ...(() => {
         const log = S.playLog[d.sid] || {}, rows = Object.entries(log).map(([gid, e]) => ({ g: S.lib.find(x => x.id === gid), e })).filter(r => r.g && r.e.ms > 0).sort((x, y) => y.e.ms - x.e.ms);
         const tot = rows.reduce((t, r) => t + r.e.ms, 0), hrs = ms => (ms / 3600000).toFixed(1) + ' h';
-        return { dPlayOn: rows.length > 0, dPlayTotal: hrs(tot) + ' total', dPlay: rows.map(r => ({ name: r.g.name, bg: this.cardBg(r.g), h: hrs(r.e.ms), sub: r.e.n + ' session' + (r.e.n === 1 ? '' : 's') + ' · last ' + rel(r.e.last) })) };
+        return {
+          dPlayOn: rows.length > 0, dPlayTotal: hrs(tot) + ' total', dPlay: rows.map(r => ({ name: r.g.name, bg: this.cardBg(r.g), h: hrs(r.e.ms), sub: r.e.n + ' session' + (r.e.n === 1 ? '' : 's') + ' · last ' + rel(r.e.last) })),
+          dGlanceHours: tot > 0 ? hrs(tot) : dash,
+        };
       })(),
+      dGlanceGames: st ? fmt(st.games.length) : dash,
+      dGlanceWallet: (ac && ac.wallet) || dash,
+      dGlanceSince: (p && p.since) || dash,
       ...(() => {
         const ss = S.sessions.filter(x => x.sid === d.sid && x.ms > 0).slice(0, 6).map(x => { const g = S.lib.find(y => y.id === x.gid); return g ? { name: g.name, when: when(x.start), dur: dur(x.ms) } : null; }).filter(Boolean);
-        const c = S.cs2 && S.cs2.sid === d.sid ? S.cs2 : null;
-        return {
-          dSessOn: ss.length > 0, dSess: ss,
-          dCs2On: !!(c && c.installed), dCs2State: c ? (c.hasSettings ? 'has its own settings' : 'no settings yet: play CS2 once on it') : '',
-          dCs2Auto: c ? c.autoexec : '',
-          dCs2Ph: '// e.g.\nfps_max 0\ncl_crosshairsize 2\nbind "mwheeldown" "+jump"',
-          onDCs2Auto: e => { const v = e.target.value; this.setState(st => ({ cs2: st.cs2 && { ...st.cs2, autoexec: v } })); clearTimeout(this._cs2T); this._cs2T = setTimeout(() => api.cs2Autoexec(d.sid, v), 500); },
-          dCs2CanCopy: !!(c && c.sources.length),
-          dCs2Opts: c ? c.sources.map(o => ({ label: o.name, sub: '', sel: o.sid === c.from, bg: o.sid === c.from ? 'rgba(var(--accent-rgb),.1)' : 'transparent', on: () => this.setState(st => ({ menu: null, cs2: st.cs2 && { ...st.cs2, from: o.sid } })) })) : [],
-          dCs2Label: c ? ((c.sources.find(o => o.sid === c.from) || {}).name || 'Pick an account') : '',
-          dCs2Menu: S.menu === 'cs2', dCs2Up: S.menuUp, dCs2Bd: S.menu === 'cs2' ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)',
-          onDCs2Menu: e => this.toggleMenu('cs2', e),
-          onDCs2Copy: async () => {
-            const from = c && c.sources.find(o => o.sid === c.from); if (!from) return;
-            const r = await api.cs2Copy(from.sid, d.sid);
-            if (!r.ok) { this.toast('error', "Couldn't copy CS2 settings", r.error); return; }
-            this.toast('success', 'CS2 settings copied', 'From ' + from.name + ' to ' + d.name + (r.backup ? '. The old ones are backed up in the cfg folder.' : '.'));
-            api.cs2Info(d.sid).then(info => this.setState(st => ({ cs2: st.cs2 && st.cs2.sid === d.sid ? { ...st.cs2, ...info } : st.cs2 })));
-          },
-        };
+        return { dSessOn: ss.length > 0, dSess: ss };
       })(),
       onDManageLib: () => this.setState({ drawerId: null, view: 'lib', lq: '', lf: 'all', libTags: [] }),
       dAdvOpen: S.dAdv, dAdvRot: S.dAdv ? 'rotate(180deg)' : 'none', onDAdv: () => this.setState(s => ({ dAdv: !s.dAdv })),
       dLaunchMenu: S.dLaunchMenu, onDLaunchMenu: () => this.setState(s => ({ dLaunchMenu: !s.dLaunchMenu })), dLaunchBd: S.dLaunchMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.12)',
       dLaunchLbl: !d.launch || d.launch === 'default' ? 'Default (' + (this.defGameName() || 'nothing') + ')' : d.launch === 'none' ? 'Nothing' : (this.gameName(d.launch) || 'App ' + d.launch),
       dPwSaved: !!(L && d.hasCredentials), dNoPw: !(L && d.hasCredentials), onDForgetPw: () => this.forgetPassword(d.id),
-      ranks: [['Competitive', c && c.comp], ['Wingman', c && c.wing]].map(([l, r]) => { const i = r ? r.i : 0, name = r ? r.name : 'Unranked', col = rankCol(i); return { label: l.toUpperCase(), name, ab: r && i ? abbr(name) : '—', col, artBg: G(col, '#1f2937'), wins: r ? r.wins + ' wins' : 'No ranked wins yet' }; }),
-      lvl: c ? c.level : 0, lvlNext: c ? c.level + 1 : 1, xpText: c ? fmt(c.xp) + ' / ' + fmt(c.xpMax) + ' XP' : '', xpLeft: c ? fmt(c.xpMax - c.xp) + ' XP to level ' + (c.level + 1) : '', xpPct: c ? Math.round(c.xp / xpMax * 100) + '%' : '0%',
-      coms: [['Friendly', c ? c.com.f : 0], ['Teacher', c ? c.com.t : 0], ['Leader', c ? c.com.l : 0]].map(([l, n]) => ({ label: l, n: fmt(n), isF: l === 'Friendly', isT: l === 'Teacher', isL: l === 'Leader' })),
-      medals: ((c && c.medals) || []).map(m => { const col = GAMECOL[hash(m.name) % GAMECOL.length]; return m.icon ? { name: m.name, ab: '', bg: 'url("' + m.icon + '") center/contain no-repeat', bd: 'transparent' } : { name: m.name, ab: abbr(m.name), bg: 'radial-gradient(circle at 35% 30%,' + hexA(col, .95) + ',' + hexA(col, .35) + ' 60%,rgba(0,0,0,.4))', bd: hexA(col, .6) }; }),
-      medalCount: c && c.medals ? c.medals.length + ' in inventory' : 'Inventory unavailable',
       banHas: !!(ac && (ac.vacCount > 0 || ac.communityBanned)), banNone: !(ac && (ac.vacCount > 0 || ac.communityBanned)),
       banVac: ac && ac.vacCount ? (ac.vacGames.length ? 'VAC banned in: ' + ac.vacGames.join(', ') : ac.vacCount + ' VAC ban' + (ac.vacCount === 1 ? '' : 's')) : 'No VAC bans',
       banGame: ac && ac.communityBanned ? 'Community banned' : 'No community ban',
       gSorts: [['hours', 'Hours'], ['recent', 'Last 2 weeks'], ['name', 'Name']].map(([k, l]) => seg(S.gSort, k, l, () => this.setState({ gSort: k }))),
       gSummary: games.length + ' games · ' + fmt(Math.round(totH)) + ' h total',
-      gameRows: games.map(x => ({ n: x.n, ab: x.icon ? '' : shortName(x.n).slice(0, 4), icBg: gameIc(x), h: fmt(x.h) + ' h', w: x.w ? fmt(x.w) + ' h' : '—', wFg: x.w ? 'var(--ok-fg)' : 'var(--text-subtle)', pct: Math.max(2, Math.round(x.h / maxH * 100)) + '%', banned: vac.has(x.n) })),
+      gameRows: games.map(x => { const lg = libGame(x); return { n: x.n, ab: x.icon ? '' : shortName(x.n).slice(0, 4), icBg: gameIc(x), h: fmt(x.h) + ' h', w: x.w ? fmt(x.w) + ' h' : '—', wFg: x.w ? 'var(--ok-fg)' : 'var(--text-subtle)', pct: Math.max(2, Math.round(x.h / maxH * 100)) + '%', banned: vac.has(x.n), onInfo: () => this.openGameInfo(x, lg) }; }),
       onDForget: () => this.setState({ confirmId: d.id }),
     };
   }

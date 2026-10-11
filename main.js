@@ -549,6 +549,16 @@ function ipc() {
   // ---- library ----
   const findGame = id => library.build(loc.dir).find(g => g.id === id);
   ipcMain.handle('lib:list', () => library.build(loc.dir));
+  ipcMain.handle('lib:addSteamGame', (_, appid, name) => {
+    if (!isAppid(appid)) return null;
+    const id = 'steam:' + appid;
+    const lib = library.build(loc.dir);
+    if (!lib.some(x => x.id === id)) {
+      store.setGameCfg(id, { name: String(name || '').slice(0, 200) });
+      return library.build(loc.dir).find(x => x.id === id) || null;
+    }
+    return lib.find(x => x.id === id);
+  });
   ipcMain.handle('lib:set', (_, id, patch) => {
     const g = findGame(String(id)); if (!g) return null;
     const allowed = {};

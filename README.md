@@ -44,6 +44,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <h3>👥 Accounts, sorted your way</h3>
 <ul>
 <li>One-click switching from a <b>"Who's playing?"</b> picker or the classic sideways gallery</li>
+<li>A <b>full-window profile</b> for each account: its most played games, recent sessions, wallet and member since at a glance</li>
 <li><b>Tags, notes and favourites</b>: give each tag its own colour, then tick as many tags as you like in the <b>Tags</b> filter</li>
 <li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
 <li><b>Playtime per account</b> for everything you launch through SwapDeck</li>
@@ -133,13 +134,13 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <h3>📊 Stats, if you want them</h3>
 <ul>
 <li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
-<li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals</li>
-<li>Games and hours, Steam level, wallet balance and friends</li>
-<li><b>Friends who play</b> each game, with their hours, and which of its DLC the account owns</li>
+<li><b>Every game the account owns</b>, with total hours, the last 2 weeks and VAC bans marked</li>
+<li>The <b>ⓘ</b> next to a game opens its page, even if it isn't installed on this PC</li>
+<li>Steam level, wallet balance, friends, and <b>friends who play</b> each game with the DLC the account owns</li>
 <li>Completely optional. Switching works without it</li>
 </ul>
 </td>
-<td width="55%"><img src="docs/screenshots/03-account-cs2.png" alt="Stats, if you want them"></td>
+<td width="55%"><img src="docs/screenshots/03-account-games.png" alt="Stats, if you want them"></td>
 </tr>
 <tr>
 <td width="55%"><img src="docs/screenshots/09-accounts-gallery.png" alt="Make it yours"></td>
@@ -168,7 +169,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
   <tr>
     <td width="33%" valign="top">💾 <b>Backup & restore</b><br><sub>Tags, notes, games and profiles. Never sign-ins</sub></td>
     <td width="33%" valign="top">🔐 <b>Master password</b><br><sub>A lock screen on top of Windows' encryption</sub></td>
-    <td width="33%" valign="top">🕹️ <b>Per-account CS2 configs</b><br><sub>Copy settings between accounts, plus an autoexec each</sub></td>
+    <td width="33%" valign="top">🕹️ <b>Per-account CS2 configs</b><br><sub>On CS2's page: an autoexec each, and copy settings between accounts</sub></td>
   </tr>
   <tr>
     <td width="33%" valign="top">🕓 <b>Session history</b><br><sub>Who played what, when, and for how long</sub></td>
@@ -197,7 +198,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 | Action | How |
 |---|---|
 | Switch account | Click a card (grid) or double-click a panel (gallery), or select it and press `Enter` |
-| Account details | `ⓘ` on a card, or right-click |
+| Account profile | `ⓘ` on a card, or right-click. *See all games* lists everything the account owns |
+| CS2 settings per account | CS2's page → the ⚙️ gear → CS2 settings |
 | Play a game | Library → hover a game → Play, or double-click |
 | Game page | Click a game in the Library. The ⚙️ gear next to the close button opens its setup |
 | Read patch notes | A game's page → Activity → click a post |
@@ -264,7 +266,7 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 
 - Steam's **"Ask which account to use each time Steam starts"** blocks automatic sign-in, so SwapDeck turns it off when you switch.
 - If Steam asks for a password after a switch, that account's saved login expired. Sign in once with **Remember me** ticked.
-- CS2 stats aren't refreshed while that account is in a game, because it would kick the game session.
+- Opening the page of a game that isn't installed adds it to the Library as **Not installed**, so its tags and notes have a home.
 - A game's **news, DLC and friends** load when you open its page and are cached for a while, so the first open takes a second.
 - **Monitors** only need to be plugged in and powered. SwapDeck can switch one on that's turned off in Windows.
 - **Resolution profiles** can only use sizes your graphics driver offers. For stretched 4:3, add the resolution as a custom

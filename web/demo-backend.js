@@ -3,7 +3,7 @@
 // Nothing here talks to Steam or Windows, and nothing leaves the browser.
 (() => {
   'use strict';
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const H = 3600e3, D = 24 * H, now = Date.now();
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const clone = v => JSON.parse(JSON.stringify(v));
@@ -329,6 +329,11 @@
     vaultRemove: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultAutoUnlock: async () => state().vault,
     libList: async () => lib.map(clone),
+    libAddSteamGame: async (appid, name) => {
+      let g = findGame('steam:' + appid);
+      if (!g) { g = { ...game(String(appid), String(name || 'App ' + appid), '', null, 0, null), installed: false, folder: null }; lib.push(g); }
+      return clone(g);
+    },
     libSet: async (id, patch) => {
       const g = findGame(id); if (!g) return null;
       if ('acct' in patch) g.acct = patch.acct || null;

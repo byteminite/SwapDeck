@@ -3,6 +3,42 @@
 
 export const CHANGELOG = [
   {
+    v: '1.4.0', date: '11 Oct 2026',
+    title: 'A new account profile',
+    intro: 'Account details open as a full profile with everything at a glance, every game the account owns, and CS2 settings on CS2\'s own page.',
+    highlights: [
+      ['New profile', 'Account details fill the window: the account on the left, its games, sessions and status on the right.'],
+      ['At a glance', 'Hours through SwapDeck, games owned, Steam wallet and member since, right at the top.'],
+      ['All games', 'See every game the account owns, sorted by hours, the last 2 weeks or name.'],
+      ['Any game\'s page', 'The ⓘ next to a game opens its page, even if it isn\'t installed on this PC.'],
+      ['CS2 settings', 'The per-account autoexec and copying settings now live on CS2\'s page, behind the gear.'],
+    ],
+    sections: [
+      ['Account profile', [
+        'Account details open full window, with the account on the left: Switch, Steam profile, favourite, Refresh and tags, plus level, games owned, friends and bans',
+        'This account at a glance: hours played through SwapDeck, games owned, Steam wallet and member since',
+        'A Last played banner when the account has a recent session',
+        'Games on this account shows its most played games, with Played through SwapDeck and Recent sessions in the same card',
+        'Public profile as tiles: online status, visibility, VAC and trade bans, limited account and member since',
+      ]],
+      ['All games', [
+        'See all games lists every game the account owns, with total hours, the last 2 weeks and a playtime bar',
+        'Sort by Hours, Last 2 weeks or Name. Games with a VAC ban are marked',
+        'The ⓘ next to a game opens its page with the profile still behind it. Close it and you\'re back where you were',
+        'Games that aren\'t installed on this PC open too, and join the Library as Not installed',
+      ]],
+      ['CS2', [
+        'CS2 settings moved to CS2\'s page, behind the gear: the per-account autoexec and Copy settings from another account',
+        'Pick the account in the card. It starts on the game\'s account, or the one signed in',
+      ]],
+      ['Good to know', [
+        'The CS2 tab is gone, so Premier rating, ranks, level and medals aren\'t shown anymore',
+        'The Steam account card is gone too. Level, wallet, games owned and friends are on the profile, CS2 Prime status isn\'t',
+        'Games owned, All games, wallet and level need Connect for stats, like before',
+      ]],
+    ],
+  },
+  {
     v: '1.3.0', date: '8 Oct 2026',
     title: 'Steam-style game details',
     intro: 'Every game now has a Steam-style page with its updates, news, screenshots, achievements and friends, and SwapDeck fits your screen better.',
