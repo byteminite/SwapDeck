@@ -1,0 +1,82 @@
+/* Library layout: My games (tabs, filters, dropdowns, covers). Uses the .ls palette from libshell.css. */
+.lg{position:relative}
+.lg-catch{position:fixed;inset:0;z-index:15}
+
+.lg-tabs{display:flex;align-items:center;gap:24px;border-bottom:1px solid var(--ls-line);margin:8px 0 18px;overflow-x:auto;scrollbar-width:none}
+.lg-tabs::-webkit-scrollbar{display:none}
+.lg-tab{position:relative;display:flex;align-items:center;gap:8px;height:42px;flex:none;border:0;background:transparent;cursor:pointer;font:500 14px 'Geist',sans-serif;color:var(--text-subtle);white-space:nowrap}
+.lg-tab:hover{color:var(--text-soft)}
+.lg-tab.on{color:var(--text)}
+.lg-n{font:600 11px 'Geist',sans-serif;padding:2px 8px;border-radius:99px;background:var(--ls-surface-2);color:var(--text-muted)}
+.lg-tab.on .lg-n{background:var(--accent);color:var(--accent-contrast)}
+.lg-tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
+.lg-sortl{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none;font:500 13px 'Geist',sans-serif;color:var(--text-muted)}
+
+.lg-filters{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.lg-ddw{position:relative}
+.lg-dd{display:flex;align-items:center;justify-content:space-between;gap:8px;height:34px;padding:0 12px;border-radius:99px;border:0;background:var(--ls-surface-2);color:var(--text);font:500 12.5px 'Geist',sans-serif;cursor:pointer;white-space:nowrap}
+.lg-filters .lg-dd{width:170px;height:38px;padding:0 14px;background:var(--ls-surface)}
+.lg-dd > span:first-child{overflow:hidden;text-overflow:ellipsis}
+.lg-dd svg{color:var(--text-muted);flex:none}
+.lg-dd.set{background:rgba(var(--accent-rgb),.12);color:var(--accent)}
+.lg-dd.set svg{color:var(--accent)}
+.lg-x{margin-right:-4px;width:18px;height:18px;border-radius:99px;display:grid;place-items:center}
+.lg-x:hover{background:rgba(var(--fg-rgb),.12)}
+.lg-ddm{position:absolute;top:calc(100% + 8px);left:0;z-index:20;min-width:220px;max-height:340px;overflow-y:auto;padding:6px;border-radius:16px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 24px 60px var(--shadow-c)}
+.lg-ddm.r{left:auto;right:0}
+.lg-ddo{width:100%;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:0;border-radius:10px;background:transparent;font:500 13px 'Geist',sans-serif;color:var(--text-soft);cursor:pointer;text-align:left}
+.lg-ddo:hover,.lg-ddo:focus-visible{background:var(--ls-surface-2);color:var(--text);outline:0}
+.lg-ddo.on{color:var(--text)}
+.lg-ol{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg-dt{width:9px;height:9px;border-radius:9px;flex:none}
+.lg-av{width:22px;height:22px;border-radius:99px;flex:none}
+.lg-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--ls-surface-2);flex:none}
+.lg-c{margin-left:auto;font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle)}
+.lg-ck{color:var(--accent);display:grid}
+.lg-ddsep{height:1px;background:var(--ls-line);margin:5px 6px}
+.lg-ddh{padding:6px 10px 4px;font:600 10px 'Geist',sans-serif;letter-spacing:.08em;color:var(--text-subtle)}
+
+.lg-add{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:12px;border:1px dashed var(--ls-line-strong);background:none;color:var(--text-soft);font:600 13px 'Geist',sans-serif;cursor:pointer;white-space:nowrap}
+.lg-add:hover{color:var(--text);border-color:var(--accent)}
+.lg-search{margin-left:auto;flex:0 1 300px;min-width:150px;height:38px;display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:99px;background:var(--ls-surface);cursor:text;color:var(--text-muted)}
+.lg-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:500 13px 'Geist',sans-serif}
+.lg-search input::placeholder{color:var(--text-subtle)}
+.lg-search:focus-within{box-shadow:0 0 0 1px rgba(var(--accent-rgb),.45)}
+.lg-search kbd{font:600 10px 'Geist',sans-serif;color:var(--text-subtle);border:1px solid var(--ls-line-strong);border-radius:6px;padding:2px 6px}
+.lg-fbar{display:flex;align-items:center;gap:10px;margin:-6px 0 18px;font:500 12.5px 'Geist',sans-serif;color:var(--text-muted)}
+.lg-fbar button,.lg-empty button{border:0;background:transparent;color:var(--accent);font:600 12.5px 'Geist',sans-serif;cursor:pointer;padding:0}
+
+.lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px 18px}
+.lg-cover{border:0;padding:0;background:transparent;text-align:left;cursor:pointer;min-width:0;outline:none}
+.lg-art{position:relative;aspect-ratio:2/3;border-radius:var(--ls-radius);overflow:hidden;box-shadow:0 0 0 1px rgba(var(--fg-rgb),.08);transition:transform .2s var(--ls-ease),box-shadow .2s var(--ls-ease)}
+.lg-cover:hover .lg-art,.lg-cover:focus-visible .lg-art{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.lg-cover:focus-visible .lg-art{box-shadow:0 0 0 2px var(--accent),0 18px 40px rgba(0,0,0,.5)}
+.lg-art.ni{filter:grayscale(1) brightness(.55)}
+.lg-fall{position:absolute;inset:0;display:flex;align-items:flex-end;padding:12px;font:800 16px/1.15 'Geist',sans-serif;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.lg-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 30%,rgba(0,0,0,.8));opacity:0;transition:opacity .18s var(--ls-ease)}
+.lg-acts{position:absolute;left:0;right:0;bottom:40px;display:flex;justify-content:center;gap:10px;opacity:0;transform:translateY(6px);transition:opacity .18s var(--ls-ease),transform .18s var(--ls-ease)}
+.lg-ash{position:absolute;left:8px;right:8px;bottom:14px;text-align:center;font:600 11px 'Geist',sans-serif;color:rgba(255,255,255,.88);opacity:0;transform:translateY(4px);transition:opacity .18s var(--ls-ease),transform .18s var(--ls-ease);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-ash.sw{color:var(--accent-light)}
+.lg-cover:hover .lg-shade,.lg-cover:focus-visible .lg-shade,.lg-cover:hover .lg-ash,.lg-cover:focus-visible .lg-ash{opacity:1;transform:none}
+.lg-cover:hover .lg-acts,.lg-cover:focus-visible .lg-acts{opacity:1;transform:none}
+.lg-ab{width:36px;height:36px;border-radius:99px;display:grid;place-items:center;background:rgba(20,20,22,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);color:#fff;cursor:pointer}
+.lg-ab.play{background:#fff;color:#111}
+.lg-ab.play svg polygon{fill:#111}
+.lg-ab:active{transform:scale(.94)}
+.lg-flag{position:absolute;left:8px;top:8px;max-width:calc(100% - 52px);font:600 10px 'Geist',sans-serif;padding:4px 8px;border-radius:99px;background:rgba(15,15,17,.72);backdrop-filter:blur(6px);color:#fff;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-flag.run i{width:6px;height:6px;border-radius:9px;background:var(--ls-good)}
+.lg-flag.upd{color:var(--accent-light)}
+.lg-flag.warn{color:var(--ls-warn)}
+.lg-fv{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:99px;display:grid;place-items:center;background:rgba(15,15,17,.62);backdrop-filter:blur(6px);color:#fff;border:0;opacity:0;cursor:pointer;transition:opacity .18s var(--ls-ease),transform .12s var(--ls-ease);z-index:2}
+.lg-fv:hover{transform:scale(1.08)}
+.lg-cover:hover .lg-fv,.lg-cover:focus-visible .lg-fv,.lg-fv.on,.lg-fv:focus-visible{opacity:1}
+.lg-fv.on{color:#ff8fa3}
+.lg-fv.on svg path{fill:currentColor}
+.lg-cname{margin-top:10px;font:500 13.5px 'Geist',sans-serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-cacct{display:flex;align-items:center;gap:6px;margin-top:3px;font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle);min-width:0}
+.lg-cacct i{width:14px;height:14px;border-radius:5px;flex:none}
+.lg-cacct span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-skel{aspect-ratio:2/3;border-radius:var(--ls-radius);background:var(--ls-surface);animation:shim 1.2s ease-in-out infinite}
+.lg-empty{padding:60px 20px;text-align:center;color:var(--text-muted);font:500 14px/1.6 'Geist',sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px}
+
+@media (max-width:1100px){.lg-tab > svg{display:none}.lg-tabs{gap:18px}.lg-search{flex-basis:100%;margin-left:0}}

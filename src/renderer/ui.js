@@ -11,7 +11,7 @@ import { TAG_PRESETS, PANEL_W } from './tagpicker.js';
 import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, activityCard, dlcCard, friendsCard, cs2StatsCard } from './gamepage.js';
 import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
-import { libShellVals, layoutVals } from './libvals.js';
+import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 
 const api = window.api;
 
@@ -325,6 +325,7 @@ class App extends Component {
     if (S.locked) return;
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
     if (k === 'b') return this.onKey({ key: 'Escape', target: document.body, preventDefault() {} });
+    if (isLibLayout(this)) return;
     if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw || S.acctMenu) return;
     if (S.gd) { if (k === 'a') this.play(S.gd); return; }
     if (S.launch && !S.launch.hidden) return;
@@ -421,6 +422,7 @@ class App extends Component {
     if (S.locked) return;
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (e.key === 'Escape') {
+      if (S.lsDd) return this.setState({ lsDd: null });
       if (S.gNews) return this.setState({ gNews: null });
       if (S.gShot) return this.setState({ gShot: null });
       if (S.gShotMenu || S.gAchMenu || S.gFrMenu || S.gCsMenu) return this.setState({ gShotMenu: false, gAchMenu: false, gFrMenu: false, gCsMenu: false });
@@ -445,6 +447,8 @@ class App extends Component {
       if (typing) e.target.blur();
       return;
     }
+    // The Library layout handles its own keys; Classic's grid shortcuts (Enter switches accounts) must not fire behind it.
+    if (isLibLayout(this)) return;
     if (S.view === 'lib') {
       if (typing || S.gd || S.ag || S.setOpen || S.rmId) return;
       if (e.key === '/' && this._lsearch) { e.preventDefault(); this._lsearch.focus(); return; }
@@ -662,6 +666,7 @@ class App extends Component {
     this.gset(id, { acct });
   }
   // Ready-made tags first, then the order tags were first used. Unused tags drop out, except ones touched in the open game.
+  tagRgb(t) { return tagDef(t)[0]; }
   tagOrder(keep = []) {
     const S = this.state, used = [...this.accts.flatMap(a => a.tags), ...S.lib.flatMap(g => g.tags)];
     return [...new Set([...KNOWN, ...(S.settings.tagList || []), ...used, ...keep])].filter(t => KNOWN.includes(t) || used.includes(t) || keep.includes(t));

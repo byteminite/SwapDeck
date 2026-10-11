@@ -1,0 +1,36 @@
+// Library layout: My games (sub-tabs, filter dropdowns, cover grid).
+import { html } from './vendor/htm-preact.js';
+import { icon } from './libicons.js';
+
+function dropdown(d) {
+  return html`<div class="lg-ddw">
+<button class=${'lg-dd' + (d.set ? ' set' : '') + (d.wide ? ' wide' : '')} aria-haspopup="listbox" aria-expanded=${d.open} onClick=${d.toggle}><span>${d.label}</span>${d.set ? html`<span class="lg-x" role="button" aria-label="Clear" onClick=${d.clear}>${icon('x', 12)}</span>` : icon('chevron', 14)}</button>
+${d.open ? html`<div class=${'lg-ddm' + (d.right ? ' r' : '')} role="listbox">${d.opts.map(o => o.sep ? html`<div class="lg-ddsep"></div>` : o.head ? html`<div class="lg-ddh">${o.head}</div>` : html`<button class=${'lg-ddo' + (o.on ? ' on' : '')} role="option" aria-selected=${o.on} onClick=${o.pick}>${o.dot ? html`<span class="lg-dt" style=${'background:' + o.dot}></span>` : null}${o.av ? html`<span class="lg-av" style=${'background:' + o.av}></span>` : null}${o.ic ? html`<span class="lg-ic">${icon(o.ic, 13)}</span>` : null}<span class="lg-ol">${o.label}</span>${o.n != null ? html`<span class="lg-c">${o.n}</span>` : null}${o.on ? html`<span class="lg-ck">${icon('check', 15)}</span>` : null}</button>`)}</div>` : null}
+</div>`;
+}
+
+function cover(c) {
+  return html`<div class="lg-cover" role="button" tabindex="0" data-gid=${c.id} aria-label=${c.name} onClick=${c.onOpen} onKeyDown=${c.onKey} onContextMenu=${c.onMenu}>
+<div class=${'lg-art' + (c.ni ? ' ni' : '')} style=${'background:' + c.bg}>
+${c.fallback ? html`<div class="lg-fall">${c.name}</div>` : null}
+<div class="lg-shade"></div>
+${c.flag ? html`<span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span>` : null}
+<button class=${'lg-fv' + (c.fav ? ' on' : '')} aria-label=${c.fav ? 'Remove from favourites' : 'Add to favourites'} title=${c.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${c.onFav}>${icon('heart', 14)}</button>
+<div class="lg-acts"><button class="lg-ab" aria-label="Details" title="Details" onClick=${c.onInfo}>${icon('info', 15)}</button><button class="lg-ab play" aria-label=${c.playLabel} title=${c.playLabel} onClick=${c.onPlay}>${icon(c.playIc, 15)}</button></div>
+<span class=${'lg-ash' + (c.hintSw ? ' sw' : '')}>${c.hint}</span>
+</div>
+<div class="lg-cname" title=${c.name}>${c.name}</div>
+<div class="lg-cacct"><i style=${'background:' + c.dot}></i><span>${c.who}</span></div>
+</div>`;
+}
+
+export function gamesPage(G) {
+  const tabs = html`<div class="lg-tabs">${G.subs.map(s => html`<button class=${'lg-tab' + (s.on ? ' on' : '')} aria-pressed=${s.on} onClick=${s.pick}>${icon(s.ic, 15)}<span>${s.label}</span><span class="lg-n">${s.n}</span></button>`)}<div class="lg-sortl">Sorting: ${dropdown(G.sortDd)}</div></div>`;
+  const filters = html`<div class="lg-filters">${dropdown(G.tagDd)}${dropdown(G.acctDd)}${dropdown(G.srcDd)}<button class="lg-add" onClick=${G.onAdd}>${icon('plus', 15)}Add game</button>
+<label class="lg-search">${icon('search', 15)}<input value=${G.q} placeholder="Search" aria-label="Search your games" onInput=${G.onQ} /><kbd>Ctrl K</kbd></label></div>`;
+  const bar = G.anyFilter ? html`<div class="lg-fbar">${G.shown} of ${G.total} games<button onClick=${G.clear}>Clear filters</button></div>` : null;
+  const body = G.loading ? html`<div class="lg-grid">${[0, 1, 2, 3, 4, 5].map(i => html`<div class="lg-skel" style=${'animation-delay:' + i / 10 + 's'}></div>`)}</div>`
+    : G.cards.length ? html`<div class="lg-grid">${G.cards.map(cover)}</div>`
+      : html`<div class="lg-empty">${G.total ? 'No games match these filters.' : 'No games yet.'}${G.total ? html`<button onClick=${G.clear}>Clear filters</button>` : null}</div>`;
+  return html`<div class="lg">${G.ddOpen ? html`<div class="lg-catch" onClick=${G.closeDd}></div>` : null}${tabs}${filters}${bar}${body}</div>`;
+}

@@ -1,4 +1,6 @@
 // Props for the Library layout shell, built from the App component's state.
+import { libGamesVals } from './libgamesvals.js';
+import { gamesPage } from './libgames.js';
 const PAGES = [['games', 'My games', "Here's your game library"], ['recent', 'Recently played', "Here's your last progress"], ['fav', 'Favourites', 'Your favourite games'], ['upd', 'Updates', "Here's what Steam is updating"]];
 
 export function isLibLayout(app) {
@@ -22,7 +24,7 @@ export function libShellVals(app) {
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings(), onMe: () => me && app.openDetails && app.openDetails(me.id),
       onSearch: () => {}, onBell: () => {},
-      contentRef: app.lsContentRef, content: null,
+      contentRef: app.lsContentRef, content: page === 'games' ? gamesPage(libGamesVals(app).lsGames) : null,
     },
   };
 }
