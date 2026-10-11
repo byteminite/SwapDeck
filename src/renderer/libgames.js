@@ -2,14 +2,14 @@
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 
-function dropdown(d) {
+export function dropdown(d) {
   return html`<div class="lg-ddw">
 <button class=${'lg-dd' + (d.set ? ' set' : '') + (d.wide ? ' wide' : '')} aria-haspopup="listbox" aria-expanded=${d.open} onClick=${d.toggle}><span>${d.label}</span>${d.set ? html`<span class="lg-x" role="button" aria-label="Clear" onClick=${d.clear}>${icon('x', 12)}</span>` : icon('chevron', 14)}</button>
 ${d.open ? html`<div class=${'lg-ddm' + (d.right ? ' r' : '')} role="listbox">${d.opts.map(o => o.sep ? html`<div class="lg-ddsep"></div>` : o.head ? html`<div class="lg-ddh">${o.head}</div>` : html`<button class=${'lg-ddo' + (o.on ? ' on' : '')} role="option" aria-selected=${o.on} onClick=${o.pick}>${o.dot ? html`<span class="lg-dt" style=${'background:' + o.dot}></span>` : null}${o.av ? html`<span class="lg-av" style=${'background:' + o.av}></span>` : null}${o.ic ? html`<span class="lg-ic">${icon(o.ic, 13)}</span>` : null}<span class="lg-ol">${o.label}</span>${o.n != null ? html`<span class="lg-c">${o.n}</span>` : null}${o.on ? html`<span class="lg-ck">${icon('check', 15)}</span>` : null}</button>`)}</div>` : null}
 </div>`;
 }
 
-function cover(c) {
+export function cover(c) {
   return html`<div class="lg-cover" role="button" tabindex="0" data-gid=${c.id} aria-label=${c.name} onClick=${c.onOpen} onKeyDown=${c.onKey} onContextMenu=${c.onMenu}>
 <div class=${'lg-art' + (c.ni ? ' ni' : '')} style=${'background:' + c.bg}>
 ${c.fallback ? html`<div class="lg-fall">${c.name}</div>` : null}

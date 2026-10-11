@@ -14,6 +14,7 @@ const PAGES = {
   support: id => web(`https://help.steampowered.com/en/wizard/HelpWithGame/?appid=${id}`),
   news: id => web(`https://store.steampowered.com/news/app/${id}`),
   game: id => `steam://nav/games/details/${id}`,
+  downloads: () => 'steam://open/downloads', // Steam's Downloads page (the appid is ignored)
 };
 
 // Returns the URL, or null for an unknown page or an appid that isn't a plain number.

@@ -4,6 +4,15 @@ import { gamesPage } from './libgames.js';
 import { gamePage } from './libgamepage.js';
 import { libGamePageVals } from './libgamepagevals.js';
 import { launchVals, switchVals } from './liblaunchvals.js';
+import { libRecentVals, recentPage } from './librecent.js';
+import { libFavVals, favPage } from './libfav.js';
+import { libUpdVals, updPage, updatingGames } from './libupd.js';
+const CONTENT = {
+  games: app => gamesPage(libGamesVals(app).lsGames),
+  recent: app => recentPage(libRecentVals(app)),
+  fav: app => favPage(libFavVals(app)),
+  upd: app => updPage(libUpdVals(app)),
+};
 const PAGES = [['games', 'My games', "Here's your game library"], ['recent', 'Recently played', "Here's your last progress"], ['fav', 'Favourites', 'Your favourite games'], ['upd', 'Updates', "Here's what Steam is updating"]];
 
 export function isLibLayout(app) {
@@ -21,7 +30,7 @@ export function libShellVals(app, gv) {
   const S = app.state, page = S.libPage || 'games', me = app.accts.find(a => a.current) || app.accts[0];
   const meta = PAGES.find(p => p[0] === page) || PAGES[0];
   const go = k => app.setState({ libPage: k, gd: null, lgTab: 'ov', gdTab: 'ov' });
-  const updCount = Object.values(S.libUpd || {}).filter(u => u && ['queued', 'downloading', 'paused', 'verifying', 'failed'].includes(u.state)).length;
+  const updCount = updatingGames(app).length;
   return {
     libLayout: true,
     ls: {
@@ -33,7 +42,7 @@ export function libShellVals(app, gv) {
       onSettings: () => app.openSettings(), onMe: () => me && app.openDetails && app.openDetails(me.id),
       onSearch: () => {}, onBell: () => {},
       ...launchVals(app), sw: switchVals(app),
-      contentRef: app.lsContentRef, content: S.gd && gv && gv.gdOn ? gamePage(libGamePageVals(app, gv)) : page === 'games' ? gamesPage(libGamesVals(app).lsGames) : null,
+      contentRef: app.lsContentRef, content: S.gd && gv && gv.gdOn ? gamePage(libGamePageVals(app, gv)) : (CONTENT[page] || CONTENT.games)(app),
     },
   };
 }

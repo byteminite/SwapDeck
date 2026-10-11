@@ -1058,7 +1058,7 @@ class App extends Component {
     this.setState({ menu: key, menuUp: !!r && window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom });
   }
   async pollUpdates(force) {
-    if (!force && (document.hidden || this.state.view !== 'lib')) return;
+    if (!force && (document.hidden || (this.state.view !== 'lib' && !isLibLayout(this)))) return;
     const libUpd = await api.libUpdates().catch(() => null);
     if (libUpd) this.setState({ libUpd });
   }

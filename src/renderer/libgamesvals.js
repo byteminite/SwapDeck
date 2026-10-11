@@ -18,7 +18,7 @@ function playInfo(app, g, me, run) {
   return a.current ? ['Plays as ' + a.name, false, a] : ['Switches to ' + a.name, true, a];
 }
 
-function card(app, g, me, L) {
+export function card(app, g, me, L) {
   const S = app.state, run = !!(L && L.gid === g.id && L.running), [hint, hintSw] = playInfo(app, g, me, run);
   const owners = accountsOf(g).map(id => app.find(id)).filter(Boolean), dotA = g.acct ? app.find(g.acct) : owners[0];
   const upd = g.steam && g.installed && !run ? updateBadge(S.libUpd[g.appid]) : null;
