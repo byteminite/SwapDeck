@@ -141,7 +141,7 @@ class App extends Component {
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
     lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
-    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, menu: null, menuUp: false, wn: false,
+    audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, linkQueue: null, menu: null, menuUp: false, wn: false,
   };
   _t = []; _tid = 0;
 
@@ -511,8 +511,11 @@ class App extends Component {
     if (r.timeout) { this.toast('warning', 'Stopped waiting', 'No sign-in after 10 minutes. Try again when you are ready.'); return; }
     await this.reload();
     this.setState({ q: '', accTags: [], sel: r.sid });
-    this.toast('success', r.existing ? 'Already saved' : 'Account added', r.existing ? `Signed in as ${r.name}.` : `${r.name} is saved and signed in.`);
+    this.toast('success', r.existing ? 'Already saved' : 'Account added', r.existing ? `Signed in as ${r.name}.` : `${r.name} is saved and signed in. Connect it for stats so SwapDeck knows which games it owns.`);
     this.later(80, () => this.scrollToSel(r.sid));
+    // A new account goes straight to Connect for stats (optional: closing it is fine), so its games show up.
+    const added = this.find(r.sid);
+    if (!r.existing && added && !added.linked) this.later(400, () => this.openLink(r.sid));
   }
   cancelAdd() { api.cancelAdd(); this.setState({ addOpen: false }); }
   openDetails(id) {
@@ -570,7 +573,22 @@ class App extends Component {
   // ---------- connect for stats ----------
   openLink(id) { const a = this.find(id); this.setState({ link: { id, step: 'choose', login: a ? a.login : '', pw: '', code: '', guard: 'mobile', qr: null, remember: false, tok: '' } }); }
   setLink(p) { this.setState(s => ({ link: s.link && { ...s.link, ...p } })); }
-  closeLink() { api.linkCancel(); this.setState({ link: null }); }
+  // Closing the dialog also stops a Connect all queue.
+  closeLink() { api.linkCancel(); this.setState({ link: null, linkQueue: null }); }
+  // Connect all: one account after another, each with its own Steam sign-in. Skip leaves one for later.
+  connectAll() {
+    const ids = this.accts.filter(a => !a.linked).map(a => a.id);
+    if (!ids.length) return;
+    this.setState({ linkQueue: { rest: ids.slice(1), total: ids.length } });
+    this.openLink(ids[0]);
+  }
+  nextLink() {
+    const Q = this.state.linkQueue;
+    api.linkCancel();
+    if (!Q || !Q.rest.length) return this.setState({ link: null, linkQueue: null });
+    this.setState({ linkQueue: { ...Q, rest: Q.rest.slice(1) } });
+    this.openLink(Q.rest[0]);
+  }
   toChoose() { api.linkCancel(); this.setLink({ step: 'choose', code: '', pw: '', tok: '', qr: null, gErr: null }); }
   onLinkEvent(e) {
     const L = this.state.link; if (!L) return;
@@ -637,7 +655,7 @@ class App extends Component {
     if (g) this.setState(s => ({ lib: s.lib.map(x => x.id === id ? g : x) }));
   }
   setAcct(id, acct) {
-    this.gmut(id, { acct });
+    this.gmut(id, { acct, acctAuto: false });
     this.setState({ acctMenu: false });
     this.gset(id, { acct });
   }
@@ -689,6 +707,7 @@ class App extends Component {
     return {
       open, onToggle: () => this.setState({ tagPop: open ? null : kind, colorFor: null }), count: sel.length, chips: sel.map(chip), onClear: () => setSel([]),
       fav: { on: sel.includes(FAV), n: items.filter(x => isLib ? x.fav : x.pinned).length, toggle: () => flip(FAV) },
+      notInst: isLib ? { on: this.showNotInst(), n: items.filter(x => !x.installed).length, toggle: () => this.setCfg({ showNotInstalled: !this.showNotInst() }) } : null,
       rows: this.tagOrder().filter(t => counts[t]).map(t => ({ label: t, dot: 'rgb(' + tagDef(t)[0] + ')', on: sel.includes(t), n: counts[t], toggle: () => flip(t), onDot: e => this.openColor(e, t, where), color: colorOf(t) })),
       emptyText: isLib ? 'No tags yet. Open a game and add tags in its details.' : 'No tags yet. Add tags in an account\u2019s details.',
       footText: 'Shows ' + (isLib ? 'games' : 'accounts') + ' with any ticked tag',
@@ -1283,8 +1302,17 @@ class App extends Component {
     };
   }
 
+  showNotInst() { return this.state.settings.showNotInstalled !== false; }
+  // The accounts that own a game, for a card with no account picked: "Majkl, B3" or "Majkl +2".
+  ownersLabel(g) {
+    const names = (g.owners || []).map(sid => this.find(sid)).filter(Boolean).map(a => a.name);
+    if (!names.length) return 'any account';
+    return names.length <= 2 ? names.join(', ') : names[0] + ' +' + (names.length - 1);
+  }
   libraryVals() {
-    const S = this.state, games = S.lib, L = S.launch, isLib = S.view === 'lib';
+    const S = this.state, L = S.launch, isLib = S.view === 'lib';
+    // Not-installed games show only while "Not installed" is ticked in the Tags menu (on unless turned off).
+    const games = this.showNotInst() ? S.lib : S.lib.filter(g => g.installed);
     const q = S.lq.trim().toLowerCase(), byN = (x, y) => x.name.localeCompare(y.name);
     const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || (S.lf === 'steam') === g.steam) && matchTags(g, S.libTags, g.fav));
     const bySort = S.ls === 'name' ? byN : S.ls === 'recent' ? (x, y) => (y.lastPlayed - x.lastPlayed) || byN(x, y) : (x, y) => (y.hours - x.hours) || byN(x, y);
@@ -1303,7 +1331,7 @@ class App extends Component {
         hasMon: !!mon || !!this.resOf(g), monTitle: [mon ? 'Display: ' + mon.label : null, this.resOf(g) ? 'Resolution: ' + this.resOf(g).name : null].filter(Boolean).join(' · '),
         hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '',
         // Outline the account that's signed in to Steam right now.
-        aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? 'any account' : 'no account needed',
+        aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? this.ownersLabel(g) : 'no account needed',
         upd: g.steam && g.installed && !run ? updateBadge(S.libUpd[g.appid]) : null,
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         fav: !!g.fav, starOp: g.fav || hov ? 1 : 0, starTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onStar: e => { e.stopPropagation(); this.toggleFav(g.id); },
@@ -1335,7 +1363,9 @@ class App extends Component {
     const lastS = S.sessions.find(x => x.gid === g.id && x.ms > 0);
     if (lastS) { const la = this.find(lastS.sid); rows.splice(2, 0, ['Last session', dur(lastS.ms) + (la ? ' on ' + la.name : '') + ' · ' + when(lastS.start)]); }
     const opt = sel => ({ bg: sel ? 'rgba(var(--accent-rgb),.08)' : 'transparent', sel });
-    const accs = [...this.accts].sort((x, y) => (+y.tags.some(t => g.tags.includes(t)) - +x.tags.some(t => g.tags.includes(t))) || x.name.localeCompare(y.name));
+    // Only accounts that own the game (when SwapDeck knows), plus the one already picked.
+    const owns = g.steam && g.owners && g.owners.length ? x => g.owners.includes(x.id) || x.id === g.acct : () => true;
+    const accs = this.accts.filter(owns).sort((x, y) => (+y.tags.some(t => g.tags.includes(t)) - +x.tags.some(t => g.tags.includes(t))) || x.name.localeCompare(y.name));
     const mons = this.mons(), other = mons.find(m => m.id !== (nm && nm.id) && m.attached) || mons.find(m => m.id !== (nm && nm.id));
     // Monitor boxes shrink to fit when there are three or more.
     const baseW = m => m.portrait ? 62 : m.w / m.h > 2 ? 186 : 148, k = Math.min(1, 300 / Math.max(1, mons.reduce((t, m) => t + baseW(m), 0)));
@@ -1365,7 +1395,7 @@ class App extends Component {
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
       gAcctBd: S.acctMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
-      gAcctHint: a ? (a.current && this.steamState === 'running' ? 'Already signed in, so Play launches straight away.' : 'Play switches to ' + a.name + ' first, then launches.') : 'Launches on whichever account Steam is signed in with.',
+      gAcctHint: (g.acctAuto && a ? 'Picked for you: ' + a.name + ' is the only account that owns it. ' : '') + (a ? (a.current && this.steamState === 'running' ? 'Already signed in, so Play launches straight away.' : 'Play switches to ' + a.name + ' first, then launches.') : 'Launches on whichever account Steam is signed in with.'),
       acctMenu: S.acctMenu, onAcctMenu: () => this.setState(s => ({ acctMenu: !s.acctMenu })),
       acctOpts: [{ isNone: true, isAcct: false, label: "Don't switch", sub: 'Use whoever is signed in', cur: false, ...opt(!g.acct), on: () => this.setAcct(g.id, null) },
         ...accs.map(x => ({ isNone: false, isAcct: true, ini: x.avatar ? '' : x.ini, grad: avBg(x), label: x.name, sub: x.login + (x.tags.length ? ' · ' + x.tags.join(', ') : ''), cur: x.current, ...opt(g.acct === x.id), on: () => this.setAcct(g.id, x.id) }))],
@@ -1599,7 +1629,15 @@ class App extends Component {
       lkGuardText: Lk && Lk.guard === 'email' ? 'Enter the code Steam emailed to your ' + (Lk.detail ? '@' + Lk.detail + ' ' : '') + 'address.' + (Lk.canConfirm ? ' Or approve the sign-in in the Steam Mobile app.' : '') : 'Enter the code shown in the Steam Mobile app (Steam Guard).' + (Lk && Lk.canConfirm ? ' Or just approve the sign-in there.' : ''),
       lkGuardSwap: '', onLkGuardSwap: () => {},
       lkSignInBg: Lk && Lk.login && Lk.pw ? 'var(--btn-bg)' : 'var(--btn-dis)', lkVerifyBg: Lk && Lk.code.length === 5 ? 'var(--btn-bg)' : 'var(--btn-dis)',
-      onLkDone: () => this.setState({ link: null, tab: 'cs2' }), onLkRetry: () => this.toChoose(),
+      onLkRetry: () => this.toChoose(),
+      ...(() => {
+        const Q = this.state.linkQueue, more = !!(Q && Q.rest.length);
+        return {
+          lkQueueLbl: Q ? (Q.total - Q.rest.length) + ' of ' + Q.total : '',
+          lkCanSkip: more && step !== 'working' && step !== 'ok', onLkSkip: () => this.nextLink(),
+          lkDoneLbl: more ? 'Next account →' : 'Done', onLkDone: () => this.nextLink(),
+        };
+      })(),
     };
   }
 
@@ -1622,6 +1660,7 @@ class App extends Component {
       stBusyText: busy === 'closing' ? 'Closing Steam…' : 'Starting Steam…',
       showClose: running && !busy, showStart: steam === 'closed' && !busy,
       onCloseSteam: () => this.closeSteam(), onStartSteam: () => this.startSteam(), onAdd: () => this.addAcc(), onSetOpen: () => this.openSettings(),
+      connectAllN: this.accts.filter(a => !a.linked).length, onConnectAll: () => this.connectAll(),
       showToolbar: !nf && has, searchRef: this.searchRef, q: S.q, onQ: e => this.setState({ q: e.target.value, hover: null }), accPick: this.tagPickVals('acc'), sorts,
       showGallery: !nf && has && vis.length > 0, galRef: this.galRef, onGalLeave: () => this.setState({ hover: null }),
       showNoResults: !nf && has && vis.length === 0, nrTitle: S.q.trim() ? 'No accounts match "' + S.q.trim() + '"' : 'No accounts with the ticked tags',

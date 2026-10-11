@@ -89,7 +89,7 @@
   const STEAMDIR = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\';
   const game = (appid, name, folder, acct, hours, ago, o = {}) => ({
     id: 'steam:' + appid, steam: true, appid, name, installed: true, folder: STEAMDIR + folder,
-    acct: acct ? A(acct).sid : null, opts: o.opts || '', display: { mon: null, mode: 'primary', restore: true, res: null, ...(o.display || {}) },
+    acct: acct ? A(acct).sid : null, owners: (o.owners || (acct ? [acct] : [])).map(n => A(n).sid), opts: o.opts || '', display: { mon: null, mode: 'primary', restore: true, res: null, ...(o.display || {}) },
     audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: o.tags || [], fav: !!o.fav, note: o.note || '',
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
@@ -107,7 +107,8 @@
     game('739630', 'Phasmophobia', 'Phasmophobia', 'Lantern', 52.8, 5 * D, { audio: '{demo}.headset', tags: ['horror', 'co-op'] }),
     game('381210', 'Dead by Daylight', 'Dead by Daylight', 'Lantern', 120.4, 12 * D, { tags: ['horror'] }),
     game('1966720', 'Lethal Company', 'Lethal Company', 'Pixel Pilot', 33.1, 14 * D, { tags: ['horror', 'co-op'] }),
-    game('252490', 'Rust', 'Rust', null, 166, 20 * D),
+    game('252490', 'Rust', 'Rust', null, 166, 20 * D, { owners: ['NightOwl', 'Crosshair'] }),
+    { ...game('1172470', 'Apex Legends', '', 'NightOwl', 95, 40 * D), installed: false, folder: null, acctAuto: true },
     game('690790', 'DiRT Rally 2.0', 'DiRT Rally 2.0', 'ApexDrift', 22.6, 25 * D, { tags: ['racing'] }),
   ];
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));

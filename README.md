@@ -58,7 +58,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <ul>
 <li>Your installed <b>Steam games</b> with their own Steam artwork</li>
 <li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
-<li>Each game remembers <b>which account</b> plays it, so Play switches for you</li>
+<li>Each game remembers <b>which account</b> plays it, so Play switches for you. When only one account owns a game, it's picked for you</li>
+<li><b>Games you own but haven't installed</b> show too, marked <i>Not installed</i>, with the accounts that own them. Hide them from the <b>Tags</b> menu</li>
 <li><b>Tag and star games</b>: favourites come first, whatever the sort</li>
 <li><b>Update badges</b> on the covers: <i>Update queued</i>, <i>Updating 42%</i> or <i>Update failed</i>, straight from Steam</li>
 <li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
@@ -134,7 +135,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <td width="45%" valign="middle">
 <h3>📊 Stats, if you want them</h3>
 <ul>
-<li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token)</li>
+<li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token), or <b>Connect all</b> to go through every account in one go</li>
 <li><b>Every game the account owns</b>, with total hours, the last 2 weeks and VAC bans marked</li>
 <li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals, on CS2's page</li>
 <li>The <b>ⓘ</b> next to a game opens its page, even if it isn't installed on this PC</li>
@@ -221,6 +222,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 - Backups contain your tags, notes, games and profiles, never sign-ins or passwords.
 - A game's details read Steam's own files on your PC for update status, screenshots and achievements. Its news and
   DLC list come from Steam's public servers (no sign-in), only when you open that game, and are cached for a while.
+- To know which accounts own a game, SwapDeck uses the game list of accounts connected for stats. For other accounts it
+  reads Steam's own files on your PC, which list the games they've played here. Nothing is sent anywhere for this.
 - For accounts connected for stats, a game's details also show friends who play it and which DLC the account owns. That
   uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
 
@@ -269,7 +272,7 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 - Steam's **"Ask which account to use each time Steam starts"** blocks automatic sign-in, so SwapDeck turns it off when you switch.
 - If Steam asks for a password after a switch, that account's saved login expired. Sign in once with **Remember me** ticked.
 - CS2 stats aren't refreshed while that account is in a game, because it would kick the game session.
-- Opening the page of a game that isn't installed adds it to the Library as **Not installed**, so its tags and notes have a home.
+- SwapDeck only knows **every game an account owns** once it's connected for stats. Until then, it goes by what that account has played on this PC.
 - A game's **news, DLC and friends** load when you open its page and are cached for a while, so the first open takes a second.
 - **Monitors** only need to be plugged in and powered. SwapDeck can switch one on that's turned off in Windows.
 - **Resolution profiles** can only use sizes your graphics driver offers. For stretched 4:3, add the resolution as a custom

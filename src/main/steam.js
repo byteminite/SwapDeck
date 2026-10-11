@@ -347,6 +347,19 @@ function localPlaytime(dir) {
   return out;
 }
 
+// Apps each account has played on this PC (from the same localconfig cache), keyed by SteamID64.
+// For accounts that aren't connected for stats, this is the best guess at what they own.
+function localApps(dir) {
+  localPlaytime(dir); // fills the localconfig cache
+  const out = {};
+  for (const [f, apps] of playCache) {
+    if (!dir || !f.startsWith(path.join(dir, 'userdata'))) continue;
+    const ids = Object.entries(apps.data).filter(([, v]) => v && typeof v === 'object' && (Number(vdf.get(v, 'LastPlayed') || 0) || Number(vdf.get(v, 'Playtime') || 0))).map(([id]) => id);
+    out[sidFromAccountId(path.basename(path.dirname(path.dirname(f))))] = ids;
+  }
+  return out;
+}
+
 // Launch options set in Steam (game Properties → Launch Options) for one game, per account on this PC.
 function steamLaunchOptions(dir, appid) {
   localPlaytime(dir); // fills the localconfig cache
@@ -419,7 +432,7 @@ function artFile(dir, appid, file) {
 }
 
 module.exports = {
-  localPlaytime, artFile, splitArgs, steamLaunchOptions, cs2HasSettings, cs2CopySettings,
+  localPlaytime, localApps, artFile, splitArgs, steamLaunchOptions, cs2HasSettings, cs2CopySettings,
   locate, status, isRunning, shutdown, start, waitFor, readSteamReg, regSet,
   listAccounts, loginUsersMtime, markMostRecent, clearAutoLogin, disableUserChooser, removeAccount,
   avatar, installedGames, sidFromAccountId, accountIdFromSid, loginUsersPath, sleep, libraryDirs,

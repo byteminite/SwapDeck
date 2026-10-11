@@ -5,12 +5,12 @@ export const CHANGELOG = [
   {
     v: '1.4.0', date: '11 Oct 2026',
     title: 'A new account profile',
-    intro: 'Account details open as a full profile with everything at a glance and every game the account owns, and everything CS2 now lives on CS2\'s own page.',
+    intro: 'Account details open as a full profile, the Library shows every game your accounts own, and everything CS2 now lives on CS2\'s own page.',
     highlights: [
       ['New profile', 'Account details fill the window: the account on the left, its games, sessions and status on the right.'],
-      ['At a glance', 'Hours through SwapDeck, games owned, Steam wallet and member since, right at the top.'],
-      ['All games', 'See every game the account owns, sorted by hours, the last 2 weeks or name.'],
-      ['Any game\'s page', 'The ⓘ next to a game opens its page, even if it isn\'t installed on this PC.'],
+      ['All games', 'See every game an account owns and open any of them with ⓘ, installed or not.'],
+      ['Owned games', 'Games your accounts own show in the Library as Not installed. Untick Not installed in Tags to hide them.'],
+      ['Right account', 'Games show who owns them, and when only one account does, it\'s picked for you.'],
       ['CS2 in one place', 'Premier rating, ranks and medals are on CS2\'s page, with its per-account settings behind the gear.'],
     ],
     sections: [
@@ -25,7 +25,17 @@ export const CHANGELOG = [
         'See all games lists every game the account owns, with total hours, the last 2 weeks and a playtime bar',
         'Sort by Hours, Last 2 weeks or Name. Games with a VAC ban are marked',
         'The ⓘ next to a game opens its page with the profile still behind it. Close it and you\'re back where you were',
-        'Games that aren\'t installed on this PC open too, and join the Library as Not installed',
+        'Games that aren\'t installed on this PC open too',
+      ]],
+      ['Library', [
+        'Every game your saved accounts own shows up, marked Not installed when it isn\'t on this PC, including games you uninstalled',
+        'Not installed in the Tags menu shows or hides them. It starts ticked',
+        'Games with no account picked show who owns them, like "Majkl, B3"',
+        'A game\'s Steam account list only shows the accounts that own it. When just one does, it\'s picked for you',
+      ]],
+      ['Accounts', [
+        'Connect all on the Accounts page connects every account that isn\'t connected yet, one after another. Skip leaves one for later',
+        'After you add an account, Connect for stats opens straight away so SwapDeck learns which games it owns. Close it to connect later',
       ]],
       ['CS2', [
         'CS2 stats moved from the account to CS2\'s Overview: Premier rating, Competitive and Wingman ranks, level, commendations, medals and any cooldown',
@@ -36,6 +46,7 @@ export const CHANGELOG = [
       ['Good to know', [
         'The account\'s CS2 tab and Steam account card are gone. Level, wallet, games owned and friends are on the profile, CS2 Prime status isn\'t shown anymore',
         'Games owned, All games, wallet and level need Connect for stats, like before',
+        'Which games an account owns comes from its game list when it\'s connected for stats. For other accounts, SwapDeck only knows the games they\'ve played on this PC',
       ]],
     ],
   },

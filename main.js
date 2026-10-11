@@ -414,6 +414,7 @@ function ipc() {
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
+    if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
     if (patch.tagColor && typeof patch.tagColor === 'object') allowed.tagColors = withTagColor(patch.tagColor);
     let keyError = null;
@@ -562,7 +563,7 @@ function ipc() {
   ipcMain.handle('lib:set', (_, id, patch) => {
     const g = findGame(String(id)); if (!g) return null;
     const allowed = {};
-    if ('acct' in patch) allowed.acct = patch.acct || null;
+    if ('acct' in patch) { allowed.acct = patch.acct || null; allowed.acctSet = true; }
     if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
     if ('fav' in patch) allowed.fav = !!patch.fav;
     if ('note' in patch) allowed.note = String(patch.note || '').slice(0, 1000);
