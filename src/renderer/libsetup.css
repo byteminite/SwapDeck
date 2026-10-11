@@ -1,0 +1,82 @@
+/* Library layout: a game's Setup tab (two columns of cards). */
+.su{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.su-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.su-box{border-radius:var(--ls-radius);background:var(--ls-surface);padding:14px 16px}
+.su-l{display:flex;align-items:center;gap:10px;margin-bottom:10px;font:500 12px 'Geist',sans-serif;color:var(--text-muted)}
+.su-l > span{flex:1}
+.su-hint{margin-top:8px;font:500 11.5px/1.45 'Geist',sans-serif;color:var(--text-subtle)}
+.su-dw{position:relative}
+.su-sel{width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--ls-line);background:var(--ls-surface);color:var(--text);cursor:pointer;text-align:left}
+.su-sel:hover{border-color:var(--ls-line-strong)}
+.su-sel > svg{margin-left:auto;color:var(--text-muted);flex:none}
+.su-sv{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.su-sv b{font:600 13.5px 'Geist',sans-serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.su-sv span{font:500 11px 'Geist Mono',monospace;color:var(--text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.su-av{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;font:600 11px 'Geist Mono',monospace;color:#fff;background-size:cover!important}
+.su-av.sm{width:26px;height:26px;border-radius:8px}
+.su-av.none{border:1px dashed rgba(var(--fg-rgb),.3)}
+.su-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;background:var(--surface-raised);border:1px solid var(--ls-line-strong);border-radius:12px;padding:5px;max-height:260px;overflow-y:auto;box-shadow:0 20px 50px var(--shadow-c)}
+.su-menu.up{top:auto;bottom:calc(100% + 6px)}
+.su-opt{width:100%;display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:9px;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left}
+.su-opt:hover,.su-opt:focus-visible{background:var(--ls-surface-2);outline:0}
+.su-opt em{font:600 10.5px 'Geist Mono',monospace;font-style:normal;letter-spacing:.08em;color:var(--accent-strong);flex:none}
+.su-opt em.mut{color:var(--text-subtle);letter-spacing:0}
+.su-ck{color:var(--accent);display:grid;flex:none}
+.su-file{display:flex;align-items:center;gap:8px;min-width:0}
+.su-btn{height:32px;padding:0 12px;flex:none;border-radius:99px;border:1px solid var(--ls-line-strong);background:transparent;color:var(--text-soft);font:600 12px 'Geist',sans-serif;cursor:pointer;white-space:nowrap}
+.su-btn:hover{background:var(--ls-surface-2);color:var(--text)}
+.su-btn.d{color:var(--bad-fg)}
+.su-link{border:0;background:none;color:var(--accent-strong);font:600 12px 'Geist',sans-serif;cursor:pointer;padding:0;letter-spacing:0}
+.su-in{width:100%;box-sizing:border-box;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--ls-line);background:rgba(0,0,0,.15);color:var(--text);font:500 13px 'Geist',sans-serif;outline:none}
+.su-in.mono{font:500 12.5px 'Geist Mono',monospace}
+.su-in.sm{height:32px}
+.su-in:focus{border-color:rgba(var(--accent-rgb),.5)}
+
+.su-seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--ls-surface-2)}
+.su-seg button{height:26px;padding:0 10px;border-radius:7px;border:0;background:transparent;color:var(--text-subtle);font:600 11.5px 'Geist',sans-serif;cursor:pointer}
+.su-seg button.on{background:var(--ls-surface-3);color:var(--text)}
+.su-map{display:flex;align-items:flex-end;justify-content:center;flex-wrap:wrap;gap:14px;padding:18px 10px 14px;border-radius:14px;background:rgba(0,0,0,.15);border:1px solid var(--ls-line);transition:opacity .2s}
+.su-map.dim{opacity:.55}
+.su-mon{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;padding:0;cursor:pointer;color:inherit;font:inherit}
+.su-scr{position:relative;box-sizing:border-box;border-radius:8px;border:1.5px solid rgba(var(--fg-rgb),.22);background:rgba(var(--fg-rgb),.04);display:grid;place-items:center;font:700 20px 'Geist Mono',monospace;color:rgba(var(--fg-rgb),.35);transition:all .2s var(--ls-ease)}
+.su-mon.sel .su-scr{border-color:var(--accent);color:var(--accent-strong);background:linear-gradient(160deg,rgba(var(--accent-rgb),.2),rgba(var(--accent-rgb),.06));box-shadow:0 0 0 3px rgba(var(--accent-rgb),.12),0 0 28px rgba(var(--accent-rgb),.22)}
+.su-mon.off .su-scr{background:rgba(0,0,0,.35);border-color:rgba(var(--fg-rgb),.1);color:rgba(var(--fg-rgb),.15)}
+.su-scr i{position:absolute;font:700 9.5px 'Geist',sans-serif;font-style:normal;letter-spacing:.08em}
+.su-scr i.t{top:5px;left:6px;color:var(--text-muted)}
+.su-scr i.o{bottom:5px;left:0;right:0;text-align:center;color:var(--text-subtle)}
+.su-scr i.k{top:5px;right:5px;width:16px;height:16px;border-radius:99px;background:var(--accent);color:var(--accent-contrast);display:grid;place-items:center}
+.su-mon > b{font:600 12px 'Geist',sans-serif;color:var(--text-soft)}
+.su-mon.sel > b{color:var(--text)}
+.su-mon > span{font:500 11px 'Geist Mono',monospace;color:var(--text-subtle);white-space:nowrap}
+.su-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.su-mode{display:flex;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--ls-line);background:transparent;color:inherit;font:inherit;cursor:pointer}
+.su-mode.on{border-color:rgba(var(--accent-rgb),.5);background:rgba(var(--accent-rgb),.06)}
+.su-mode b{display:block;font:600 12.5px 'Geist',sans-serif;color:var(--text)}
+.su-mode span span{display:block;font:500 11px 'Geist',sans-serif;color:var(--text-muted);margin-top:3px}
+.su-rd{width:14px;height:14px;flex:none;border-radius:99px;border:1.5px solid rgba(var(--fg-rgb),.25);display:grid;place-items:center;margin-top:2px}
+.su-mode.on .su-rd{border-color:var(--accent)}
+.su-mode.on .su-rd::after{content:'';width:6px;height:6px;border-radius:99px;background:var(--accent)}
+.su-k{display:flex;align-items:center;margin:14px 0 8px;font:700 10.5px 'Geist',sans-serif;letter-spacing:.08em;color:var(--text-muted)}
+.su-k .su-link{margin-left:auto}
+.su-res{display:flex;gap:6px;flex-wrap:wrap}
+.su-r{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 11px;border-radius:10px;border:1px solid var(--ls-line);background:transparent;color:var(--text);cursor:pointer;font:inherit;text-align:left}
+.su-r.on{border-color:rgba(var(--accent-rgb),.5);background:rgba(var(--accent-rgb),.08)}
+.su-r b{font:600 12px 'Geist',sans-serif}
+.su-r span{font:500 10.5px 'Geist Mono',monospace;color:var(--text-subtle)}
+.su-rst{display:flex;align-items:center;gap:14px;margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--ls-line);cursor:pointer}
+.su-tg{position:relative;width:40px;height:22px;flex:none;border-radius:99px;transition:background .25s}
+.su-tg i{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:99px;background:#fff;transition:transform .25s var(--ls-ease)}
+
+.su-app{padding:8px 10px;border-radius:11px;border:1px solid var(--ls-line);margin-bottom:8px}
+.su-approw{display:flex;align-items:center;gap:10px;margin-top:7px}
+.su-cb{display:flex;align-items:center;gap:7px;flex:none;font:500 11.5px 'Geist',sans-serif;color:var(--text-soft);cursor:pointer;white-space:nowrap}
+.su-cb span{width:16px;height:16px;border-radius:5px;border:1.5px solid;display:grid;place-items:center;color:var(--accent-contrast)}
+.su-x{width:28px;height:28px;flex:none;border-radius:8px;border:1px solid rgba(248,113,113,.3);background:transparent;color:var(--bad-fg);display:grid;place-items:center;cursor:pointer}
+.su-add{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:10px;border:1px dashed var(--ls-line-strong);background:none;color:var(--text-soft);font:600 12.5px 'Geist',sans-serif;cursor:pointer}
+.su-add:hover{color:var(--text);border-color:var(--accent)}
+.su-extra{display:flex;gap:8px;flex-wrap:wrap}
+.su-cs2{border-radius:var(--ls-radius);background:var(--ls-surface);padding:14px 16px}
+.su-cs2 > div{margin:0}
+
+.su-sel:focus-visible,.su-mon:focus-visible,.su-mode:focus-visible,.su-r:focus-visible,.su-btn:focus-visible,.su-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:1050px){.su{grid-template-columns:minmax(0,1fr)}}

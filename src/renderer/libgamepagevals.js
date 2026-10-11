@@ -1,4 +1,5 @@
 // Props for the Library layout's game page. Uses the same helpers as Classic's game details.
+import { setupTab } from './libsetup.js';
 import { accountsOf } from './libgrid.js';
 
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
@@ -24,6 +25,7 @@ export function libGamePageVals(app, b) {
   const tab = S.lgTab || 'ov', ach = g.steam ? app.achVals(g) : null, A = ach && ach.cell;
   const setTab = k => () => {
     app.setState({ lgTab: k, gdTab: k === 'setup' ? 'setup' : 'ov', colorFor: null });
+    if (k === 'setup' && g.steam && String(g.appid) === '730') app.loadCs2(app.cs2Sid(g));
     if (k === 'ach' && ach && ach.card.showAll && ach.card.showAll.label === 'Show all') ach.card.showAll.on();
   };
   const [playLabel, playIc, playDisabled] = playButton(g, S.launch);
@@ -35,7 +37,7 @@ export function libGamePageVals(app, b) {
     onBack: () => { clearInterval(app._gTimer); app.setState({ gd: null, lgTab: 'ov', gdTab: 'ov', gShot: null, gNews: null }); },
     ach: parts ? { got: parts[1], total: parts[2], pct: pct || 0, open: setTab('ach') } : null,
     tab: tabs.some(t => t[0] === tab) ? tab : 'ov', tabs: tabs.map(([k, label]) => ({ label, on: tab === k, pick: setTab(k) })),
-    ov: tab === 'ov' ? b.gOv : null, achCard: ach ? ach.card : null, setupEl: null,
+    ov: tab === 'ov' ? b.gOv : null, achCard: ach ? ach.card : null, setupEl: tab === 'setup' ? setupTab(b) : null,
     noOvText: g.steam ? '' : 'Non-Steam games have their setup on the Setup tab.',
   };
 }
