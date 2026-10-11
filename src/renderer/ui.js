@@ -12,6 +12,7 @@ import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, a
 import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
+import { openSpot } from './libspot.js';
 
 const api = window.api;
 
@@ -421,7 +422,9 @@ class App extends Component {
     const S = this.state, tag = (e.target && e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if (S.locked) return;
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
+    if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
+      if (S.lsSpot) return this.setState({ lsSpot: false });
       if (S.lsDd) return this.setState({ lsDd: null });
       if (S.lsMenu) return this.setState({ lsMenu: false });
       if (S.gNews) return this.setState({ gNews: null });

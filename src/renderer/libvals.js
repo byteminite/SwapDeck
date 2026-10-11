@@ -9,6 +9,7 @@ import { libFavVals, favPage } from './libfav.js';
 import { libUpdVals, updPage, updatingGames } from './libupd.js';
 import { acctMenuVals, acctPageVals } from './libacctvals.js';
 import { acctMenu, acctPage } from './libacct.js';
+import { libSpotVals, spotOverlay, openSpot } from './libspot.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -43,7 +44,7 @@ export function libShellVals(app, gv, dw) {
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings(), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
-      onSearch: () => {}, onBell: () => {},
+      onSearch: () => openSpot(app), onBell: () => {}, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
       contentRef: app.lsContentRef, content: onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },

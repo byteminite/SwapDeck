@@ -27,7 +27,7 @@ ${c.flag ? html`<span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? 
 export function gamesPage(G) {
   const tabs = html`<div class="lg-tabs">${G.subs.map(s => html`<button class=${'lg-tab' + (s.on ? ' on' : '')} aria-pressed=${s.on} onClick=${s.pick}>${icon(s.ic, 15)}<span>${s.label}</span><span class="lg-n">${s.n}</span></button>`)}<div class="lg-sortl">Sorting: ${dropdown(G.sortDd)}</div></div>`;
   const filters = html`<div class="lg-filters">${dropdown(G.tagDd)}${dropdown(G.acctDd)}${dropdown(G.srcDd)}<button class="lg-add" onClick=${G.onAdd}>${icon('plus', 15)}Add game</button>
-<label class="lg-search">${icon('search', 15)}<input value=${G.q} placeholder="Search" aria-label="Search your games" onInput=${G.onQ} /><kbd>Ctrl K</kbd></label></div>`;
+<label class="lg-search">${icon('search', 15)}<input value=${G.q} placeholder="Search" aria-label="Search your games" onInput=${G.onQ} /></label></div>`;
   const bar = G.anyFilter ? html`<div class="lg-fbar">${G.shown} of ${G.total} games<button onClick=${G.clear}>Clear filters</button></div>` : null;
   const body = G.loading ? html`<div class="lg-grid">${[0, 1, 2, 3, 4, 5].map(i => html`<div class="lg-skel" style=${'animation-delay:' + i / 10 + 's'}></div>`)}</div>`
     : G.cards.length ? html`<div class="lg-grid">${G.cards.map(cover)}</div>`
