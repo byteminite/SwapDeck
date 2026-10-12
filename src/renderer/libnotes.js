@@ -4,6 +4,7 @@ import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { updateBadge } from './updatebadge.js';
 import { updatingGames } from './libupd.js';
+import { packsNote } from './libpacks.js';
 
 const TABS = [['all', 'All'], ['update', 'Updates'], ['account', 'Accounts']];
 const TINT = { good: ['rgba(126,232,166,.14)', 'var(--ls-good)'], warn: ['rgba(255,210,122,.14)', 'var(--ls-warn)'], acc: ['rgba(var(--accent-rgb),.14)', 'var(--accent-light)'], bad: ['rgba(255,154,139,.14)', '#ff9a8b'] };
@@ -47,6 +48,8 @@ export function notesList(app) {
   // A new id for every play session, so each run shows as new once.
   if (!run) app._runKey = null; else if (!app._runKey || app._runKey.gid !== run.id) app._runKey = { gid: run.id, t: Date.now() };
   if (run) add({ id: 'run-' + run.id + '-' + app._runKey.t, kind: 'update', ic: 'gamepad', tone: 'good', art: app.cardBg(run), title: run.name + ' is running', body: (runA ? 'Started on ' + runA.name + '. ' : '') + 'Stop puts your display and sound back.', go: () => app.setState(s => ({ launch: s.launch && { ...s.launch, hidden: false } })) });
+  const pk = packsNote(app);
+  if (pk) add(pk);
   for (const g of updatingGames(app)) {
     const st = S.libUpd[g.appid], b = updateBadge(st), busy = b.busy;
     add({ id: 'upd-' + g.appid + '-' + st.state, kind: 'update', ic: busy ? 'refresh' : st.state === 'failed' ? 'alert' : 'clock', tone: busy ? 'acc' : st.state === 'failed' ? 'bad' : 'warn', art: app.cardBg(g),

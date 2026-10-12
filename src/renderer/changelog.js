@@ -5,22 +5,24 @@ export const CHANGELOG = [
   {
     v: '1.6.0', date: '12 Oct 2026',
     title: 'Minecraft modpacks in your Library',
-    intro: 'Your Minecraft modpacks from Modrinth, CurseForge and Prism Launcher show up as games, and Play starts them with their own setup.',
+    intro: 'SwapDeck finds your Minecraft modpacks from Modrinth, CurseForge and Prism Launcher. Add the ones you want and Play starts them with their own setup.',
     highlights: [
-      ['Modpacks as games', 'Every pack you installed with Modrinth, CurseForge or Prism Launcher shows up in the Library, with its own icon.'],
+      ['Modpacks as games', 'SwapDeck finds the packs you installed with Modrinth, CurseForge or Prism Launcher. Pick the ones you want in your Library.'],
       ['Play starts the pack', 'Play opens the launcher straight into that pack, no clicking through it first.'],
       ['Their own setup', 'Give a pack its own monitor, resolution, sound device and companion apps, like any other game.'],
       ['Everything goes back', 'SwapDeck notices when Minecraft closes and puts your display and sound back.'],
     ],
     sections: [
       ['Minecraft modpacks', [
-        'Packs from Modrinth, CurseForge and Prism Launcher show up in the Library on their own, with the pack\'s icon and the time you played them',
+        'SwapDeck finds packs from Modrinth, CurseForge and Prism Launcher on this PC. The bell says when it finds new ones (a message in Classic), and Review lets you pick which ones go in your Library',
+        'Settings > General > Choose packs adds or removes packs any time. Right-click a pack > Remove from Library takes it out, and it stays in its launcher',
+        'Packs show with their own icon, its colours behind it, and the time you played them',
         'A new Minecraft choice in the Source filter, in both layouts',
         'Play opens the pack in its launcher, the same way the launcher\'s own desktop shortcut does',
         'The game page and Setup work like any other game: monitor, resolution, sound device, companion apps, tags, favourites and notes',
         'SwapDeck finds Minecraft once it starts and puts everything back when you close it. Stop > Close the game too closes Minecraft, not the launcher',
         'Right-click a pack > Change artwork gives it your own icon and banner. The cover takes its colours from your icon',
-        'Turn them off in Settings > General > Show Minecraft modpacks',
+        'Turn off Settings > General > Look for Minecraft modpacks and SwapDeck doesn\'t look at all',
       ]],
       ['Good to know', [
         'Mods, updates and your Minecraft account stay in the launcher. SwapDeck only starts the pack',

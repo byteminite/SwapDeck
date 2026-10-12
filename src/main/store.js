@@ -31,7 +31,9 @@ const DEFAULTS = {
     hiddenGames: [],         // Library layout: games hidden from the Library (Steam still has them)
     notesRead: [],           // Library layout: ids of notifications already read
     stopPref: 'ask',         // Library layout: Stop asks, only stops tracking, or also closes the game
-    showPacks: true,         // list Minecraft modpacks (Modrinth, CurseForge, Prism) in the Library
+    showPacks: true,         // look for Minecraft modpacks (Modrinth, CurseForge, Prism)
+    packsAdded: [],          // modpacks the user added to the Library
+    packsSeen: [],           // modpacks already offered under the bell, so only new ones are offered again
     darkBase: 'dark',        // the dark base the light / dark switch goes back to
     obDone: false,           // first-start screens finished or skipped
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)

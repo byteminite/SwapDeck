@@ -89,8 +89,9 @@ function build(dir) {
       lastPlayed: cfg.lastPlayed || 0, hours: Math.round((cfg.playMs || 0) / 360000) / 10,
     });
   }
-  // Minecraft modpacks from Modrinth, CurseForge and Prism Launcher (Settings > General can hide them).
-  for (const p of modpacks.scan(store.settings().showPacks !== false)) {
+  // Minecraft modpacks from Modrinth, CurseForge and Prism Launcher that the user added (Settings > General).
+  const added = new Set(store.settings().packsAdded || []);
+  for (const p of modpacks.scan(store.settings().showPacks !== false).filter(x => added.has(x.id))) {
     const cfg = store.gameCfg(p.id);
     out.push({
       id: p.id, steam: false, pack: { launcher: p.launcher, label: p.label }, name: p.name, exe: p.exe, installed: fs.existsSync(p.folder), folder: p.folder,

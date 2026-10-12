@@ -6,9 +6,11 @@ import { dropdown } from './libgames.js';
 import { tg, seg, btn, row } from './libsetui.js';
 import { openTags } from './libtags.js';
 import { startFirst } from './libfirst.js';
+import { openPacks } from './libpacks.js';
 
 const START = [['games', 'My games'], ['recent', 'Recently played'], ['fav', 'Favourites'], ['upd', 'Updates']];
 
+const packsLine = app => { const n = (app.state.settings.packsAdded || []).filter(id => app.state.lib.some(g => g.id === id)).length, f = (app.state.packsFound || []).length; return n + ' of ' + f + ' found ' + (f === 1 ? 'pack is' : 'packs are') + ' in your Library.'; };
 function shortcutCtrl(app, b) {
   const keys = html`<span class=${'st-key' + (b.hkRec ? ' rec' : '')}>${(b.hkRec ? ['...'] : b.hkKeys).map(k => html`<kbd>${k}</kbd>`)}</span>`;
   const rec = () => { app.setState({ setSec: 'general' }); b.onHkRec(); };
@@ -40,7 +42,8 @@ export function generalSec(app, b) {
     row('When I press Stop', 'Stop always puts your display and sound back. Closing the game asks it to close, like Alt+F4.', seg([['ask', 'Ask every time'], ['track', 'Stop tracking only'], ['close', 'Close the game too']].map(([k, label]) => ({ label, on: (cfg.stopPref || 'ask') === k, pick: () => app.setCfg({ stopPref: k }) }))), '', 'when i press stop close game tracking ask'),
     row('Close SwapDeck after switching', 'Quits SwapDeck when the switch finishes.', tg(cfg.closeAfter, b.onCl, 'Close SwapDeck after switching')),
     row('Open SwapDeck on', 'The page you see first in the Library layout.', seg(START.map(([k, label]) => ({ label, on: start === k, pick: () => app.setCfg({ libStart: k }) })))),
-    row('Show Minecraft modpacks', 'Packs from Modrinth, CurseForge and Prism Launcher show up in the Library. Play starts them in their launcher.', tg(cfg.showPacks !== false, () => app.setCfg({ showPacks: cfg.showPacks === false }), 'Show Minecraft modpacks'), '', 'minecraft modpacks modrinth curseforge prism launcher'),
+    row('Look for Minecraft modpacks', 'Finds packs from Modrinth, CurseForge and Prism Launcher on this PC. You pick which ones go in your Library.', tg(cfg.showPacks !== false, () => app.setCfg({ showPacks: cfg.showPacks === false }), 'Look for Minecraft modpacks'), '', 'minecraft modpacks modrinth curseforge prism launcher'),
+    cfg.showPacks === false ? null : row('Minecraft modpacks', packsLine(app), btn('Choose packs', () => openPacks(app), { ic: 'box' }), '', 'minecraft modpacks choose add remove'),
     row("Show games that aren't installed", "Owned games that aren't on this PC show up in the Library.", tg(app.showNotInst(), () => app.setCfg({ showNotInstalled: !app.showNotInst() }), "Show games that aren't installed")),
     row('Keep running in the tray', cfg.tray ? 'Closing the window hides SwapDeck in the tray.' : 'Closing the window quits SwapDeck.', tg(cfg.tray, b.onTr, 'Keep running in the tray')),
     row('Open the panel with a shortcut', b.hkRec ? 'Press the new keys now. Esc cancels.' : b.hkErr || b.hkOk || 'Press the keys in any app to open or close the tray panel. Ctrl + Alt works like AltGr on many keyboards; add Shift if a character stops typing.', shortcutCtrl(app, b), cfg.tray ? '' : 'off'),

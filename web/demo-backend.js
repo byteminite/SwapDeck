@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], hiddenGames: [], notesRead: [], stopPref: 'ask', darkBase: 'dark', showPacks: true, obDone: true, tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], hiddenGames: [], notesRead: [], stopPref: 'ask', darkBase: 'dark', showPacks: true, packsAdded: [], packsSeen: [], obDone: true, tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -117,6 +117,8 @@
     pack('modrinth', 'Modrinth', 'Fabulously Optimized', 12.4, 3 * D, 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%238a5a36%22/%3E%3Crect%20width%3D%2264%22%20height%3D%2222%22%20fill%3D%22%235bbf4a%22/%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2232%22%20y%3D%2216%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2248%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2216%22%20y%3D%2232%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%228%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2248%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2224%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3C/svg%3E'),
     pack('curseforge', 'CurseForge', 'All the Mods 10', 31.8, 6 * D, 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%232a2550%22/%3E%3Crect%20width%3D%2264%22%20height%3D%2222%22%20fill%3D%22%237c5cf0%22/%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2232%22%20y%3D%2216%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2248%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2216%22%20y%3D%2232%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%228%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2248%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2224%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3C/svg%3E'),
   ];
+  // Like the real app: modpacks are found, but only the ones added in Choose packs are in the Library.
+  const libShown = () => lib.filter(g => !g.pack || (settings.showPacks !== false && settings.packsAdded.includes(g.id)));
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));
   const findGame = id => lib.find(g => g.id === id);
 
@@ -281,7 +283,7 @@
 
   const state = () => ({
     steam: steamState(), accounts: accounts.map(a => ({ ...a })), games: gamesList(), settings: { ...settings }, version: VERSION, busy, zoom: zoom.factor,
-    update: { state: 'idle' }, vault: { mode: 'dpapi', locked: false, autoUnlock: false, canEncrypt: true }, lib: lib.map(clone), monitors: clone(monitors),
+    update: { state: 'idle' }, vault: { mode: 'dpapi', locked: false, autoUnlock: false, canEncrypt: true }, lib: libShown().map(clone), monitors: clone(monitors),
     winAccent: '#0078d4', session: curSession(), displaySaved: false, monPos: clone(monPos), resProfiles: clone(resProfiles), playLog: clone(playLog),
     sessions: clone(sessions), newInstall: false,
   });
@@ -356,7 +358,8 @@
     vaultChange: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultRemove: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultAutoUnlock: async () => state().vault,
-    libList: async () => lib.map(clone),
+    libList: async () => libShown().map(clone),
+    packsFound: async () => settings.showPacks === false ? [] : lib.filter(g => g.pack).map(g => ({ id: g.id, name: g.name, label: g.pack.label, icon: g.img, added: settings.packsAdded.includes(g.id) })),
     libAddSteamGame: async (appid, name) => {
       let g = findGame('steam:' + appid);
       if (!g) { g = { ...game(String(appid), String(name || 'App ' + appid), '', null, 0, null), installed: false, folder: null }; lib.push(g); }

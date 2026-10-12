@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   vaultRemove: pw => invoke('vault:remove', pw),
   vaultAutoUnlock: on => invoke('vault:autounlock', on),
   libList: () => invoke('lib:list'),
+  packsFound: () => invoke('packs:found'),
   libSet: (id, patch) => invoke('lib:set', id, patch),
   libAddSteamGame: (appid, name) => invoke('lib:addSteamGame', appid, name),
   openSteamPage: (kind, appid) => invoke('steam:page', kind, appid),

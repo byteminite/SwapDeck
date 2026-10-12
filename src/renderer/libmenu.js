@@ -14,6 +14,13 @@ export function openGameMenu(app, id, e) {
   app.setState({ gm: { id, x: Math.max(8, x), y: Math.max(52, y), sub: null }, lsDd: null, lsMenu: false });
 }
 
+// A modpack leaves the Library but stays in its launcher; Settings > General > Choose packs adds it back.
+function removePack(app, g) {
+  const list = app.state.settings.packsAdded || [];
+  app.setCfg({ packsAdded: list.filter(x => x !== g.id) });
+  app.toast('info', g.name + ' removed', 'It stays in ' + g.pack.label + '. Add it back with Choose packs in Settings, General.', { label: 'Undo', fn: () => app.setCfg({ packsAdded: [...(app.state.settings.packsAdded || []), g.id] }) });
+}
+
 export function hideGame(app, g) {
   const list = app.state.settings.hiddenGames || [];
   app.setCfg({ hiddenGames: [...list.filter(x => x !== g.id), g.id] });
@@ -38,7 +45,7 @@ function items(app, g) {
     g.installed ? { label: 'Desktop shortcut', ic: 'external', run: close(() => app.shortcut(g, g.acct && app.find(g.acct), null)) } : null,
     g.steam ? { label: 'Store page', ic: 'external', run: close(() => window.api.openSteamPage('store', g.appid)) } : null,
     { sep: true },
-    g.steam || g.pack ? { label: 'Hide from Library', ic: 'x', danger: true, run: close(() => hideGame(app, g)) } : { label: 'Remove from SwapDeck', ic: 'x', danger: true, run: close(() => app.setState({ rmId: g.id })) },
+    g.pack ? { label: 'Remove from Library', ic: 'x', danger: true, run: close(() => removePack(app, g)) } : g.steam ? { label: 'Hide from Library', ic: 'x', danger: true, run: close(() => hideGame(app, g)) } : { label: 'Remove from SwapDeck', ic: 'x', danger: true, run: close(() => app.setState({ rmId: g.id })) },
   ].filter(Boolean);
 }
 

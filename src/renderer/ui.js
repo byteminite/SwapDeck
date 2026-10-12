@@ -14,6 +14,7 @@ import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 import { syncTabInk } from './libmotion.js';
 import { flipTheme } from './themeflip.js';
+import { loadPacks, packsVals, packsOverlay, openPacks } from './libpacks.js';
 import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
@@ -275,6 +276,8 @@ class App extends Component {
     this.applyTheme();
     this.syncLibScroll();
     syncTabInk(document);
+    // New modpacks are offered once they're found (throttled to every 15 seconds).
+    if (!this.state.locked && !this.state.ob) loadPacks(this);
   }
   // Library layout: a game or account page opens at the top; the four list pages keep where you left them.
   syncLibScroll() {
@@ -401,7 +404,9 @@ class App extends Component {
   toast(type, title, msg, action) {
     const id = ++this._tid;
     this.setState(s => ({ toasts: [...s.toasts, { id, type, title, msg, action }].slice(-4) }));
-    this.later(type === 'error' ? 8000 : 4800, () => this.dismiss(id));
+    // action.stay: the toast waits for the user (Classic has no bell to keep it).
+    if (!(action && action.stay)) this.later(type === 'error' ? 8000 : 4800, () => this.dismiss(id));
+    return id;
   }
   dismiss(id) { this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })); }
 
@@ -427,7 +432,7 @@ class App extends Component {
     const settings = await api.setSettings(patch);
     if (settings) this.setState({ settings });
     // Showing or hiding modpacks changes which games the Library lists.
-    if ('showPacks' in patch) this.reloadLib();
+    if ('showPacks' in patch || 'packsAdded' in patch) this.reloadLib();
   }
 
   // Settings > General shortcut recorder: the next real key pressed with Ctrl or Alt becomes the shortcut.
@@ -471,6 +476,7 @@ class App extends Component {
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
       if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
+      if (S.packsPick) return this.setState({ packsPick: null });
       if (S.wnFull) return this.setState({ wnFull: null });
       if (S.lnErr) return this.setState({ lnErr: null });
       if (S.stopAsk) return this.setState({ stopAsk: null });
@@ -1765,6 +1771,8 @@ class App extends Component {
       setOpen: S.setOpen, onSetClose: () => this.setState({ setOpen: false, rp: null, hkRec: false }), stop: e => e.stopPropagation(),
       clBg: cfg.closeAfter ? onBg : offBg, clX: cfg.closeAfter ? 'translateX(18px)' : 'translateX(0px)', onCl: () => this.setCfg({ closeAfter: !cfg.closeAfter }),
       pkBg: cfg.showPacks !== false ? onBg : offBg, pkX: cfg.showPacks !== false ? 'translateX(18px)' : 'translateX(0px)', onPk: () => this.setCfg({ showPacks: cfg.showPacks === false }),
+      pkOn: cfg.showPacks !== false, onPkChoose: () => openPacks(this),
+      pkLine: (cfg.packsAdded || []).filter(id => S.lib.some(g => g.id === id)).length + ' of ' + (S.packsFound || []).length + ' found packs are in your Library',
       cfgOpts: cfg.steamArgs || '', onOpts: e => { const v = e.target.value; this.setState(s => ({ settings: { ...s.settings, steamArgs: v } })); clearTimeout(this._argT); this._argT = setTimeout(() => api.setSettings({ steamArgs: v }), 400); },
       pathText: nf ? 'Not found — browse to steam.exe' : S.steam.exe || '', pathFg: nf ? 'var(--bad-fg)' : 'var(--text-soft)', pathBd: nf ? 'rgba(248,113,113,.4)' : 'rgba(var(--fg-rgb),.1)',
       addOpen: S.addOpen, onAddCancel: () => this.cancelAdd(),
@@ -1787,7 +1795,7 @@ class App extends Component {
     );
     return {
       ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...(isLibLayout(this) ? {} : this.libraryVals()), ...gv, ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this),
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this), packsView: packsOverlay(packsVals(this)),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

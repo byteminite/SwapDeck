@@ -203,7 +203,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
     <td width="33%" valign="top">🏷️ <b>Tags manager</b><br><sub>Rename, recolour and delete tags everywhere at once</sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top">⛏️ <b>Minecraft modpacks</b><br><sub>Packs from Modrinth, CurseForge and Prism Launcher show up as games. Play starts the pack with its own monitor and sound</sub></td>
+    <td width="33%" valign="top">⛏️ <b>Minecraft modpacks</b><br><sub>SwapDeck finds packs from Modrinth, CurseForge and Prism Launcher, you pick which ones join your Library. Play starts the pack with its own monitor and sound</sub></td>
     <td width="33%" valign="top">🌗 <b>Light and dark</b><br><sub>One click on the sun or moon, and the new colours pour in from the button</sub></td>
     <td width="33%" valign="top">🎞️ <b>Animations</b><br><sub>Pages, covers and tabs ease in. <i>Reduce motion</i> turns them off</sub></td>
   </tr>
@@ -227,6 +227,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 | Account profile | `ⓘ` on a card, or right-click. *See all games* lists everything the account owns |
 | CS2 settings per account | CS2's page → the ⚙️ gear → CS2 settings |
 | Play a game | Library → hover a game → Play, or double-click |
+| Add Minecraft modpacks | The bell's *Review*, or Settings → General → *Choose packs* |
 | Play a Minecraft modpack | Library → Source → Minecraft, then Play. The pack opens in its launcher |
 | Game page | Click a game in the Library. The ⚙️ gear next to the close button opens its setup |
 | Read patch notes | A game's page → Activity → click a post |

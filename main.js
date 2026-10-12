@@ -461,6 +461,8 @@ function ipc() {
     if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
     if ('obDone' in patch) allowed.obDone = !!patch.obDone;
     if ('showPacks' in patch) allowed.showPacks = !!patch.showPacks;
+    // Modpacks the user added to the Library, and the ones SwapDeck already offered (so only new ones are offered again).
+    for (const k of ['packsAdded', 'packsSeen']) if (Array.isArray(patch[k])) allowed[k] = [...new Set(patch[k].filter(x => typeof x === 'string' && /^mc:(modrinth|curseforge|prism):[0-9a-f]{16}$/.test(x)))].slice(0, 500);
     if ('darkBase' in patch) allowed.darkBase = patch.darkBase === 'oled' ? 'oled' : 'dark';
     if ('stopPref' in patch) allowed.stopPref = ['ask', 'track', 'close'].includes(patch.stopPref) ? patch.stopPref : 'ask';
     if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
@@ -621,6 +623,8 @@ function ipc() {
   // ---- library ----
   const findGame = id => library.build(loc.dir).find(g => g.id === id);
   ipcMain.handle('lib:list', () => library.build(loc.dir));
+  // Every modpack the launchers have, added or not, for the review list (nothing here changes the Library).
+  ipcMain.handle('packs:found', () => { const added = new Set(store.settings().packsAdded || []); return modpacks.scan(store.settings().showPacks !== false).map(p => ({ id: p.id, name: p.name, label: p.label, icon: p.icon ? 'sdimg://pack/' + p.id.split(':')[2] : null, added: added.has(p.id) })); });
   ipcMain.handle('lib:addSteamGame', (_, appid, name) => {
     if (!isAppid(appid)) return null;
     const id = 'steam:' + appid;
