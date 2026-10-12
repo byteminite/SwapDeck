@@ -38,6 +38,8 @@ const fetching = new Set(); // sids with a stats refresh in flight
 
 // Events go to the main window and, when it's open, the tray panel.
 const send = (ch, ...args) => {
+  if (ch === 'launch') setTrayPlaying(args[0] && args[0].running ? args[0].gid : null);
+  if (ch === 'launch-end') setTrayPlaying(null);
   if (win && !win.isDestroyed()) win.webContents.send(ch, ...args);
   if (trayWin && !trayWin.isDestroyed()) trayWin.webContents.send(ch, ...args);
 };
@@ -729,7 +731,7 @@ function ipc() {
     const accs = accounts().filter(a => !hidden.has(a.sid) || a.sid === act), lib = library.build(loc.dir), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
-      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
+      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.stopPref || 'ask' },
       accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
         .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
@@ -883,11 +885,33 @@ function showWin() {
   win.show(); win.focus();
 }
 
+// Tray icon, with a green dot in the corner while a game runs (drawn into the 16 px bitmap, BGRA).
+let trayPlaying = null;
+function trayImage(dot) {
+  const img = nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 });
+  if (!dot) return img;
+  const px = Buffer.from(img.toBitmap()), cx = 12, cy = 12;
+  for (let y = 7; y < 16; y++) for (let x = 7; x < 16; x++) {
+    const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy), i = (y * 16 + x) * 4;
+    if (d <= 3.6) { px[i] = 0x7e; px[i + 1] = 0xde; px[i + 2] = 0x4a; px[i + 3] = 255; } // #4ade7e
+    else if (d <= 4.8) { px[i] = 0x14; px[i + 1] = 0x14; px[i + 2] = 0x14; px[i + 3] = 255; } // dark ring so it reads on any taskbar
+  }
+  return nativeImage.createFromBitmap(px, { width: 16, height: 16 });
+}
+function setTrayPlaying(gid) {
+  if (gid === trayPlaying) return;
+  trayPlaying = gid;
+  if (!tray) return;
+  tray.setImage(trayImage(!!gid));
+  const g = gid && library.build(loc.dir).find(x => x.id === String(gid));
+  tray.setToolTip(g ? 'SwapDeck · playing ' + g.name : 'SwapDeck');
+}
+
 // The tray icon exists only while "Keep running in the tray" is on.
 function updateTray() {
   const on = !!store.settings().tray;
   if (on && !tray) {
-    tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 }));
+    tray = new Tray(trayImage(!!trayPlaying));
     tray.setToolTip('SwapDeck');
     tray.on('click', toggleTrayPanel);
     tray.on('right-click', toggleTrayPanel);

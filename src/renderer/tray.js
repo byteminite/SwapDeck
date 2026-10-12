@@ -21,13 +21,13 @@ const H = "font:600 10.5px 'Geist Mono',monospace;letter-spacing:.1em;color:var(
 const spin = s => html`<span style=${`width:${s}px;height:${s}px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(var(--fg-rgb),.2);border-top-color:var(--accent);animation:spin .8s linear infinite;display:inline-block`}></span>`;
 
 class Tray extends Component {
-  state = { d: null, switching: null };
+  state = { d: null, switching: null, ask: false, q: '', stopping: null };
 
   componentDidMount() {
     this.load();
     // While the panel is open, keep the games' update badges current.
     this._poll = setInterval(() => { if (!document.hidden) this.load(); }, 3000);
-    this._off = ['tray-show', 'steam', 'accounts', 'launch', 'launch-end', 'switch'].map(ch => api.on(ch, () => this.load()));
+    this._off = ['tray-show', 'steam', 'accounts', 'launch', 'launch-end', 'switch'].map(ch => api.on(ch, () => { if (ch === 'tray-show') this.setState({ ask: false, stopNote: null, q: '' }); this.load(); }));
     this._key = e => { if (e.key === 'Escape') api.trayHide(); };
     window.addEventListener('keydown', this._key);
     this._ro = new ResizeObserver(() => { if (this._box) api.traySize(this._box.offsetHeight); });
@@ -63,6 +63,19 @@ class Tray extends Component {
     this.load();
   }
   async play(g) { api.trayHide(); await api.play(g.id); }
+  // Stop follows "When I press Stop" (Settings): ask inline, only stop tracking, or close the game too.
+  stopPress(sess) {
+    const pref = (this.state.d.settings || {}).stopPref || 'ask';
+    if (!sess.running) return api.stopGame();
+    if (pref === 'ask') return this.setState({ ask: true });
+    this.stopGo(pref);
+  }
+  async stopGo(mode) {
+    this.setState({ ask: false, stopping: mode });
+    const r = await api.stopGame(mode).catch(() => null);
+    this.setState({ stopping: null, stopNote: mode === 'close' && r && !r.ok ? r.error || "It didn't close." : null });
+    this.load();
+  }
 
   render() {
     const { d, switching } = this.state;
@@ -83,9 +96,20 @@ class Tray extends Component {
 
   ${sess ? html`<div style="display:flex;align-items:center;gap:12px;margin:12px 12px 0;padding:10px 12px;border-radius:12px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.3)">
     <span style=${`width:34px;height:46px;flex:none;border-radius:7px;background:${sg && sg.cover ? `url("${sg.cover}") center/cover` : 'rgba(var(--fg-rgb),.1)'}`}></span>
-    <div style="flex:1;min-width:0"><div style="font:600 10px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--ok-fg)">${sess.running ? 'NOW PLAYING' : 'LAUNCHING'}</div><div style="font:600 13px 'Geist',sans-serif;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sg ? sg.name : 'Game'}</div></div>
-    <button class="tp-stop" style="padding:6px 10px;border-radius:9px;border:1px solid rgba(248,113,113,.35);background:transparent;color:var(--bad-fg);font:500 11.5px 'Geist',sans-serif;cursor:pointer;flex:none" onClick=${() => api.stopGame()} title="Restores your display and stops tracking. The game keeps running.">Stop</button>
+    <div style="flex:1;min-width:0"><div style="font:600 10px 'Geist Mono',monospace;letter-spacing:.1em;color:${sess.running ? 'var(--ok-fg)' : 'var(--accent-strong)'}">${this.state.stopping ? (this.state.stopping === 'close' ? 'CLOSING' : 'STOPPING') : sess.running ? 'NOW PLAYING' : 'STARTING'}</div><div style="font:600 13px 'Geist',sans-serif;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sg ? sg.name : 'Game'}</div>
+    ${!sess.running && sess.steps && sess.steps[sess.step] ? html`<div style="display:flex;align-items:center;gap:6px;margin-top:3px;font:500 11px 'Geist',sans-serif;color:var(--text-muted);white-space:nowrap;overflow:hidden">${spin(10)}${sess.steps[sess.step].label}</div>` : null}</div>
+    ${this.state.stopping ? spin(16) : this.state.ask ? null : html`<button class="tp-stop" style="padding:6px 10px;border-radius:9px;border:1px solid rgba(248,113,113,.35);background:transparent;color:var(--bad-fg);font:500 11.5px 'Geist',sans-serif;cursor:pointer;flex:none" onClick=${() => this.stopPress(sess)} title=${sess.running ? 'Puts your display and sound back.' : 'Cancels the start.'}>${sess.running ? 'Stop' : 'Cancel'}</button>`}
   </div>` : null}
+  ${sess && this.state.ask ? html`<div style="margin:8px 12px 0;padding:10px;border-radius:12px;background:rgba(var(--fg-rgb),.04);border:1px solid rgba(var(--fg-rgb),.1)">
+    <div style="font:600 12px 'Geist',sans-serif;margin:0 2px 8px">Stop ${sg ? sg.name : 'the game'}?</div>
+    <div style="display:flex;gap:6px">
+      <button class="tp-main" style="flex:1;padding:8px;border:0;border-radius:9px;background:var(--btn-bg);color:var(--btn-fg);font:600 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.stopGo('track')}>Stop tracking</button>
+      <button class="tp-btn" style="flex:1;padding:8px;border-radius:9px;border:1px solid rgba(248,113,113,.35);background:transparent;color:var(--bad-fg);font:600 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.stopGo('close')} title="Asks the game to close, like Alt+F4">Close game</button>
+      <button class="tp-btn" style="padding:8px 10px;border-radius:9px;border:1px solid rgba(var(--fg-rgb),.12);background:transparent;color:var(--text-muted);font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${() => this.setState({ ask: false })}>Cancel</button>
+    </div>
+    <div style="margin:8px 2px 0;font:500 11px/1.4 'Geist',sans-serif;color:var(--text-subtle)">Stop tracking keeps the game running. Closing it may lose anything you haven't saved.</div>
+  </div>` : null}
+  ${this.state.stopNote ? html`<div style="margin:8px 12px 0;padding:8px 10px;border-radius:10px;background:rgba(251,191,36,.08);font:500 11.5px 'Geist',sans-serif;color:var(--warn-fg)">${this.state.stopNote} Display and sound are back.</div>` : null}
 
   ${d.accounts.length ? html`<div style="padding:14px 12px 4px">
     <div style=${H + ';padding:0 4px 10px'}>SWITCH ACCOUNT</div>
@@ -102,8 +126,9 @@ class Tray extends Component {
 
   ${d.games.length ? html`<div style="padding:12px 8px 6px">
     <div style=${H + ';padding:0 8px 6px'}>PLAY</div>
+    ${d.games.length > 6 ? html`<input value=${this.state.q} placeholder="Find a game" aria-label="Find a game" onInput=${e => this.setState({ q: e.target.value })} style="box-sizing:border-box;width:calc(100% - 16px);margin:0 8px 6px;height:30px;padding:0 10px;border-radius:9px;border:1px solid rgba(var(--fg-rgb),.12);background:rgba(var(--fg-rgb),.04);color:var(--text);font:500 12px 'Geist',sans-serif;outline:none" />` : null}
     <div ref=${this.listRef} onWheel=${this.listWheel} style="max-height:262px;overflow-y:auto;padding-right:2px">
-    ${d.games.map(g => {
+    ${d.games.filter(g => !this.state.q.trim() || g.name.toLowerCase().includes(this.state.q.trim().toLowerCase())).map(g => {
       const dis = !!sess, upd = sess && sess.gid === g.id ? null : updateBadge(g.upd);
       return html`<div class="tp-row" style=${`display:flex;align-items:center;gap:11px;padding:6px 8px;border-radius:10px;cursor:${dis ? 'default' : 'pointer'};opacity:${dis && !(sess && sess.gid === g.id) ? .5 : 1}`} onClick=${() => !dis && this.play(g)}>
         <span style=${`width:28px;height:38px;flex:none;border-radius:6px;background:${g.cover ? `url("${g.cover}") center/cover,rgba(var(--fg-rgb),.08)` : 'rgba(var(--fg-rgb),.1)'}`}></span>
