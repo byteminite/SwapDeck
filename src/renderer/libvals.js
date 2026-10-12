@@ -15,6 +15,7 @@ import { libTagsVals, tagsOverlay } from './libtags.js';
 import { libMenuVals, gameMenu } from './libmenu.js';
 import { libArtVals, artOverlay } from './libart.js';
 import { libNotesVals, notesPanel, unreadCount } from './libnotes.js';
+import { stopVals, stopOverlay } from './libstop.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -50,7 +51,7 @@ export function libShellVals(app, gv, dw) {
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings('general'), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu, lsNotes: false })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => openSpot(app), onBell: () => app.setState(s => ({ lsNotes: !s.lsNotes, lsMenu: false })), bellN: unreadCount(app), bellOn: !!S.lsNotes,
-      notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
+      notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, stop: (S.stopAsk || S.stopping) && stopVals(app) ? stopOverlay(stopVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
       gm: S.gm && libMenuVals(app) ? gameMenu(libMenuVals(app)) : null, art: S.art && libArtVals(app) ? artOverlay(libArtVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,

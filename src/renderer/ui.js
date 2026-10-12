@@ -434,6 +434,8 @@ class App extends Component {
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
       if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
+      if (S.stopAsk) return this.setState({ stopAsk: null });
+      if (S.stopping && S.stopping.phase === 'done') return this.setState({ stopping: null });
       if (S.lsNotes) return this.setState({ lsNotes: false });
       if (S.gm) return this.setState({ gm: S.gm.sub ? { ...S.gm, sub: null } : null });
       if (S.art) return this.setState({ art: null });
@@ -1121,7 +1123,8 @@ class App extends Component {
     if (e.restoreErr) this.toast('error', "Couldn't restore the display", e.restoreErr, { label: 'Try again', fn: () => this.restoreNow() });
     else if (e.restored) this.toast('success', 'Display restored', 'Your monitors are back the way they were' + (nm ? ', ' + nm.label + ' primary.' : '.'));
     else if (e.hadMon && !e.restoreOn) this.toast('warning', name + ' closed', '"Restore display" is off for this game, so the display stays as it is.', { label: 'Restore now', fn: () => this.restoreNow() });
-    else if (e.reason === 'stopped') this.toast('info', 'Stopped tracking ' + name, 'The game keeps running. Playtime so far is saved.');
+    // The Library layout's Stop screen already says what happened (and the game may have been closed).
+    else if (e.reason === 'stopped' && !this.state.stopping) this.toast('info', 'Stopped tracking ' + name, 'The game keeps running. Playtime so far is saved.');
     else if (e.reason === 'exit') this.toast('info', name + ' closed', 'Playtime saved.');
     this.reloadMonitors();
   }

@@ -58,7 +58,7 @@ contextBridge.exposeInMainWorld('api', {
   libRestoreCustom: saved => invoke('lib:restoreCustom', saved),
   play: (id, asSid) => invoke('game:play', id, asSid),
   gameFolder: id => invoke('game:folder', id),
-  stopGame: () => invoke('game:stop'),
+  stopGame: mode => invoke('game:stop', mode === 'close' ? 'close' : 'track'),
   shortcut: id => invoke('game:shortcut', id),
   displays: () => invoke('display:list'),
   displayModes: id => invoke('display:modes', id),

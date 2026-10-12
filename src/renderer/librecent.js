@@ -2,6 +2,7 @@
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { card, libList } from './libgamesvals.js';
+import { libStop } from './libstop.js';
 import { cover } from './libgames.js';
 
 const DAY = 86400000;
@@ -21,7 +22,7 @@ function hero(app, L) {
   const S = app.state;
   if (L && L.running) {
     const g = app.gfind(L.gid), a = L.acct && app.find(L.acct);
-    if (g) return { g, live: true, label: 'Running now' + (a ? ' on ' + a.name : ''), text: 'Stop puts your display and sound back. It never closes the game.', a };
+    if (g) return { g, live: true, label: 'Running now' + (a ? ' on ' + a.name : ''), text: 'Stop puts your display and sound back, and asks before it closes the game.', a };
   }
   const g = libList(app).filter(x => x.installed && x.lastPlayed).sort((x, y) => y.lastPlayed - x.lastPlayed)[0];
   return g ? { g, live: false, label: 'Last played ' + dayLabel(g.lastPlayed, midnight(Date.now())).toLowerCase(), text: g.hours ? Math.round(g.hours).toLocaleString() + ' h played' : '' } : null;
@@ -64,7 +65,7 @@ export function libRecentVals(app) {
     return { name: a.name, ini: a.avatar ? '' : a.ini, bg: avBg(a), cur: a.current, line: live ? 'Playing ' + live.name + ' now' : mine.length ? app.gfind(mine[0].gid).name + ' · ' + fmt(mine.reduce((t, s) => t + s.ms, 0)) + ' this week' : 'Not played this week', liveOn: !!live, swOff: !!L, sw: () => app.switchTo(a.id) }; });
   return {
     hero: H && { name: H.g.name, bg: H.g.steam && H.g.hero ? 'url("' + H.g.hero + '") center/cover no-repeat,' + app.gradOf(H.g) : app.cardBg(H.g), live: H.live, label: H.label, text: H.text,
-      onPlay: () => app.play(H.g.id), onShow: () => app.setState(s => ({ launch: s.launch && { ...s.launch, hidden: false } })), onStop: () => app.stopGame(), onOpen: () => app.openGame(H.g.id) },
+      onPlay: () => app.play(H.g.id), onShow: () => app.setState(s => ({ launch: s.launch && { ...s.launch, hidden: false } })), onStop: () => libStop(app), onOpen: () => app.openGame(H.g.id) },
     jump, rows, sessN: week.length, sessT: fmt(week.reduce((t, s) => t + s.ms, 0)),
     week: { mode, total: mode === 'h' ? total.toFixed(1) + ' h' : String(total), sub: mode === 'h' ? 'played through SwapDeck' : 'sessions', bars: vals.map((v, i) => ({ h: Math.max(4, v / max * 78), today: i === 6, label: new Date(days[i]).toLocaleDateString('en-GB', { weekday: 'short' }), v: mode === 'h' ? (v ? v.toFixed(1) : '') : (v || '') })),
       pick: k => () => app.setState({ lrWk: k }) },

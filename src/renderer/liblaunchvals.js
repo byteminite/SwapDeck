@@ -1,5 +1,6 @@
 // Props for the Library layout's start screen, switch screen and Now playing bar, from the launch session
 // (src/main/play.js steps) and the account switch progress.
+import { libStop } from './libstop.js';
 
 const STEP_IC = { acct: 'user', disp: 'monitor', audio: 'headphones', apps: 'app', launch: 'rocket', run: 'gamepad' };
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
@@ -31,9 +32,9 @@ export function launchVals(app) {
     asPill: !g.steam ? [] : switching ? [{ bg: avBg(from), ini: from.avatar ? '' : from.ini }, { bg: avBg(a), ini: a.avatar ? '' : a.ini }] : a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [],
     asArrow: switching, asText: !g.steam ? 'No Steam account needed' : switching ? 'Switching to ' + a.name : a ? 'Playing as ' + a.name : 'Playing on the signed-in account',
     note: (g.note || '').trim(), noteCopied: !!S.lNoteCopied, onCopy: () => app.copyNote(g.note),
-    onStop: () => app.stopGame(), onHide: hide,
+    onStop: () => libStop(app), onHide: hide,
   };
-  const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => app.stopGame() } : null;
+  const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => libStop(app) } : null;
   return { lnScreen: screen, lnBar: bar };
 }
 

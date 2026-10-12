@@ -36,6 +36,7 @@ export function generalSec(app, b) {
   return { k: 'general', title: 'General', sub: 'What happens around a switch, and how SwapDeck starts.', rows: [
     row('Launch a game after switching', 'Default for every account. Each account can pick its own game on its page.', tg(cfg.launchAfter, b.onLg, 'Launch a game after switching')),
     row('Default game', 'Installed games from your Library.', html`<div class="st-dd">${b.defMenu ? html`<div class="lg-catch" onClick=${b.onDefMenu}></div>` : null}${dropdown(defDd)}</div>`, 'sub' + (cfg.launchAfter ? '' : ' off')),
+    row('When I press Stop', 'Stop always puts your display and sound back. Closing the game asks it to close, like Alt+F4.', seg([['ask', 'Ask every time'], ['track', 'Stop tracking only'], ['close', 'Close the game too']].map(([k, label]) => ({ label, on: (cfg.stopPref || 'ask') === k, pick: () => app.setCfg({ stopPref: k }) }))), '', 'when i press stop close game tracking ask'),
     row('Close SwapDeck after switching', 'Quits SwapDeck when the switch finishes.', tg(cfg.closeAfter, b.onCl, 'Close SwapDeck after switching')),
     row('Open SwapDeck on', 'The page you see first in the Library layout.', seg(START.map(([k, label]) => ({ label, on: start === k, pick: () => app.setCfg({ libStart: k }) })))),
     row("Show games that aren't installed", "Owned games that aren't on this PC show up in the Library.", tg(app.showNotInst(), () => app.setCfg({ showNotInstalled: !app.showNotInst() }), "Show games that aren't installed")),

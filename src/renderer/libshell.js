@@ -38,5 +38,5 @@ export function libShell(b) {
   const L = b.ls;
   // Lock now: nothing of the library stays on screen (or in the page) behind the lock screen.
   if (b.lockOn) return null;
-  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</main></div>${L.menu}${L.notes}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
+  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</main></div>${L.menu}${L.notes}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}${L.stop}</div>`;
 }

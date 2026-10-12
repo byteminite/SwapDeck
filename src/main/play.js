@@ -10,6 +10,7 @@ const steam = require('./steam');
 const store = require('./store');
 const display = require('./display');
 const audio = require('./audio');
+const { closeGame, targetOf } = require('./closegame');
 const library = require('./library');
 
 const ex = (cmd, args) => new Promise(r => execFile(cmd, args, { windowsHide: true }, (e, out) => r(e ? '' : String(out))));
@@ -120,6 +121,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [],
       logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
       // What the game was set up with, kept on the session so Recently played can show it.
+      closeTarget: targetOf(g),
       setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: apps.map(a => path.basename(a.path, '.exe')) },
     };
     emit(s);
@@ -223,6 +225,14 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
   }
 
   const stop = () => end('stopped');
+  // Stop and close the game: ask it to close first, then put display and sound back whatever happened.
+  async function stopClose() {
+    const s = session;
+    if (!s) return { ok: true };
+    const r = await closeGame(s.closeTarget).catch(e => ({ ok: false, error: e.message }));
+    if (session === s) await end('stopped');
+    return r;
+  }
 
   async function restoreNow() {
     // Go back to the layout saved before the change; without one, fall back to the normal setup.
@@ -270,7 +280,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
   const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct };
 
-  return { play, stop, restoreNow, test, testRes, current };
+  return { play, stop, stopClose, restoreNow, test, testRes, current };
 }
 
 module.exports = { createPlayer };

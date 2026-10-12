@@ -454,6 +454,7 @@ function ipc() {
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
     if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
+    if ('stopPref' in patch) allowed.stopPref = ['ask', 'track', 'close'].includes(patch.stopPref) ? patch.stopPref : 'ask';
     if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
     if (patch.tagColor && typeof patch.tagColor === 'object') allowed.tagColors = withTagColor(patch.tagColor);
@@ -681,7 +682,7 @@ function ipc() {
     shell.openPath(dir);
     return { ok: true };
   });
-  ipcMain.handle('game:stop', () => player.stop());
+  ipcMain.handle('game:stop', (_, mode) => mode === 'close' ? player.stopClose() : player.stop());
   ipcMain.handle('game:shortcut', (_, id) => {
     const g = findGame(String(id)); if (!g) return { ok: false, error: 'Game not found.' };
     const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
