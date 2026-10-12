@@ -22,7 +22,7 @@ function playButton(g, L) {
 export function libGamePageVals(app, b) {
   const S = app.state, g = S.gd && app.gfind(S.gd);
   if (!g) return null;
-  const tab = S.lgTab || 'ov', ach = g.steam ? app.achVals(g) : null, A = ach && ach.cell;
+  const ach = g.steam ? app.achVals(g) : null, A = ach && ach.cell, tab = S.lgTab === 'ach' && !ach ? 'ov' : S.lgTab || 'ov';
   const setTab = k => () => {
     app.setState({ lgTab: k, gdTab: k === 'setup' ? 'setup' : 'ov', colorFor: null });
     if (k === 'setup' && g.steam && String(g.appid) === '730') app.loadCs2(app.cs2Sid(g));

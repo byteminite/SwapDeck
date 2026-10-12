@@ -15,6 +15,7 @@ import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
+import { libPad } from './libpad.js';
 
 const api = window.api;
 
@@ -322,7 +323,7 @@ class App extends Component {
     if (rest.x && Math.abs(p.axes[0] || 0) < .3) rest.x = false;
     if (rest.y && Math.abs(p.axes[1] || 0) < .3) rest.y = false;
     const ax = rest.x ? 0 : p.axes[0] || 0, ay = rest.y ? 0 : p.axes[1] || 0, btn = i => !!(p.buttons[i] && p.buttons[i].pressed);
-    const now = { up: btn(12) || ay < -.6, down: btn(13) || ay > .6, left: btn(14) || ax < -.6, right: btn(15) || ax > .6, a: btn(0), b: btn(1), x: btn(2), lb: btn(4), rb: btn(5) };
+    const now = { up: btn(12) || ay < -.6, down: btn(13) || ay > .6, left: btn(14) || ax < -.6, right: btn(15) || ax > .6, a: btn(0), b: btn(1), x: btn(2), y: btn(3), lb: btn(4), rb: btn(5), view: btn(8), menu: btn(9) };
     const prev = this._padPrev || {}, t = Date.now();
     this._padPrev = now;
     for (const k of Object.keys(now)) {
@@ -339,7 +340,7 @@ class App extends Component {
     if (S.ob) return; // first start: only its own buttons, no app shortcuts behind it
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
     if (k === 'b') return this.onKey({ key: 'Escape', target: document.body, preventDefault() {} });
-    if (isLibLayout(this)) return;
+    if (isLibLayout(this)) return libPad(this, k);
     if (S.setOpen || S.link || S.confirmId || S.unlinkId || S.ag || S.rmId || S.sw || S.acctMenu) return;
     if (S.gd) { if (k === 'a') this.play(S.gd); return; }
     if (S.launch && !S.launch.hidden) return;

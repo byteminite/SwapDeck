@@ -67,7 +67,7 @@ export function libFavVals(app) {
 }
 
 function favCard(c) {
-  return html`<div class="fv-card" role="listitem" tabindex="0" onContextMenu=${c.onMenu} aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
+  return html`<div class="fv-card" data-gid=${c.id} role="listitem" tabindex="0" onContextMenu=${c.onMenu} aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
 <div class="fv-bg" style=${'background:' + c.hero}></div>
 ${c.flag && c.flag.label !== 'Non-Steam' ? html`<div class="fv-flags"><span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span></div>` : null}
 <div class="fv-in"><span class="fv-cv" style=${'background:' + c.bg}>${c.fallback ? html`<em>${c.name}</em>` : null}</span>
