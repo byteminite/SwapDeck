@@ -1,6 +1,7 @@
 // Props for the Library layout's My games page, built from the App component's state.
 import { SUBS, SORTS, SOURCES, accountsOf, applyFilters, sortGames, subCounts, tagCounts, acctCounts, srcCounts } from './libgrid.js';
 import { updateBadge } from './updatebadge.js';
+import { openTags } from './libtags.js';
 
 const SUB_IC = { all: 'gamepad', inst: 'drive', ni: 'download', never: 'dashed' };
 const SRC_IC = { all: 'layers', steam: 'gamepad', ns: 'app' };
@@ -52,7 +53,7 @@ export function libGamesVals(app) {
   const subN = subCounts(searched, f), tags = app.tagOrder().filter(t => games.some(g => (g.tags || []).includes(t)));
   const tagN = tagCounts(searched, f, tags), ids = app.accts.map(a => a.id), accN = acctCounts(searched, f, ids), srcN = srcCounts(searched, f);
   const tagDd = dd(app, 'tag', f.tag || 'Tag', !!f.tag, [{ label: 'All tags', ic: 'tags', n: tagN.all, on: !f.tag, pick: pick({ lsTag: null }) }, { sep: true },
-    ...tags.map(t => ({ label: t, dot: 'rgb(' + app.tagRgb(t) + ')', n: tagN[t], on: f.tag === t, pick: pick({ lsTag: t }) }))], { lsTag: null });
+    ...tags.map(t => ({ label: t, dot: 'rgb(' + app.tagRgb(t) + ')', n: tagN[t], on: f.tag === t, pick: pick({ lsTag: t }) })), { sep: true }, { label: 'Manage tags', ic: 'settings', pick: () => openTags(app) }], { lsTag: null });
   const accA = f.acct && app.find(f.acct);
   const acctDd = dd(app, 'acct', accA ? accA.name : 'Account', !!accA, [{ label: 'Any account', ic: 'users', n: accN.all, on: !f.acct, pick: pick({ lsAcct: null }) }, { sep: true }, { head: 'PLAYS AS OR OWNED BY' },
     ...app.accts.map(a => ({ label: a.name, av: avBg(a), n: accN[a.id], on: f.acct === a.id, pick: pick({ lsAcct: a.id }) }))], { lsAcct: null });

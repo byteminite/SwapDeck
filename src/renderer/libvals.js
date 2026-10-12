@@ -11,6 +11,7 @@ import { acctMenuVals, acctPageVals } from './libacctvals.js';
 import { acctMenu, acctPage } from './libacct.js';
 import { libSpotVals, spotOverlay, openSpot } from './libspot.js';
 import { settingsPage } from './libset.js';
+import { libTagsVals, tagsOverlay } from './libtags.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -45,7 +46,7 @@ export function libShellVals(app, gv, dw) {
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings('general'), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
-      onSearch: () => openSpot(app), onBell: () => {}, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null,
+      onSearch: () => openSpot(app), onBell: () => {}, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
       contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),

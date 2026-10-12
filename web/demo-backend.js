@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -326,6 +326,26 @@
     vaultStatus: async () => state().vault,
     vaultUnlock: async () => ({ ok: true }),
     vaultLock: async () => ({ mode: 'dpapi', locked: false }),
+    tagRename: async (from, to) => {
+      const b = String(to).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16);
+      if (!b) return { ok: false, error: 'A tag needs a name.' };
+      [...lib, ...accounts].forEach(x => { x.tags = [...new Set((x.tags || []).map(t => t === from ? b : t))]; });
+      if (settings.tagColors[from]) { settings.tagColors[b] = settings.tagColors[from]; delete settings.tagColors[from]; }
+      settings.tagMade = (settings.tagMade || []).map(t => t === from ? b : t);
+      return { ok: true, tag: b };
+    },
+    tagDelete: async tag => {
+      [...lib, ...accounts].forEach(x => { x.tags = (x.tags || []).filter(t => t !== tag); });
+      delete settings.tagColors[tag]; settings.tagMade = (settings.tagMade || []).filter(t => t !== tag);
+      return { ok: true };
+    },
+    tagCreate: async (name, rgb) => {
+      const t = String(name).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 16);
+      if (!t) return { ok: false, error: 'Give the tag a name.' };
+      if (rgb) settings.tagColors[t] = rgb;
+      settings.tagMade = [...new Set([...(settings.tagMade || []), t])];
+      return { ok: true, tag: t };
+    },
     vaultSet: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultChange: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultRemove: async () => ({ ok: false, error: 'Not in the browser demo.' }),

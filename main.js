@@ -57,6 +57,38 @@ function withTagColor({ tag, rgb }) {
   return Object.fromEntries(Object.entries(colors).slice(-200));
 }
 
+// Tags manager. Names follow the same rules as the tag inputs (cleanTags); colours are "r,g,b".
+function renameTag(from, to) {
+  const a = cleanTags([from])[0], b = cleanTags([to])[0];
+  if (!a || !b) return { ok: false, error: 'A tag needs a name.' };
+  if (a === b) return { ok: true, tag: b };
+  store.retag(tags => tags.map(t => t === a ? b : t));
+  const s = store.settings(), colors = { ...(s.tagColors || {}) };
+  if (a in colors && !(b in colors)) colors[b] = colors[a];
+  delete colors[a];
+  const swap = list => [...new Set((list || []).map(t => t === a ? b : t))];
+  store.setSettings({ tagColors: colors, tagList: swap(s.tagList), tagMade: swap(s.tagMade) });
+  return { ok: true, tag: b };
+}
+function deleteTag(tag) {
+  const a = cleanTags([tag])[0];
+  if (!a) return { ok: false };
+  store.retag(tags => tags.filter(t => t !== a));
+  const s = store.settings(), colors = { ...(s.tagColors || {}) };
+  delete colors[a];
+  store.setSettings({ tagColors: colors, tagList: (s.tagList || []).filter(t => t !== a), tagMade: (s.tagMade || []).filter(t => t !== a) });
+  return { ok: true };
+}
+function createTag(name, rgb) {
+  const t = cleanTags([name])[0];
+  if (!t) return { ok: false, error: 'Give the tag a name.' };
+  const s = store.settings(), colors = { ...(s.tagColors || {}) };
+  if (validRgb(rgb)) colors[t] = rgb;
+  store.setSettings({ tagColors: colors, tagMade: [...new Set([...(s.tagMade || []), t])].slice(-200) });
+  rememberTags([t]);
+  return { ok: true, tag: t };
+}
+
 // ---------- state ----------
 
 function account(a) {
@@ -461,6 +493,9 @@ function ipc() {
   });
   ipcMain.handle('vault:status', () => store.vault.status());
   ipcMain.handle('vault:unlock', (_, password) => store.vault.unlock(String(password)));
+  ipcMain.handle('tags:rename', (_, from, to) => renameTag(String(from), String(to)));
+  ipcMain.handle('tags:delete', (_, tag) => deleteTag(String(tag)));
+  ipcMain.handle('tags:create', (_, name, rgb) => createTag(String(name), rgb == null ? null : String(rgb)));
   ipcMain.handle('vault:lock', () => { store.vault.lock(); return store.vault.status(); });
   ipcMain.handle('vault:set', (_, password, autoUnlock) => {
     if (store.vault.mode() === 'master') return { ok: false, error: 'A master password is already set.' };

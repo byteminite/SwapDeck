@@ -4,6 +4,7 @@ import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { dropdown } from './libgames.js';
 import { tg, seg, btn, row } from './libsetui.js';
+import { openTags } from './libtags.js';
 
 const START = [['games', 'My games'], ['recent', 'Recently played'], ['fav', 'Favourites'], ['upd', 'Updates']];
 
@@ -33,6 +34,7 @@ export function generalSec(app, b) {
     row('Keep running in the tray', cfg.tray ? 'Closing the window hides SwapDeck in the tray.' : 'Closing the window quits SwapDeck.', tg(cfg.tray, b.onTr, 'Keep running in the tray')),
     row('Open the panel with a shortcut', b.hkRec ? 'Press the new keys now. Esc cancels.' : b.hkErr || b.hkOk || 'Press the keys in any app to open or close the tray panel. Ctrl + Alt works like AltGr on many keyboards; add Shift if a character stops typing.', shortcutCtrl(app, b), cfg.tray ? '' : 'off'),
     row('Start with Windows', b.swSub, tg(cfg.startup, b.onSw, 'Start with Windows')),
+    row('Tags', (() => { const t = app.tagOrder(); return t.length ? t.length + (t.length === 1 ? ' tag: ' : ' tags: ') + t.join(', ') : 'No tags yet.'; })(), btn('Manage tags', () => openTags(app), { ic: 'tags' }), '', 'tags group colour color rename delete manage'),
     hiddenAccts(app),
     row('Backup', 'Tags, notes, games, display and resolution profiles. Sign-ins and passwords are never included.', html`<div class="st-ctl">${btn('Export', b.onExport, { ic: 'download' })}${btn('Import', b.onImport, { ic: 'refresh' })}</div>`),
   ].filter(Boolean) };

@@ -433,6 +433,7 @@ class App extends Component {
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
+      if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
       if (S.lsSpot) return this.setState({ lsSpot: false });
       if (S.lsDd) return this.setState({ lsDd: null });
       if (S.lsMenu) return this.setState({ lsMenu: false });
@@ -685,8 +686,8 @@ class App extends Component {
   // Ready-made tags first, then the order tags were first used. Unused tags drop out, except ones touched in the open game.
   tagRgb(t) { return tagDef(t)[0]; }
   tagOrder(keep = []) {
-    const S = this.state, used = [...this.accts.flatMap(a => a.tags), ...S.lib.flatMap(g => g.tags)];
-    return [...new Set([...KNOWN, ...(S.settings.tagList || []), ...used, ...keep])].filter(t => KNOWN.includes(t) || used.includes(t) || keep.includes(t));
+    const S = this.state, used = [...this.accts.flatMap(a => a.tags), ...S.lib.flatMap(g => g.tags)], made = S.settings.tagMade || [];
+    return [...new Set([...KNOWN, ...(S.settings.tagList || []), ...used, ...made, ...keep])].filter(t => KNOWN.includes(t) || used.includes(t) || made.includes(t) || keep.includes(t));
   }
   // Keeps tags in the shared order; a 13th tag is refused (the main process keeps at most 12).
   // Unticked tags stay listed (keepKey) while the details are open, so nothing moves.

@@ -26,7 +26,8 @@ const DEFAULTS = {
     spRecent: [],            // Library layout: last 4 Ctrl K searches
     hiddenAccts: [],
     hideNames: false,        // show initials instead of account names (streaming)
-    libStart: 'games',       // Library layout: page shown when SwapDeck opens         // Library layout: accounts removed from SwapDeck (still saved in Steam)
+    libStart: 'games',       // Library layout: page shown when SwapDeck opens
+    tagMade: [],             // tags made in the Tags manager, listed even before a game uses them         // Library layout: accounts removed from SwapDeck (still saved in Steam)
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)
@@ -284,6 +285,13 @@ function getCredentials(sid) {
   const login = dec(c.login), password = dec(c.password);
   return login && password ? { login, password } : null;
 }
+// Tags manager: rewrite every game's and account's tag list in one go (rename or delete), then save once.
+function retag(fn) {
+  const fix = o => { if (o && Array.isArray(o.tags)) o.tags = [...new Set(fn(o.tags))]; };
+  Object.values(data.games || {}).forEach(fix);
+  Object.values(data.meta || {}).forEach(fix);
+  save();
+}
 function hasCredentials(sid) { return !!(tokens[sid] && tokens[sid].cred); }
 function removeCredentials(sid) { const t = tokens[sid]; if (!t) return; delete t.cred; if (!t.refresh) delete tokens[sid]; writeTokens(); }
 
@@ -292,6 +300,6 @@ module.exports = {
   setToken, getToken, getMachineToken, isLinked, removeToken,
   setCredentials, getCredentials, hasCredentials, removeCredentials,
   reencryptAround, vault,
-  gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, sessions, cs2Cfg, setCs2Cfg, exportData, importData,
+  retag, gameCfg, setGameCfg, allGameCfgs, customGames, setCustomGames, displaySaved, setDisplaySaved, monPos, setMonPos, resProfiles, setResProfiles, playLog, addPlay, sessions, cs2Cfg, setCs2Cfg, exportData, importData,
   existedBefore: () => existed, // false on a fresh install
 };
