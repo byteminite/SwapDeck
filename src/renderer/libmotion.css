@@ -58,3 +58,23 @@
 }
 .ls.rm .tab-ink{transition:none}
 [data-tb="0"]:has(.ls.rm) .sd-toasts>*{animation:none!important}
+
+/* Game page favourite: a round heart button; adding a favourite makes it jump and sparkle. */
+.gp-fav{position:relative;width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:rgba(20,20,22,.55);backdrop-filter:blur(8px);color:#fff;cursor:pointer;transition:transform .12s cubic-bezier(.23,1,.32,1),border-color .15s,color .15s}
+.gp-fav:hover{border-color:rgba(255,255,255,.4)}
+.gp-fav:active{transform:scale(.94)}
+.gp-fav:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gp-fav.on{color:#ff8fa3;border-color:rgba(255,143,163,.45)}
+.gp-fav.on svg path{fill:currentColor}
+.gp-fav svg{position:relative;z-index:1}
+.gp-fav.pop svg{animation:favJump .55s cubic-bezier(.23,1,.32,1)}
+@keyframes favJump{0%{transform:scale(1)}20%{transform:translateY(0) scale(.75)}50%{transform:translateY(-9px) scale(1.25)}75%{transform:translateY(1px) scale(.95)}100%{transform:none}}
+.gp-sparks{position:absolute;inset:0;pointer-events:none}
+.gp-sparks i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;box-shadow:0 0 6px currentColor;color:#ff8fa3;border-radius:99px;background:#ff8fa3;opacity:0}
+.gp-sparks i:nth-child(even){width:5px;height:5px;margin:-2.5px;background:#ffd27a;color:#ffd27a}
+.gp-fav.pop .gp-sparks i{animation:favSpark .6s cubic-bezier(.23,1,.32,1) .08s}
+@keyframes favSpark{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(-38px) scale(.4)}}
+.gp-fav.pop::after{content:'';position:absolute;inset:-1px;border-radius:99px;box-shadow:0 0 0 0 rgba(255,143,163,.55);animation:favRing .6s cubic-bezier(.23,1,.32,1)}
+@keyframes favRing{to{box-shadow:0 0 0 14px rgba(255,143,163,0)}}
+.ls.rm .gp-fav.pop svg,.ls.rm .gp-fav.pop .gp-sparks i,.ls.rm .gp-fav.pop::after{animation:none}
+@media (prefers-reduced-motion:reduce){.gp-fav.pop svg,.gp-fav.pop .gp-sparks i,.gp-fav.pop::after{animation:none}}

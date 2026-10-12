@@ -18,9 +18,17 @@ ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 <div class="gp-band-in">
 <div class="gp-who">${P.who.faces.map(f => html`<i style=${'background:' + f}></i>`)}<span>${P.who.text}</span></div>
 <div class="gp-btns">
-<button class=${'gp-chip' + (P.fav ? ' on' : '')} aria-pressed=${P.fav} onClick=${P.onFav}>${icon('heart', 16)}${P.fav ? 'Favourite' : 'Add to favourites'}</button>
+<button class=${'gp-fav' + (P.fav ? ' on' : '')} aria-pressed=${P.fav} aria-label=${P.fav ? 'Remove from favourites' : 'Add to favourites'} title=${P.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${e => favPop(e, P)}>${icon('heart', 20)}${SPARKS}</button>
 <button class="gp-cta" onClick=${P.onPlay} disabled=${P.playDisabled}>${icon(P.playIc, 18)}${P.playLabel}</button>
 </div></div></div>`;
+}
+
+// The heart on a game page: adding it makes the heart jump and sparkle (after the re-render, so the class sticks).
+const SPARKS = html`<span class="gp-sparks" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7].map(i => html`<i style=${'--a:' + i * 45 + 'deg'}></i>`)}</span>`;
+function favPop(e, P) {
+  const btn = e.currentTarget, adding = !P.fav;
+  P.onFav();
+  if (adding) requestAnimationFrame(() => { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); });
 }
 
 export function gamePage(P) {
