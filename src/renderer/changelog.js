@@ -3,6 +3,31 @@
 
 export const CHANGELOG = [
   {
+    v: '1.6.1', date: '12 Oct 2026',
+    title: 'Updates arrive sooner',
+    intro: 'SwapDeck now hears about new versions within minutes, and tells you with a Windows notification when one is ready.',
+    highlights: [
+      ['Faster updates', 'SwapDeck checks for a new version every 30 minutes, and again when you open it.'],
+      ['A notification', 'When an update is ready and SwapDeck is in the tray, Windows shows a notification. Click it to open SwapDeck.'],
+      ['Light mode fixes', 'The Details button and the account line on covers are easy to read again.'],
+    ],
+    sections: [
+      ['Updates', [
+        'SwapDeck checks GitHub for a new version every 30 minutes instead of every 6 hours',
+        'Opening the window or the tray panel checks too, if the last check was over 5 minutes ago',
+        'When an update has downloaded and SwapDeck isn\'t on screen, a Windows notification says it\'s ready. Click it to open SwapDeck and restart',
+      ]],
+      ['Fixes', [
+        'Light mode: the Details button you see when you hover a cover shows its icon again',
+        'Light mode: Switches to … on covers is readable on dark cover art',
+      ]],
+      ['Good to know', [
+        'Each check downloads one small file from GitHub. Nothing about you or your PC is sent',
+        'Turn off notifications for SwapDeck in Windows Settings > System > Notifications if you don\'t want them',
+      ]],
+    ],
+  },
+  {
     v: '1.6.0', date: '12 Oct 2026',
     title: 'Minecraft modpacks in your Library',
     intro: 'SwapDeck finds your Minecraft modpacks from Modrinth, CurseForge and Prism Launcher. Add the ones you want and Play starts them with their own setup.',

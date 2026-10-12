@@ -256,6 +256,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 - How rare each achievement is, and the bell's new patch notes, come from Steam's public servers with no sign-in: rarity when you open a game's Achievements tab, patch notes every 6 hours for your 10 most recently played games. Only the games' Steam app IDs are sent.
 - Minecraft modpacks are read from Modrinth's, CurseForge's and Prism Launcher's own pack lists on your PC. To notice when Minecraft
   runs, SwapDeck looks at the Java programs running on your PC. Nothing is sent anywhere.
+- SwapDeck checks GitHub for a new version every 30 minutes and when you open it. Each check downloads one small file; nothing about you is sent.
 - *Close the game too* (when you press Stop) asks the game's windows on your PC to close, like Alt+F4. It never forces a game closed.
 
 ## FAQ

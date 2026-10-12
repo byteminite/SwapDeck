@@ -905,6 +905,7 @@ function toggleTrayPanel() {
   // A click on the tray icon blurs (and hides) the panel first; don't reopen it straight away.
   if (w.isVisible() || Date.now() - trayHiddenAt < 250) { hideTrayPanel(); return; }
   placeTrayPanel();
+  updater.checkSoon();
   w.webContents.send('tray-show');
   w.show(); w.focus();
   // Taking focus again a moment later makes Windows close the hidden-icons flyout if the click came from there.
@@ -912,6 +913,7 @@ function toggleTrayPanel() {
 }
 
 function showWin() {
+  updater.checkSoon();
   if (!win) { createWindow(); return; }
   if (win.isMinimized()) win.restore();
   win.show(); win.focus();
@@ -1028,6 +1030,7 @@ function createWindow() {
       contextIsolation: true, nodeIntegration: false, sandbox: true,
     },
   });
+  win.on('focus', () => updater.checkSoon());
   win.once('ready-to-show', () => { if (startHidden()) return; if (b && b.maximized) win.maximize(); win.show(); });
   trackBounds();
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -1063,6 +1066,8 @@ if (!app.requestSingleInstanceLock()) {
     const id = playArg(argv);
     if (id) player.play(id);
   });
+  // Windows shows notifications only for an app with its installed id (the same appId as the installer's shortcut).
+  if (process.platform === 'win32') app.setAppUserModelId('app.swapdeck.switcher');
   app.whenReady().then(async () => {
     store.load();
     Menu.setApplicationMenu(null);
@@ -1084,7 +1089,7 @@ if (!app.requestSingleInstanceLock()) {
     applyHotkey();
     const startId = playArg(process.argv);
     if (startId) win.webContents.once('did-finish-load', () => setTimeout(() => player.play(startId), 1500));
-    updater.init(s => send('update', s));
+    updater.init(s => send('update', s), { onNotifyClick: showWin, isVisible: () => !!win && win.isVisible() && !win.isMinimized() && win.isFocused() });
     setInterval(poll, 2500);
     setTimeout(refreshPublicAll, 2500);
     setInterval(refreshPublicAll, 5 * 60 * 1000);
