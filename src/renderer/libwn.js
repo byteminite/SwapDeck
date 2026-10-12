@@ -9,7 +9,7 @@ const HL_IC = ['grid', 'house', 'search', 'power', 'refresh'];
 const HUES = ['34,211,238', '167,139,250', '251,191,36', '74,222,128', '244,114,182', '96,165,250', '251,146,60'];
 const hue = i => '--hue:' + HUES[i % HUES.length];
 // Section icons by topic; anything unknown gets a star.
-const SEC_IC = [[/minecraft|modpack|pack/i, 'box'], [/friend/i, 'users'], [/stop/i, 'power'], [/search/i, 'search'], [/tag/i, 'tags'], [/resolution|display|fit|screen|scale|size/i, 'monitor'], [/home/i, 'house'], [/setting/i, 'settings'],
+const SEC_IC = [[/^play/i, 'play'], [/own setup/i, 'monitor'], [/goes back/i, 'history'], [/minecraft|modpack|pack/i, 'box'], [/friend/i, 'users'], [/stop/i, 'power'], [/search/i, 'search'], [/tag/i, 'tags'], [/resolution|display|fit|screen|scale|size/i, 'monitor'], [/home/i, 'house'], [/setting/i, 'settings'],
   [/update/i, 'refresh'], [/favourite/i, 'heart'], [/tray|shortcut/i, 'app'], [/news|patch|notif/i, 'bell'], [/librar|all games/i, 'grid'], [/game|cs2/i, 'gamepad'], [/account|profile/i, 'users'],
   [/^app$/i, 'settings'], [/look/i, 'layers'], [/fix/i, 'check2'], [/good to know/i, 'info']];
 const hlIcon = (title, i) => { const m = SEC_IC.find(([re]) => re.test(title)); return m ? m[1] : HL_IC[i % HL_IC.length]; };
