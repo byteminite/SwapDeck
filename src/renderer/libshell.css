@@ -75,3 +75,11 @@
 .ls-rail .ls-cnt{top:2px;right:2px;box-shadow:0 0 0 2px var(--background,#0a0a0c)}
 .am{top:auto!important;right:auto!important;left:90px;bottom:16px;transform-origin:bottom left}
 .nt{top:auto!important;right:auto!important;left:90px;bottom:60px;transform-origin:bottom left}
+
+/* Small windows: the accounts menu and notifications sit above the Now playing bar, and toasts move up out of its way. */
+.am,.nt{z-index:58}
+.ls:has(.np)~.sd-toasts,[data-tb="0"]:has(.np) .sd-toasts{bottom:100px!important}
+/* Full-window screens (starting, switching, all back to normal) keep their buttons at the bottom, so toasts go top right. */
+[data-tb="0"]:has(.ln) .sd-toasts{top:64px;bottom:auto!important}
+/* While a dialog is open, toasts sit behind its backdrop so they never cover its buttons. */
+[data-tb="0"]:has(.tm-ov) .sd-toasts{z-index:61}

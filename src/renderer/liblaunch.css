@@ -120,3 +120,6 @@
 .ln-stp.fail .ln-st{background:none}
 .ln-stp.fail b{color:#fff}
 .ln-err span{min-width:0;overflow-wrap:anywhere}
+/* Smallest windows: the starting screen fits without scrolling, and never centres its top out of reach. */
+.ln-in{align-content:safe center}
+@media (max-height:700px){.ln-in{gap:16px;padding:20px 6vw}.ln-cv{width:72px;border-radius:12px}.ln-who{gap:18px}.ln h1{font-size:24px;margin-bottom:10px}.ln-k{margin-bottom:6px}.ln-note{margin-top:10px}.ln-panel{padding:16px 18px}.ln-sub{margin-bottom:10px}.ln-stp{padding:4px 8px}.ln-ic{width:28px;height:28px}.ln-acts{margin-top:12px}.ln-hint{margin-top:10px}.ln-pair{margin-bottom:16px}.ln-av{width:72px;height:72px;border-radius:22px}}

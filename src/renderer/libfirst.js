@@ -37,7 +37,7 @@ const feat = (ic, b, s) => html`<div class="ob-feat"><span class="ob-fic">${icon
 const cta = (label, fn, off) => html`<button class="ob-cta" disabled=${!!off} onClick=${fn}>${label}${icon('chevron', 16)}</button>`;
 
 const VIEWS = {
-  hi: P => html`<div class="ob-logo"><i></i></div><h1>Welcome to SwapDeck</h1><p class="ob-lead">Switch Steam accounts in one click, and give every game its own setup.</p>
+  hi: P => html`<div class="ob-logo"><img src="app-icon.png" alt="" draggable="false" /></div><h1>Welcome to SwapDeck</h1><p class="ob-lead">Switch Steam accounts in one click, and give every game its own setup.</p>
 <div class="ob-feats">${feat('repeat', 'One-click account switching', 'No more typing passwords to change accounts.')}${feat('monitor', 'Each game, its own setup', 'Pick the account, monitor, resolution and sound for every game.')}${feat('history', 'Everything goes back', 'When you are done, your display and sound go back to normal.')}</div>
 <div class="ob-go">${cta('Get started', P.go('steam'))}</div><div class="ob-fine">Free and open source. Your sign-ins stay on this PC.</div>`,
   steam: P => html`<h1>Finding Steam</h1><p class="ob-lead">SwapDeck works with the Steam that's already on your PC.</p>
@@ -67,6 +67,6 @@ export function firstOverlay(app) {
   const P = vals(app);
   return html`<div class="ob" role="dialog" aria-modal="true" aria-label="Set up SwapDeck"><div class="ob-glow"></div>
 <div class="ob-covers">${P.covers.map(c => html`<i style=${'background-image:url("' + c + '")'}></i>`)}</div>
-<div class="ob-top"><div class="ob-brand"><span class="ob-lg"><i></i></span>SwapDeck</div><div class="ob-dots" aria-label=${'Step ' + (P.idx + 1) + ' of ' + P.n}>${STEPS.map((s, k) => html`<i class=${k <= P.idx ? 'on' : ''}></i>`)}</div>${P.step !== 'done' ? html`<button class="ob-skip" onClick=${P.skip}>Skip setup</button>` : html`<span style="width:90px"></span>`}</div>
+<div class="ob-top"><div class="ob-brand"><span class="ob-lg"><img src="app-icon.png" alt="" draggable="false" /></span>SwapDeck</div><div class="ob-dots" aria-label=${'Step ' + (P.idx + 1) + ' of ' + P.n}>${STEPS.map((s, k) => html`<i class=${k <= P.idx ? 'on' : ''}></i>`)}</div>${P.step !== 'done' ? html`<button class="ob-skip" onClick=${P.skip}>Skip setup</button>` : html`<span style="width:90px"></span>`}</div>
 <div class="ob-stage"><div class="ob-card" key=${P.step}>${VIEWS[P.step](P)}</div></div></div>`;
 }

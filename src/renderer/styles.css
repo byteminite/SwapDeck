@@ -83,3 +83,10 @@ select.sd-select option { background: #15151b; color: #e8e8ec; }
 
 /* themed dropdown options */
 .sd-opt:hover { background: rgba(var(--fg-rgb), .06) !important; }
+
+/* Classic on small windows: the top row stays on one line, and the game screen scrolls instead of running off. */
+.cl-cta{flex:none}
+.cl-cta,.cl-cta span{white-space:nowrap}
+@media (max-width:1100px){.cl-stlabel,.cl-runmon{display:none!important}}
+.cl-launch{overflow-y:auto;align-items:safe center!important}
+[data-tb="1"]:has(.cl-launch) .sd-toasts{top:60px;bottom:auto!important}

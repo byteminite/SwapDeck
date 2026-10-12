@@ -25,7 +25,7 @@ ${btn('upd', 'refresh', 'Updates', () => L.go('upd'), L.updCount)}
 // The window has no title bar in this layout: the top bar is the drag area and holds the window buttons.
 function winBtns(b) {
   const sv = (d, w = 2.2) => html`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=${w} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: d }}></svg>`;
-  return html`<div class="ls-win"><button aria-label="Minimize" onClick=${() => b.onWin('min')}>${sv('<path d="M5 12h14"/>', 2.4)}</button><button aria-label="Maximize" onClick=${() => b.onWin('max')}>${sv('<rect x="4" y="4" width="16" height="16" rx="4"/>')}</button>${b.showClose === false ? null : html`<button class="x" aria-label="Close" onClick=${() => b.onWin('close')}>${sv('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 2.4)}</button>`}</div>`;
+  return html`<div class="ls-win"><button aria-label="Minimize" onClick=${() => b.onWin('min')}>${sv('<path d="M5 12h14"/>', 2.4)}</button><button aria-label="Maximize" onClick=${() => b.onWin('max')}>${sv('<rect x="4" y="4" width="16" height="16" rx="4"/>')}</button><button class="x" aria-label="Close" onClick=${() => b.onWin('close')}>${sv('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 2.4)}</button></div>`;
 }
 
 function top(L, b) {
