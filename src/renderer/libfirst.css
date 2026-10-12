@@ -1,5 +1,5 @@
 /* First start (both layouts). */
-.ob{position:fixed;left:0;right:0;top:44px;bottom:0;z-index:96;overflow:hidden;background:var(--background,#0a0a0c);color:var(--text);font-family:'Geist',sans-serif;animation:lnIn .3s cubic-bezier(.22,1,.36,1)}
+.ob{position:fixed;left:0;right:0;top:var(--tb,44px);bottom:0;z-index:96;overflow:hidden;background:var(--background,#0a0a0c);color:var(--text);font-family:'Geist',sans-serif;animation:lnIn .3s cubic-bezier(.22,1,.36,1)}
 .ob-glow{position:absolute;width:900px;height:900px;border-radius:50%;left:50%;top:-420px;transform:translateX(-50%);background:radial-gradient(circle,rgba(var(--accent-rgb),.22),transparent 62%);pointer-events:none}
 .ob-covers{position:absolute;inset:auto 0 -60px 0;height:300px;display:flex;gap:16px;justify-content:center;opacity:.13;filter:blur(1px);pointer-events:none;-webkit-mask-image:linear-gradient(0deg,transparent,#000 70%)}
 .ob-covers i{width:150px;flex:none;aspect-ratio:2/3;border-radius:14px;background-size:cover;background-position:center}

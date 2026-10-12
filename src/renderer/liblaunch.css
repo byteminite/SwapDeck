@@ -1,5 +1,5 @@
 /* Library layout: start screen, switch screen and Now playing bar. */
-.ln{position:fixed;left:0;right:0;top:44px;bottom:0;z-index:60;overflow:hidden;background:#0b0b0d;animation:lnIn .25s var(--ls-ease)}
+.ln{position:fixed;left:0;right:0;top:var(--tb,44px);bottom:0;z-index:60;overflow:hidden;background:#0b0b0d;animation:lnIn .25s var(--ls-ease)}
 @keyframes lnIn{from{opacity:0}to{opacity:1}}
 .ln-bg{position:absolute;inset:-40px;background-size:cover!important;background-position:center!important;filter:blur(28px) saturate(130%) brightness(.45);transform:scale(1.08)}
 .ln-bg.acct{filter:blur(60px) brightness(.5)}

@@ -2,7 +2,7 @@
 .ls-circ{position:relative}
 .ls-circ.on{background:var(--ls-surface-2)}
 .ls-cnt{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:99px;background:var(--accent);color:var(--accent-contrast);font:700 10px/17px 'Geist',sans-serif;text-align:center;box-shadow:0 0 0 2px var(--background,#0a0a0c)}
-.nt{position:fixed;right:76px;top:96px;z-index:45;width:400px;max-height:min(560px,calc(100vh - 120px));display:flex;flex-direction:column;border-radius:20px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 30px 70px var(--shadow-c);transform-origin:top right;animation:amIn .16s var(--ls-ease)}
+.nt{position:fixed;right:182px;top:calc(var(--tb,44px) + 52px);z-index:45;width:400px;max-height:min(560px,calc(100vh - 120px));display:flex;flex-direction:column;border-radius:20px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 30px 70px var(--shadow-c);transform-origin:top right;animation:amIn .16s var(--ls-ease)}
 .nt-h{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}
 .nt-h b{font:700 15px 'Geist',sans-serif}
 .nt-h span{flex:1;font:600 12px 'Geist',sans-serif;color:var(--accent-light)}

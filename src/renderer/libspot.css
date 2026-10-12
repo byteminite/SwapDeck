@@ -1,5 +1,5 @@
 /* Library layout: Ctrl K search overlay. */
-.sp-dim{position:fixed;left:0;right:0;top:44px;bottom:0;z-index:58;display:flex;align-items:flex-start;justify-content:center;padding-top:9vh;background:rgba(8,8,10,.55);backdrop-filter:blur(6px);animation:lnIn .15s var(--ls-ease)}
+.sp-dim{position:fixed;left:0;right:0;top:var(--tb,44px);bottom:0;z-index:58;display:flex;align-items:flex-start;justify-content:center;padding-top:9vh;background:rgba(8,8,10,.55);backdrop-filter:blur(6px);animation:lnIn .15s var(--ls-ease)}
 .sp{width:min(700px,92%);border-radius:22px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 40px 90px var(--shadow-c);overflow:hidden;animation:amIn .18s var(--ls-ease)}
 .sp-in{display:flex;align-items:center;gap:12px;padding:16px 18px 14px;border-bottom:1px solid var(--ls-line);color:var(--text-muted)}
 .sp-in input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font:500 17px 'Geist',sans-serif}

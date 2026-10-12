@@ -50,3 +50,20 @@
 .ls-banner.warn{background:rgba(255,210,122,.1);color:var(--ls-warn)}
 .ls-banner span{flex:1;color:var(--text)}
 .ls-banner button{height:30px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,210,122,.4);background:transparent;color:var(--ls-warn);font:600 12px 'Geist',sans-serif;cursor:pointer}
+
+/* No title bar in this layout: the top bar drags the window (double-click maximizes), buttons stay clickable. */
+[data-tb="0"]{--tb:0px}
+.ls-top{-webkit-app-region:drag}
+.ls-top button,.ls-top input,.ls-top a{-webkit-app-region:no-drag}
+.ls-win{display:flex;align-items:center;gap:2px;margin-left:6px}
+.ls-win button{width:34px;height:30px;border-radius:9px;border:0;background:transparent;color:var(--text-muted);display:grid;place-items:center;cursor:pointer}
+.ls-win button:hover{background:var(--ls-surface-2);color:var(--text)}
+.ls-win button.x:hover{background:#e81123;color:#fff}
+.ls-win button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ls-logo{overflow:hidden;padding:0;background:none;box-shadow:0 0 18px rgba(var(--accent-rgb),.25)}
+.ls-logo img{width:40px;height:40px;display:block}
+
+/* Window buttons float top-right over every screen; the top bar leaves room for them. */
+.ls-win{position:fixed;top:22px;right:18px;z-index:99;margin:0;-webkit-app-region:no-drag}
+.ls-topr{margin-right:112px}
+.ls-drag{position:fixed;left:0;right:130px;top:0;height:44px;z-index:98;-webkit-app-region:drag}

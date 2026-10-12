@@ -46,7 +46,7 @@ export function libShellVals(app, gv, dw) {
   return {
     libLayout: true,
     ls: {
-      page, go, updCount: updCount || null,
+      page, go, updCount: updCount || null, ver: 'v' + (S.version || ''),
       hiName: me ? 'Hi, ' + me.name + '!' : 'Hi there!', hiSub: onSet ? 'Settings' : onGame ? gameSub(app, S.gd) : ap ? 'Account details' : meta[2], pageTitle: meta[1],
       pills: PAGES.map(([k, label]) => ({ label, on: page === k && !ap && !onSet, go: () => go(k) })),
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',

@@ -1,5 +1,5 @@
 /* Library layout: account menu and account page. */
-.am{position:fixed;right:24px;top:96px;z-index:45;width:350px;border-radius:20px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 30px 70px var(--shadow-c);padding:8px;transform-origin:top right;animation:amIn .16s var(--ls-ease)}
+.am{position:fixed;right:130px;top:calc(var(--tb,44px) + 52px);z-index:45;width:350px;border-radius:20px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 30px 70px var(--shadow-c);padding:8px;transform-origin:top right;animation:amIn .16s var(--ls-ease)}
 @keyframes amIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 .am-h{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 8px}
 .am-h b{font:700 14px 'Geist',sans-serif}
