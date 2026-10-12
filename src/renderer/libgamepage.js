@@ -2,6 +2,7 @@
 // same cards as Classic's game details, so both layouts show the same data.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { heartBurst } from './libmotion.js';
 import { gameOverview } from './gamepage.js';
 
 function header(P) {
@@ -18,19 +19,16 @@ ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 <div class="gp-band-in">
 <div class="gp-who">${P.who.faces.map(f => html`<i style=${'background:' + f}></i>`)}<span>${P.who.text}</span></div>
 <div class="gp-btns">
-<button class=${'gp-fav' + (P.fav ? ' on' : '')} aria-pressed=${P.fav} aria-label=${P.fav ? 'Remove from favourites' : 'Add to favourites'} title=${P.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${e => favPop(e, P)}>${icon('heart', 20)}${SPARKS}</button>
+<button class=${'gp-fav' + (P.fav ? ' on' : '')} aria-pressed=${P.fav} aria-label=${P.fav ? 'Remove from favourites' : 'Add to favourites'} title=${P.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${e => favPop(e, P)}>${icon('heart', 20)}</button>
 <button class="gp-cta" onClick=${P.onPlay} disabled=${P.playDisabled}>${icon(P.playIc, 18)}${P.playLabel}</button>
 </div></div></div>`;
 }
 
-// The heart on a game page: adding it makes the heart jump and sparkle (after the re-render, so the class sticks).
-// Seven pairs of dots in a rainbow burst out around the heart (a big dot and a smaller one just behind it).
-const BURST = ['#7ee8a6', '#c4e35f', '#f2a65a', '#e8d25f', '#f472b6', '#a78bfa', '#818cf8'];
-const SPARKS = html`<span class="gp-sparks" aria-hidden="true"><b class="gp-ring"></b>${BURST.flatMap((c, i) => [0, 1].map(k => html`<i class=${k ? 'sm' : ''} style=${'--a:' + (i * 360 / 7 + k * 14) + 'deg;--c:' + c}></i>`))}</span>`;
+// The heart on a game page: adding it plays the favourite burst.
 function favPop(e, P) {
   const btn = e.currentTarget, adding = !P.fav;
   P.onFav();
-  if (adding) requestAnimationFrame(() => { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); });
+  if (adding) heartBurst(btn);
 }
 
 export function gamePage(P) {

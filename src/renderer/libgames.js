@@ -1,6 +1,7 @@
 // Library layout: My games (sub-tabs, filter dropdowns, cover grid).
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { heartBurst } from './libmotion.js';
 
 export function dropdown(d) {
   return html`<div class="lg-ddw">
@@ -15,7 +16,7 @@ export function cover(c) {
 ${c.fallback ? html`<div class="lg-fall">${c.name}</div>` : null}
 <div class="lg-shade"></div>
 ${c.flag ? html`<span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span>` : null}
-<button class=${'lg-fv' + (c.fav ? ' on' : '')} aria-label=${c.fav ? 'Remove from favourites' : 'Add to favourites'} title=${c.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${c.onFav}>${icon('heart', 14)}</button>
+<button class=${'lg-fv' + (c.fav ? ' on' : '')} aria-label=${c.fav ? 'Remove from favourites' : 'Add to favourites'} title=${c.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${e => { if (!c.fav) heartBurst(e.currentTarget); c.onFav(e); }}>${icon('heart', 14)}</button>
 <div class="lg-acts"><button class="lg-ab" aria-label="Details" title="Details" onClick=${c.onInfo}>${icon('info', 15)}</button><button class="lg-ab play" aria-label=${c.playLabel} title=${c.playLabel} onClick=${c.onPlay}>${icon(c.playIc, 15)}</button></div>
 <span class=${'lg-ash' + (c.hintSw ? ' sw' : '')}>${c.hint}</span>
 </div>

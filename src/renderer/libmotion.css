@@ -39,8 +39,6 @@
 
 /* 6. Small touches. */
 /* The heart pops when a game becomes a favourite. */
-.ls .lg-fv.on svg{animation:moHeart .38s var(--mo-out)}
-@keyframes moHeart{0%{transform:scale(.6)}55%{transform:scale(1.25)}100%{transform:scale(1)}}
 /* Bars grow in: This week, achievement progress, rarity. */
 .ls-page .rp-bars i{transform-origin:bottom;animation:moGrowY .5s var(--mo-out) .1s backwards}
 .ls-page .rp-bars div:nth-child(2) i{animation-delay:.14s}.ls-page .rp-bars div:nth-child(3) i{animation-delay:.18s}
@@ -67,21 +65,19 @@
 .gp-fav.on{color:#ff8fa3;border-color:rgba(255,143,163,.45)}
 .gp-fav.on svg path{fill:currentColor}
 .gp-fav svg{position:relative;z-index:1}
-/* Burst, like a social-app like: the heart pops in with a bounce while a ring flashes out and coloured dots scatter. */
-.gp-fav.pop svg{animation:favPop .7s cubic-bezier(.17,.89,.32,1.49)}
+
+/* Favourite burst (libmotion.js heartBurst): the heart pops in with a bounce while a thin ring flashes out and
+   seven pairs of rainbow dots scatter. Same on the game page heart, cover hearts and Favourites' Add. */
+.ls :is(.gp-fav,.lg-fv,.fv-add).pop svg{animation:favPop .7s cubic-bezier(.17,.89,.32,1.49)}
 @keyframes favPop{0%,25%{transform:scale(0)}100%{transform:scale(1)}}
-.gp-sparks{position:absolute;inset:0;pointer-events:none}
-.gp-ring{position:absolute;left:50%;top:50%;width:0;height:0;border-radius:99px;opacity:0;box-sizing:border-box;z-index:0}
-.gp-fav.pop .gp-ring{animation:favRing .65s cubic-bezier(.23,1,.32,1)}
+.hb{position:fixed;width:0;height:0;z-index:120;pointer-events:none;transform:scale(var(--s,1))}
+.hb b{position:absolute;left:0;top:0;border-radius:99px;box-sizing:border-box;opacity:0;animation:favRing .65s cubic-bezier(.23,1,.32,1)}
 @keyframes favRing{0%{opacity:1;width:20px;height:20px;margin:-10px;border:6px solid #f472b6}
   60%{opacity:.9;width:84px;height:84px;margin:-42px;border:1.5px solid #a78bfa}
   100%{opacity:0;width:96px;height:96px;margin:-48px;border:1px solid #a78bfa}}
-.gp-sparks i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:99px;background:var(--c);opacity:0}
-.gp-sparks i.sm{width:5px;height:5px;margin:-2.5px}
-.gp-fav.pop .gp-sparks i{animation:favDot .8s cubic-bezier(.23,1,.32,1) .12s}
-.gp-fav.pop .gp-sparks i.sm{animation-name:favDotSm}
+.hb i{position:absolute;left:0;top:0;width:7px;height:7px;margin:-3.5px;border-radius:99px;background:var(--c);opacity:0;animation:favDot .8s cubic-bezier(.23,1,.32,1) .12s}
+.hb i.sm{width:5px;height:5px;margin:-2.5px;animation-name:favDotSm}
 @keyframes favDot{0%{opacity:0;transform:rotate(var(--a)) translateY(-22px) scale(.6)}15%{opacity:1;transform:rotate(var(--a)) translateY(-28px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-42px) scale(.3)}}
 @keyframes favDotSm{0%{opacity:0;transform:rotate(var(--a)) translateY(-20px) scale(.6)}15%{opacity:1;transform:rotate(var(--a)) translateY(-24px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-34px) scale(.3)}}
-.gp-fav.pop::after{display:none}
-.ls.rm .gp-fav.pop svg,.ls.rm .gp-fav.pop .gp-sparks i,.ls.rm .gp-fav.pop .gp-ring{animation:none}
-@media (prefers-reduced-motion:reduce){.gp-fav.pop svg,.gp-fav.pop .gp-sparks i,.gp-fav.pop .gp-ring{animation:none}}
+.ls.rm :is(.gp-fav,.lg-fv,.fv-add).pop svg{animation:none}
+@media (prefers-reduced-motion:reduce){.ls :is(.gp-fav,.lg-fv,.fv-add).pop svg,.hb{animation:none;display:none}}

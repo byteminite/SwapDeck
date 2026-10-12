@@ -1,6 +1,7 @@
 // Library layout: Favourites (big cards in your own order, drag to reorder, suggestions to add).
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { heartBurst } from './libmotion.js';
 import { dropdown } from './libgames.js';
 import { card, libList } from './libgamesvals.js';
 
@@ -81,6 +82,6 @@ export function favPage(F) {
   const bar = html`<div class="fv-bar"><h2>Favourites <small>${F.count} ${F.count === 1 ? 'game' : 'games'}</small></h2>${F.count > 1 && F.mine ? html`<span class="fv-hint">${icon('grip', 14)}Drag cards to reorder</span>` : null}<div class="fv-sp"></div>${F.count > 1 ? html`<div class="lg-sortl">Sorting: ${dropdown(F.sortDd)}</div>` : null}</div>`;
   const body = F.count ? html`<div class="fv-grid" role="list">${F.cards.map(favCard)}</div>`
     : html`<div class="fv-empty"><span class="fv-eic">${icon('heart', 26)}</span><b>No favourites yet</b><span>Press the heart on any game to pin it here.</span></div>`;
-  const sug = F.sug.length ? html`<div class="fv-sugh">You play these a lot <small>Add them to keep them one click away</small></div><div class="fv-sug">${F.sug.map(s => html`<div class="fv-si" role="button" tabindex="0" onClick=${s.open} onKeyDown=${e => { if (e.key === 'Enter' && e.target === e.currentTarget) s.open(); }}><span class="fv-scv" style=${'background:' + s.bg}></span><div class="fv-sm"><b>${s.name}</b><span>${s.sub}</span></div><button class="fv-add" onClick=${s.add}>${icon('heart', 14)}Add</button></div>`)}</div>` : null;
+  const sug = F.sug.length ? html`<div class="fv-sugh">You play these a lot <small>Add them to keep them one click away</small></div><div class="fv-sug">${F.sug.map(s => html`<div class="fv-si" role="button" tabindex="0" onClick=${s.open} onKeyDown=${e => { if (e.key === 'Enter' && e.target === e.currentTarget) s.open(); }}><span class="fv-scv" style=${'background:' + s.bg}></span><div class="fv-sm"><b>${s.name}</b><span>${s.sub}</span></div><button class="fv-add" onClick=${e => { e.stopPropagation(); heartBurst(e.currentTarget); setTimeout(() => s.add(e), 420); }}>${icon('heart', 14)}Add</button></div>`)}</div>` : null;
   return html`<div class="fvp">${F.ddOpen ? html`<div class="lg-catch" onClick=${F.closeDd}></div>` : null}${bar}${body}${sug}</div>`;
 }
