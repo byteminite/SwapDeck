@@ -85,4 +85,8 @@
 /* Light / dark switch (themeflip.js): the new colours are revealed through an animated shape, no cross-fade. */
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 ::view-transition-new(root){z-index:2}
-.flipping .hb{display:none}
+/* The light / dark reveal never blocks the app: clicks and the wheel pass through to the real screen below. */
+::view-transition{pointer-events:none}
+
+/* The old screen while the light / dark reveal plays: on top of everything, but the mouse goes straight through. */
+.tf-snap{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:2147483000;pointer-events:none;user-select:none}

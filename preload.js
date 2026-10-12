@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('api', {
   trayHide: () => ipcRenderer.send('tray:hide'),
   trayQuit: () => ipcRenderer.send('tray:quit'),
   win: action => ipcRenderer.send('win', action),
+  winSnap: () => invoke('win:snap'),
   on: (ch, fn) => {
     if (!EVENTS.includes(ch)) throw new Error('Unknown channel ' + ch);
     const h = (_, ...a) => fn(...a);

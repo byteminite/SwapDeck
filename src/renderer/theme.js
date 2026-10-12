@@ -22,7 +22,7 @@ function themeTokens(baseKey, acc, still) {
     accent: acc, 'accent-rgb': hx(acc).join(','), 'accent-2': a2, 'accent2-rgb': hx(a2).join(','),
     'accent-strong': B.light ? mixc(acc, '#000000', .4) : mixc(acc, '#ffffff', .38), 'accent-light': mixc(acc, '#ffffff', .5), 'accent-pale': mixc(acc, '#ffffff', .5),
     'accent-soft': 'rgba(' + hx(acc).join(',') + (B.light ? ',.14)' : ',.12)'), 'accent-contrast': lum(acc) > .4 ? '#0a0a0c' : '#ffffff',
-    'accent-chip': 'rgba(' + hx(mixc(acc, '#050507', .8)).join(',') + ',.82)', 'btn-hover': B.light ? mixc(acc, '#000000', .35) : mixc(acc, '#ffffff', .55),
+    'accent-chip': 'rgba(' + hx(mixc(acc, '#050507', .8)).join(',') + ',.82)', 'accent-tint': B.light ? 'rgba(' + hx(acc).join(',') + ',.14)' : 'rgba(' + hx(mixc(acc, '#050507', .8)).join(',') + ',.82)', 'btn-hover': B.light ? mixc(acc, '#000000', .35) : mixc(acc, '#ffffff', .55),
     'm-spin-slow': still ? 'none' : 'bspin 3.4s linear infinite', 'm-spin': still ? 'none' : 'bspin 1.6s linear infinite', 'm-pop': still ? 'none' : 'dfade .25s cubic-bezier(.22,1,.36,1)',
   });
   return out;

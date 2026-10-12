@@ -807,6 +807,13 @@ function ipc() {
     else if (a === 'max') win.isMaximized() ? win.unmaximize() : win.maximize();
     else if (a === 'close') win.close();
   });
+  // Light / dark switch: a still picture of the window, shown over the app while the new colours are revealed.
+  // Only the main window may ask, and only for itself.
+  ipcMain.handle('win:snap', async e => {
+    if (!win || e.sender !== win.webContents) return null;
+    const img = await win.webContents.capturePage().catch(() => null);
+    return img && !img.isEmpty() ? 'data:image/jpeg;base64,' + img.toJPEG(92).toString('base64') : null;
+  });
 }
 
 function onLinked(sid) {
