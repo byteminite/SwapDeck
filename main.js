@@ -312,6 +312,8 @@ function forget(sid) {
 }
 
 async function refreshStats(sid) {
+  // Locked (Lock now): the saved sign-in can't be read, and must not be mistaken for a broken one and deleted.
+  if (store.vault.isLocked()) return { ok: false, locked: true };
   if (fetching.has(sid)) return { ok: false, busy: true };
   fetching.add(sid);
   const warnings = [];
@@ -583,7 +585,8 @@ function ipc() {
   ipcMain.handle('ach:recent', (_, appids) => {
     if (!loc.dir || !Array.isArray(appids)) return [];
     const ids = appids.map(String).filter(isAppid).slice(0, 20);
-    return achievements.recent(loc.dir, accounts().map(a => ({ sid: a.sid, acct: String(steam.accountIdFromSid(a.sid)) })), ids);
+    const s = store.settings(), hidden = new Set(s.hiddenAccts || []);
+    return achievements.recent(loc.dir, accounts().filter(a => s.layout !== 'library' || !hidden.has(a.sid)).map(a => ({ sid: a.sid, acct: String(steam.accountIdFromSid(a.sid)) })), ids);
   });
   ipcMain.handle('game:shotFolder', (_, appid, sid) => {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return { ok: false };
@@ -728,11 +731,13 @@ function ipc() {
   });
   // ---- tray panel ----
   ipcMain.handle('tray:data', () => {
-    const s = store.settings(), act = steamState().activeSid, hidden = new Set(s.hiddenAccts || []);
+    const s = store.settings(), act = steamState().activeSid, hidden = new Set(s.layout === 'library' ? s.hiddenAccts || [] : []);
+    // Lock now: the panel shows nothing about accounts or games until SwapDeck is unlocked.
+    if (store.vault.isLocked()) return { locked: true, version: app.getVersion(), settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion } };
     const accs = accounts().filter(a => !hidden.has(a.sid) || a.sid === act), lib = library.build(loc.dir), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
-      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.stopPref || 'ask' },
+      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.layout === 'library' ? s.stopPref || 'ask' : 'track' },
       accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
         .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
@@ -904,16 +909,18 @@ function setTrayPlaying(gid) {
   trayPlaying = gid;
   if (!tray) return;
   tray.setImage(trayImage(!!gid));
-  const g = gid && library.build(loc.dir).find(x => x.id === String(gid));
-  tray.setToolTip(g ? 'SwapDeck · playing ' + g.name : 'SwapDeck');
+  // The name lookup reads the library, so do it after the launch event has gone out.
+  setImmediate(() => { if (!tray || trayPlaying !== gid) return; const g = gid && library.build(loc.dir).find(x => x.id === String(gid)); tray.setToolTip(g ? 'SwapDeck · playing ' + g.name : 'SwapDeck'); });
 }
 
 // The tray icon exists only while "Keep running in the tray" is on.
 function updateTray() {
   const on = !!store.settings().tray;
   if (on && !tray) {
-    tray = new Tray(trayImage(!!trayPlaying));
+    tray = new Tray(trayImage(false));
     tray.setToolTip('SwapDeck');
+    // Created while a game runs: set the dot and the "playing" tooltip now.
+    const playing = trayPlaying; trayPlaying = null; if (playing) setTrayPlaying(playing);
     tray.on('click', toggleTrayPanel);
     tray.on('right-click', toggleTrayPanel);
   } else if (!on && tray) { tray.destroy(); tray = null; if (trayWin && !trayWin.isDestroyed()) trayWin.destroy(); }

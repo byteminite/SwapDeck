@@ -51,6 +51,8 @@ function removeVals(app, d) {
     onRemoveNo: () => app.setState({ apRmAsk: null }),
     onRemoveYes: () => {
       setHidden([...hidden.filter(x => x !== d.sid), d.sid]);
+      // Games set to this account go back to whoever is signed in, so Play never switches to a hidden account.
+      app.state.lib.filter(g => g.acct === d.sid).forEach(g => app.gset(g.id, { acct: null }));
       app.setState({ apRmAsk: null, drawerId: null });
       app.toast('info', d.name + ' removed from SwapDeck', "It's still saved in Steam.", { label: 'Undo', fn: () => setHidden((app.state.settings.hiddenAccts || []).filter(x => x !== d.sid)) });
     },
@@ -68,7 +70,7 @@ export function acctPageVals(app, dw) {
     cur: d.current, linked: d.linked, pinned: !!d.pinned, onPin: dw.onDPin, onBack: () => app.setState({ drawerId: null }),
     tags: (d.tags || []).map(t => ({ label: t, dot: 'rgb(' + app.tagRgb(t) + ')', remove: () => tags.opts.find(o => o.label === t)?.on() })),
     tagDraft: tags.draft, onTagDraft: tags.onDraft, onTagKey: tags.onKey,
-    onProfile: () => window.api.open(dw.dUrl),
+    onProfile: () => window.api.openProfile(dw.dUrl),
     signedIn: dw.dSignedIn, swLabel: d.current ? 'Start Steam' : 'Switch to ' + d.name, onSwitch: () => libSwitch(app, d.id),
     band: bandVals(app, d), onConnect: dw.onDLink,
     stats: [['Steam level', dw.dSideLevel], ['Games owned', d.linked ? dw.dSideOwned : null], ['Friends', dw.dSideFriends], ['Bans', dw.dSideBans]]

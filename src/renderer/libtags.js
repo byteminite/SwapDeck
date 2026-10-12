@@ -32,9 +32,9 @@ export function libTagsVals(app) {
     mode: M.mode, close, tags, pal: PAL, palFor: M.pal, delFor: M.del, name: M.name || '', color: M.color || PAL[0], err: M.err || '',
     onPal: t => setTm(app, { pal: M.pal === t ? null : t, del: null }),
     onColor: (t, rgb) => { app.setCfg({ tagColor: { tag: t, rgb } }); setTm(app, { pal: null }); },
-    onRename: (t, el) => { const v = el.value.trim(); if (!v || v.toLowerCase() === t) { el.value = t; return; } if (exists(v)) { el.value = t; app.toast('warning', "There's already a tag called " + v, ''); return; } window.api.tagRename(t, v).then(r => done(app, r, 'Renamed ' + t + ' to ' + r.tag)); },
+    onRename: (t, el) => { const v = el.value.trim(); if (!v || v.toLowerCase() === t) { el.value = t; return; } if (exists(v)) { el.value = t; app.toast('warning', "There's already a tag called " + v, ''); return; } window.api.tagRename(t, v).catch(() => null).then(r => done(app, r, r && 'Renamed ' + t + ' to ' + r.tag)); },
     onAskDel: t => setTm(app, { del: t, pal: null }),
-    onDel: t => window.api.tagDelete(t).then(r => { setTm(app, { del: null }); return done(app, r, t + ' deleted'); }),
+    onDel: t => window.api.tagDelete(t).catch(() => null).then(r => { setTm(app, { del: null }); return done(app, r, t + ' deleted'); }),
     onNew: () => { const used = tags.map(x => x.rgb); setTm(app, { mode: 'new', name: '', color: PAL.find(p => !used.includes(p)) || PAL[0], err: '' }); },
     onName: e => setTm(app, { name: e.target.value, err: exists(e.target.value) ? "There's already a tag called " + e.target.value.trim() : '' }),
     onPick: rgb => setTm(app, { color: rgb }),
@@ -44,7 +44,7 @@ export function libTagsVals(app) {
       const n = (M.name || '').trim();
       if (!n) return setTm(app, { err: 'Give the tag a name' });
       if (exists(n)) return setTm(app, { err: "There's already a tag called " + n });
-      window.api.tagCreate(n, M.color).then(async r => { if (await done(app, r, 'Tag ' + r.tag + ' created')) setTm(app, { mode: 'manage' }); });
+      window.api.tagCreate(n, M.color).catch(() => null).then(async r => { if (await done(app, r, r && 'Tag ' + r.tag + ' created')) setTm(app, { mode: 'manage' }); });
     },
   };
 }

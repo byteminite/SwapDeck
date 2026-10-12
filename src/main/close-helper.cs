@@ -15,6 +15,23 @@ public static class SDClose
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hWnd);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
+    [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flags, StringBuilder name, ref int size);
+    const uint QUERY_LIMITED = 0x1000;
+
+    // The .exe path. QueryFullProcessImageName needs only limited rights, so it also works for most games run
+    // as admin or behind anti-cheat, where Process.MainModule is refused.
+    static string PathOf(Process p)
+    {
+        var h = OpenProcess(QUERY_LIMITED, false, p.Id);
+        if (h != IntPtr.Zero)
+        {
+            try { var sb = new StringBuilder(1024); int n = sb.Capacity; if (QueryFullProcessImageName(h, 0, sb, ref n)) return sb.ToString(); }
+            finally { CloseHandle(h); }
+        }
+        try { return p.MainModule.FileName; } catch { return null; }
+    }
     const uint WM_CLOSE = 0x0010, GW_OWNER = 4;
 
     static string Norm(string p) { return Path.GetFullPath(p).TrimEnd('\\').ToLowerInvariant() + "\\"; }
@@ -30,7 +47,7 @@ public static class SDClose
         {
             try
             {
-                var file = p.MainModule.FileName;
+                var file = PathOf(p);
                 var f = file == null ? "" : file.ToLowerInvariant();
                 if (exact ? f == root : f.StartsWith(root)) list.Add(p);
             }

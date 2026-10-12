@@ -28,7 +28,7 @@ function actionList(app) {
     { id: 'add', label: 'Add an account', ic: 'userplus', keywords: 'add account new login sign in', run: close(() => app.addAcc()) },
     unlinked ? { id: 'connect', label: 'Connect all accounts', ic: 'link', keywords: 'connect stats link all', run: close(() => app.connectAll()) } : null,
     { id: 'upd', label: upd ? 'Show updates (' + upd + ')' : 'Show updates', ic: 'refresh', keywords: 'updates downloads', run: page('upd') },
-    { id: 'ni', label: 'Show not installed games', ic: 'download', keywords: 'not installed uninstalled', run: page('games', { lsSub: 'ni' }) },
+    { id: 'ni', label: 'Show not installed games', ic: 'download', keywords: 'not installed uninstalled', run: () => { if (!app.showNotInst()) app.setCfg({ showNotInstalled: true }); page('games', { lsSub: 'ni' })(); } },
     { id: 'ns', label: 'Add a non-Steam game', ic: 'plus', keywords: 'add non-steam program exe game', run: close(() => app.openAddGame()) },
     { id: 'dl', label: 'Open Steam downloads', ic: 'external', keywords: 'steam downloads', run: close(() => window.api.openSteamPage('downloads', 0)) },
     { id: 'classic', label: 'Switch to the Classic layout', ic: 'grid', keywords: 'classic layout old view', run: close(() => app.setCfg({ layout: 'classic' })) },

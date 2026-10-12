@@ -24,14 +24,14 @@ const DEFAULTS = {
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
     favOrder: [],            // Library layout: favourite game ids in the owner's own order
     spRecent: [],            // Library layout: last 4 Ctrl K searches
-    hiddenAccts: [],
+    hiddenAccts: [],         // Library layout: accounts removed from SwapDeck (still saved in Steam)
     hideNames: false,        // show initials instead of account names (streaming)
     libStart: 'games',       // Library layout: page shown when SwapDeck opens
-    tagMade: [],
-    hiddenGames: [],
-    notesRead: [],
-    stopPref: 'ask',
-    obDone: false,           // first-start screens finished or skipped         // Library layout: Stop asks, only stops tracking, or also closes the game           // Library layout: ids of notifications already read         // Library layout: games hidden from the Library (Steam still has them)             // tags made in the Tags manager, listed even before a game uses them         // Library layout: accounts removed from SwapDeck (still saved in Steam)
+    tagMade: [],             // tags made in the Tags manager, listed even before a game uses them
+    hiddenGames: [],         // Library layout: games hidden from the Library (Steam still has them)
+    notesRead: [],           // Library layout: ids of notifications already read
+    stopPref: 'ask',         // Library layout: Stop asks, only stops tracking, or also closes the game
+    obDone: false,           // first-start screens finished or skipped
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)

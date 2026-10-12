@@ -17,7 +17,8 @@ function whoPlays(app, g) {
 }
 
 export function updatingGames(app) {
-  return app.state.lib.filter(g => g.steam && g.installed && updateBadge(app.state.libUpd[g.appid]));
+  const hidden = new Set(app.state.settings.hiddenGames || []);
+  return app.state.lib.filter(g => g.steam && g.installed && !hidden.has(g.id) && updateBadge(app.state.libUpd[g.appid]));
 }
 
 export function libUpdVals(app) {

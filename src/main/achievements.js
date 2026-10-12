@@ -54,11 +54,21 @@ function achievements(dir, accountId, appid, schemas) {
 const summary = a => a && { known: a.known, total: a.total, unlocked: a.unlocked, latest: a.latest };
 
 // The newest unlocks across several accounts and games, for Recently played. pairs: [{ sid, acct }].
+// Each account's stats file is only parsed again when Steam has written it since (it runs on the main process).
+const recentCache = new Map(); // "acct_appid" -> { mtime, latest }
 function recent(dir, pairs, appids, n = 5) {
   const out = [], schemas = {};
   for (const appid of appids) for (const p of pairs) {
-    const a = achievements(dir, p.acct, appid, schemas);
-    if (a && a.known) for (const x of a.latest) if (x.at) out.push({ name: x.name, desc: x.desc, icon: x.icon, at: x.at, sid: p.sid, appid: String(appid) });
+    const key = p.acct + '_' + appid;
+    let mtime = 0;
+    try { mtime = fs.statSync(path.join(statsDir(dir), `UserGameStats_${key}.bin`)).mtimeMs; } catch { recentCache.delete(key); continue; }
+    let hit = recentCache.get(key);
+    if (!hit || hit.mtime !== mtime) {
+      const a = achievements(dir, p.acct, appid, schemas);
+      hit = { mtime, latest: a && a.known ? a.latest : [] };
+      recentCache.set(key, hit);
+    }
+    for (const x of hit.latest) if (x.at) out.push({ name: x.name, desc: x.desc, icon: x.icon, at: x.at, sid: p.sid, appid: String(appid) });
   }
   return out.sort((x, y) => y.at - x.at).slice(0, n);
 }

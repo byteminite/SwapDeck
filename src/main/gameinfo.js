@@ -45,7 +45,7 @@ function stateOf(st) {
 // screen, so a manifest is only parsed again when its file changed.
 const seen = new Map(); // manifest path -> { mtime, status }
 function updates(dir) {
-  const out = {};
+  const out = {}, now = new Set();
   for (const lib of steam.libraryDirs(dir || '')) {
     let names;
     try { names = fs.readdirSync(lib); } catch { continue; }
@@ -53,6 +53,7 @@ function updates(dir) {
       const m = /^appmanifest_(\d{1,10})\.acf$/.exec(name);
       if (!m) continue;
       const file = path.join(lib, name);
+      now.add(file);
       let mtime;
       try { mtime = fs.statSync(file).mtimeMs; } catch { continue; }
       let hit = seen.get(file);
@@ -64,6 +65,8 @@ function updates(dir) {
       if (hit.status.state !== 'ok' && hit.status.state !== 'missing') out[m[1]] = hit.status;
     }
   }
+  // Uninstalled or moved games drop out, so Recently updated never lists a game twice or one that's gone.
+  for (const f of seen.keys()) if (!now.has(f)) seen.delete(f);
   return out;
 }
 

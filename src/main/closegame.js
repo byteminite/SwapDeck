@@ -4,14 +4,14 @@
 const path = require('path');
 const { createHelper } = require('./native');
 
-const run = createHelper({ name: 'close', version: 1, source: 'close-helper.cs', cls: 'SDClose' });
+const run = createHelper({ name: 'close', version: 2, source: 'close-helper.cs', cls: 'SDClose' });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const parse = out => { try { return JSON.parse(out.slice(out.indexOf('{'))); } catch { return { procs: [], windows: 0 }; } };
 
 // Steam games: their install folder under steamapps\common. Other games: exactly their .exe, never a whole
 // folder, since a non-Steam .exe can sit next to unrelated programs (Downloads, Desktop).
 function targetOf(g) {
-  if (g.steam) return g.folder && /\steamapps\common\[^\]+/i.test(path.resolve(g.folder)) ? path.resolve(g.folder) : null;
+  if (g.steam) return g.folder && /\\steamapps\\common\\[^\\]+$/i.test(path.resolve(g.folder)) ? path.resolve(g.folder) : null;
   return g.exe && /\.exe$/i.test(g.exe) ? path.resolve(g.exe) : null;
 }
 

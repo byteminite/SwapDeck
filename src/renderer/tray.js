@@ -80,6 +80,11 @@ class Tray extends Component {
   render() {
     const { d, switching } = this.state;
     if (!d) return null;
+    if (d.locked) return html`<div ref=${el => { this.boxRef(el); this.applyTheme(el, d); }} style="box-sizing:border-box;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;color:var(--text);font-family:'Geist',sans-serif;padding:16px">
+  <div style="font:700 13.5px 'Geist',sans-serif">SwapDeck is locked</div>
+  <div style="margin:4px 0 12px;font:500 12px 'Geist',sans-serif;color:var(--text-muted)">Open SwapDeck and type your master password.</div>
+  <div style="display:flex;gap:8px"><button class="tp-main" style="flex:1;padding:9px 12px;border:0;border-radius:10px;background:var(--btn-bg);color:var(--btn-fg);font:600 12.5px 'Geist',sans-serif;cursor:pointer" onClick=${() => api.trayOpen()}>Open SwapDeck</button><button class="tp-btn" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(var(--fg-rgb),.12);background:transparent;color:var(--text-muted);font:500 12.5px 'Geist',sans-serif;cursor:pointer" onClick=${() => api.trayQuit()}>Quit</button></div>
+</div>`;
     const st = d.steam, cur = st.running ? d.accounts.find(a => a.sid === st.activeSid) : null, sess = d.session;
     const sg = sess && d.games.find(g => g.id === sess.gid);
     const busy = !!st.busy || !!switching;

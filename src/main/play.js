@@ -73,7 +73,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
     const st = await steam.status();
     // Right-click > Play as: one launch on another account, without changing the game's own setting.
-    const pick = g.steam ? asSid || g.acct : null;
+    const pick = g.steam ? (asSid && accounts().some(a => a.sid === asSid) ? asSid : g.acct) : null;
     const acc = pick ? accounts().find(a => a.sid === pick) : null;
     const needSw = !!acc && !(st.running && st.activeSid === acc.sid);
     let mon = null, needD = false;
@@ -229,8 +229,15 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
   async function stopClose() {
     const s = session;
     if (!s) return { ok: true };
-    const r = await closeGame(s.closeTarget).catch(e => ({ ok: false, error: e.message }));
-    if (session === s) await end('stopped');
+    let r = await closeGame(s.closeTarget).catch(e => ({ ok: false, error: e.message }));
+    // Nothing found to close, but the game still counts as running (Steam says so, or a launcher handed off):
+    // SwapDeck couldn't reach it, so say that instead of reporting it closed.
+    if (r.already) {
+      const reg = s.steam ? await steam.readSteamReg().catch(() => null) : null;
+      const stillOn = s.steam ? !!reg && String(reg.runningAppId) === String(s.appid) : true;
+      if (stillOn) r = { ok: false, error: "SwapDeck can't reach its window (anti-cheat or admin rights can block it). Close it from the game." };
+    }
+    if (session === s) await end(r.ok ? 'closed' : 'stopped');
     return r;
   }
 

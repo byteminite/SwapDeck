@@ -68,6 +68,6 @@ export function libShellVals(app, gv, dw) {
 // Settings > Appearance: the Classic / Library layout picker (shown in both layouts).
 export function layoutVals(app) {
   const cur = isLibLayout(app) ? 'library' : 'classic';
-  const tile = (k, label, sub) => ({ label, sub, on: cur === k, bd: cur === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),.12)', ring: cur === k ? '0 0 0 3px rgba(var(--accent-rgb),.18)' : 'none', isLib: k === 'library', pick: () => app.setCfg({ layout: k }) });
+  const tile = (k, label, sub) => ({ label, sub, on: cur === k, bd: cur === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),.12)', ring: cur === k ? '0 0 0 3px rgba(var(--accent-rgb),.18)' : 'none', isLib: k === 'library', pick: () => { if (k === 'classic') app.setState({ lsMenu: false, lsDd: null, gm: null, lsNotes: false, lsSpot: false, tm: null, art: null, stopAsk: null, wnFull: null, stopping: null, drawerId: null, gd: null }); app.setCfg({ layout: k }); } });
   return { layoutTiles: [tile('classic', 'Classic', 'Accounts and Library pages, as before'), tile('library', 'Library', 'Rail, cover grid and full game pages')] };
 }

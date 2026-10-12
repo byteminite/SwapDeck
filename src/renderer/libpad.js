@@ -4,16 +4,16 @@
 import { html } from './vendor/htm-preact.js';
 import { openSpot } from './libspot.js';
 
-const LAYERS = ['.ob', '.tm-ov', '.gm', '.sp-dim', '.nt', '.am', '.so', '.ln', '.ls'];
+const LAYERS = ['.sd-modal', '.ob', '.tm-ov', '.gm', '.sp-dim', '.nt', '.am', '.so', '.ln', '.ls'];
 const FOCUSABLE = 'button:not([disabled]), [role="button"], [tabindex="0"], input:not([type="hidden"]), textarea, a[href]';
 const PAGES = ['recent', 'fav', 'games', 'upd'];
-const TABS = ['ov', 'ach', 'setup'];
 
 function layer() {
   for (const sel of LAYERS) { const els = document.querySelectorAll(sel); if (els.length) return els[els.length - 1]; }
   return document.body;
 }
-const visible = el => { const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight && getComputedStyle(el).visibility !== 'hidden'; };
+// Off-screen controls count too, so moving down past the bottom row scrolls the page instead of getting stuck.
+const visible = el => { const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && getComputedStyle(el).visibility !== 'hidden'; };
 const center = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 
 // Nearest control in the pressed direction: distance along it, plus a penalty for drifting sideways.
@@ -52,7 +52,8 @@ export function libPad(app, k) {
   if (k === 'view') return app.setState(s => ({ lsNotes: !s.lsNotes }));
   if (k === 'lb' || k === 'rb') {
     const d = k === 'rb' ? 1 : -1;
-    if (S.gd) { const i = TABS.indexOf(S.lgTab || 'ov'); app.setState({ lgTab: TABS[(i + d + TABS.length) % TABS.length] }); return; }
+    // Game page: press the real tab buttons, so each tab loads what it needs (CS2's Setup cards, achievements).
+    if (S.gd) { const tabs = [...document.querySelectorAll('.gp-tabs .gp-tab')], i = tabs.findIndex(t => t.classList.contains('on')); if (tabs.length) tabs[(i + d + tabs.length) % tabs.length].click(); return; }
     const i = PAGES.indexOf(S.libPage || S.settings.libStart || 'games');
     app.setState({ libPage: PAGES[(i + d + PAGES.length) % PAGES.length], drawerId: null, setOpen: false });
   }

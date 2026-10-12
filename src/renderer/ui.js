@@ -16,6 +16,7 @@ import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
 import { libPad } from './libpad.js';
+import { accountsOf } from './libgrid.js';
 
 const api = window.api;
 
@@ -144,7 +145,7 @@ class App extends Component {
     fetching: {}, sw: null, toasts: [], confirmId: null, unlinkId: null, setOpen: false, setSec: 'general', addOpen: false, retrying: false,
     link: null, defMenu: false, unlockPw: '', unlockErr: false,
     mp: { form: null, a: '', b: '', old: '', auto: false, mismatch: false, err: null },
-    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, libPage: 'games', lgTab: 'ov', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
+    lq: '', lf: 'all', libTags: [], tagPop: null, colorFor: null, gdKeep: [], gTagDraft: '', dKeep: [], gdTab: 'ov', gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, libUpd: {}, libPage: null, lgTab: 'ov', ls: 'recent', hovG: null, gd: null, acctMenu: false, ag: null, launch: null, rmId: null, logoFail: {},
     disp: { testing: false, applying: false, err: null }, rp: null, rpTesting: null, libLoading: false,
     audioDevs: [], playLog: {}, lsel: null, sessions: [], cs2: null, gCs2Sid: null, linkQueue: null, menu: null, menuUp: false, wn: false,
   };
@@ -273,11 +274,12 @@ class App extends Component {
     return { ...a, name: shown, realName: a.name, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
   }
   get accts() {
-    const hid = this.state.settings.hiddenAccts, hn = !!this.state.settings.hideNames;
-    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam || this._accHid !== hid || this._accHn !== hn) {
-      this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accHid = hid; this._accHn = hn;
+    const hid = this.state.settings.hiddenAccts, hn = !!this.state.settings.hideNames, lay = this.state.settings.layout;
+    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam || this._accHid !== hid || this._accHn !== hn || this._accLay !== lay) {
+      this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accHid = hid; this._accHn = hn; this._accLay = lay;
       // Accounts removed from SwapDeck stay saved in Steam; the one Steam is signed in to always shows.
-      const hidden = new Set(hid || []);
+      // Only the Library layout has a way to show them again, so Classic always lists every account.
+      const hidden = new Set(this.state.settings.layout === 'library' ? hid || [] : []);
       this._accts = this.state.accounts.map(a => this.decorate(a)).filter(a => !hidden.has(a.sid) || a.current);
     }
     return this._accts;
@@ -337,7 +339,8 @@ class App extends Component {
   padPress(k) {
     const S = this.state;
     if (S.locked) return;
-    if (S.ob) return; // first start: only its own buttons, no app shortcuts behind it
+    // First start: the controller moves and presses inside it only.
+    if (S.ob) return ['up', 'down', 'left', 'right', 'a'].includes(k) ? libPad(this, k) : undefined;
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
     if (k === 'b') return this.onKey({ key: 'Escape', target: document.body, preventDefault() {} });
     if (isLibLayout(this)) return libPad(this, k);
@@ -427,6 +430,7 @@ class App extends Component {
   }
 
   openSettings(sec) {
+    if (isLibLayout(this)) this.setState({ gd: null, drawerId: null });
     this.setState({ setOpen: true, setSec: sec || this.state.setSec || 'general', defMenu: false, hkRec: false });
     if (sec === 'displays') this.reloadMonitors();
     this.later(0, () => { if (this._set) this._set.scrollTop = 0; });
@@ -672,6 +676,8 @@ class App extends Component {
     this.toast('info', on ? 'Auto-unlock on' : 'Auto-unlock off', on ? "SwapDeck won't ask for the master password on this PC." : 'SwapDeck will ask for the master password at launch.');
   }
   async lockNow() {
+    // A Connect flow can't save its sign-in while locked, so stop it first.
+    if (this.state.link) { api.linkCancel(); this.setState({ link: null, linkQueue: null }); }
     const vault = await api.vaultLock();
     if (vault && vault.locked) this.setState({ locked: true, vault, setOpen: false, unlockPw: '', unlockErr: false });
   }
@@ -1092,7 +1098,11 @@ class App extends Component {
     const waiting = Object.keys(this.state.pwd || {}).length > 0;
     if (!force && !waiting && (document.hidden || (this.state.view !== 'lib' && !isLibLayout(this)))) return;
     const libUpd = await api.libUpdates().catch(() => null);
-    if (libUpd) { this.setState({ libUpd }); playWhenDone(this, libUpd); }
+    if (!libUpd) return;
+    // Same as last time: skip the re-render (this runs every 3 seconds).
+    const sig = JSON.stringify(libUpd);
+    if (sig !== this._updSig) { this._updSig = sig; this.setState({ libUpd }); }
+    playWhenDone(this, libUpd);
   }
   setView(v) {
     if (v === this.state.view) return;
@@ -1108,6 +1118,8 @@ class App extends Component {
 
   async play(gid, asSid) {
     const g = this.gfind(gid), S = this.state; if (!g) return;
+    // Library layout: a game with no account picked plays on an owner, as its card says ("Switches to X").
+    if (!asSid && isLibLayout(this) && g.steam && !g.acct) { const own = accountsOf(g), me = this.accts.find(a => a.current); if (own.length && !(me && own.includes(me.id))) asSid = own.find(id => this.find(id)); }
     if (S.launch) { this.toast('warning', 'A game is already running', 'Stop tracking it first, or quit it.'); return; }
     if (g.steam && this.steamState === 'not-found') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings to launch Steam games.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return; }
     this.setState({ gd: null, acctMenu: false, hovG: null });
@@ -1122,16 +1134,18 @@ class App extends Component {
   stopGame() { api.stopGame(); }
   onLaunchEnd(e) {
     const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon();
-    this.setState({ launch: null });
+    this.setState({ launch: null, stopAsk: null });
     this.reloadLib();
     api.playLog().then(playLog => playLog && this.setState({ playLog }));
     api.playSessions().then(sessions => sessions && this.setState({ sessions }));
     if (e.reason === 'error') this.toast('error', "Couldn't launch " + name, e.error || 'Something went wrong.');
     if (e.restoreErr) this.toast('error', "Couldn't restore the display", e.restoreErr, { label: 'Try again', fn: () => this.restoreNow() });
+    else if (this.state.stopping) { /* the Library layout's Stop screen already shows what was put back */ }
     else if (e.restored) this.toast('success', 'Display restored', 'Your monitors are back the way they were' + (nm ? ', ' + nm.label + ' primary.' : '.'));
     else if (e.hadMon && !e.restoreOn) this.toast('warning', name + ' closed', '"Restore display" is off for this game, so the display stays as it is.', { label: 'Restore now', fn: () => this.restoreNow() });
     // The Library layout's Stop screen already says what happened (and the game may have been closed).
     else if (e.reason === 'stopped' && !this.state.stopping) this.toast('info', 'Stopped tracking ' + name, 'The game keeps running. Playtime so far is saved.');
+    else if (e.reason === 'closed' && !this.state.stopping) this.toast('info', name + ' closed', 'Your display and sound are back. Playtime is saved.');
     else if (e.reason === 'exit') this.toast('info', name + ' closed', 'Playtime saved.');
     this.reloadMonitors();
   }
@@ -1737,7 +1751,7 @@ class App extends Component {
       { setNormal: p => this.setCfg(p), apply: () => this.applyNormal() },
     );
     return {
-      ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...this.libraryVals(), ...gv, ...lv, ...this.addGameVals(),
+      ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...(isLibLayout(this) ? {} : this.libraryVals()), ...gv, ...lv, ...this.addGameVals(),
       ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,

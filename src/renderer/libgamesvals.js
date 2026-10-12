@@ -6,8 +6,8 @@ import { openGameMenu } from './libmenu.js';
 
 // The Library layout's game list: everything except games hidden from the Library (right-click, Hide).
 export function libList(app) {
-  const hidden = app.state.settings.hiddenGames || [];
-  return hidden.length ? app.state.lib.filter(g => !hidden.includes(g.id)) : app.state.lib;
+  const hidden = new Set(app.state.settings.hiddenGames || []);
+  return hidden.size ? app.state.lib.filter(g => !hidden.has(g.id)) : app.state.lib;
 }
 
 const SUB_IC = { all: 'gamepad', inst: 'drive', ni: 'download', never: 'dashed' };

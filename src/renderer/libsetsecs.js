@@ -19,7 +19,7 @@ function hiddenAccts(app) {
   const S = app.state, ids = (S.settings.hiddenAccts || []).filter(sid => S.accounts.some(a => a.sid === sid));
   if (!ids.length) return null;
   const show = sid => app.setCfg({ hiddenAccts: (S.settings.hiddenAccts || []).filter(x => x !== sid) });
-  const list = html`<div class="st-list">${ids.map(sid => { const a = S.accounts.find(x => x.sid === sid); return html`<div class="st-li"><b>${a.name}</b><span>${a.login}</span>${btn('Show again', () => show(sid))}</div>`; })}</div>`;
+  const list = html`<div class="st-list">${ids.map(sid => { const a = S.accounts.find(x => x.sid === sid); return html`<div class="st-li"><b>${S.settings.hideNames ? a.name.slice(0, 2).toUpperCase() : a.name}</b><span>${S.settings.hideNames ? '' : a.login}</span>${btn('Show again', () => show(sid))}</div>`; })}</div>`;
   return row('Hidden accounts', 'Removed from SwapDeck, still saved in Steam.', list, 'col', 'hidden accounts removed show again');
 }
 

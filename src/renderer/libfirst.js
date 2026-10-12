@@ -6,17 +6,16 @@ import { icon } from './libicons.js';
 const STEPS = ['hi', 'steam', 'accts', 'look', 'done'];
 const ACC = [['cyan', '#22d3ee'], ['violet', '#a78bfa'], ['amber', '#f59e0b'], ['red', '#f43f5e'], ['green', '#22c55e'], ['pink', '#ec4899']];
 
-export const startFirst = app => app.setState({ ob: { step: 'hi', skip: [], layout: app.state.settings.layout === 'library' ? 'library' : 'classic' }, setOpen: false });
+export const startFirst = app => app.setState({ ob: { step: 'hi', skip: (app.state.settings.hiddenAccts || []).slice(), layout: app.state.settings.layout === 'library' ? 'library' : 'classic' }, setOpen: false });
 export const firstDue = (app, st) => !!(st && st.newInstall && !(st.settings || {}).obDone);
 
 function vals(app) {
   const S = app.state, O = S.ob, cfg = S.settings, set = p => app.setState(s => ({ ob: s.ob && { ...s.ob, ...p } }));
   const steam = app.steamState, found = steam !== 'not-found';
   const finish = () => {
-    const hidden = [...new Set([...(cfg.hiddenAccts || []), ...O.skip])];
-    app.setCfg({ obDone: true, layout: O.layout, hiddenAccts: hidden });
+    app.setCfg({ obDone: true, layout: O.layout, hiddenAccts: [...new Set(O.skip)] });
     app.setState({ ob: null });
-    app.toast('success', 'Welcome to SwapDeck', 'Pick a game and press Play, or switch accounts from the avatar menu.');
+    app.toast('success', 'Welcome to SwapDeck', O.layout === 'library' ? 'Pick a game and press Play, or switch accounts from the avatar menu.' : 'Click an account to switch, or open the Library to play a game.');
   };
   return {
     step: O.step, idx: STEPS.indexOf(O.step), n: STEPS.length, go: k => () => set({ step: k }),
@@ -60,7 +59,7 @@ const VIEWS = {
 <div class="ob-go"><button class="st-btn" onClick=${P.go('accts')}>Back</button>${cta('Finish', P.go('done'))}</div>`; },
   done: P => { const n = P.accts.filter(a => a.on).length; return html`<div class="ob-done">${icon('check', 40)}</div><h1>You're all set</h1><p class="ob-lead">Pick a game and press Play. SwapDeck switches to the right account for you.</p>
 <div class="ob-sum"><div><b>${n}</b><span>${n === 1 ? 'account' : 'accounts'}</span></div><div><b>${P.games}</b><span>installed games</span></div><div><b>${P.layout === 'library' ? 'Library' : 'Classic'}</b><span>layout</span></div></div>
-<div class="ob-go">${cta('Open SwapDeck', P.finish)}</div><div class="ob-fine">Tip: connect accounts for stats later, from the account menu or an account's page.</div>`; },
+<div class="ob-go">${cta('Open SwapDeck', P.finish)}</div><div class="ob-fine">Tip: connect accounts for stats later, from an account's page.</div>`; },
 };
 
 export function firstOverlay(app) {
