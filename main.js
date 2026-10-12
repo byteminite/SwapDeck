@@ -425,7 +425,7 @@ function ipc() {
     const monitors = await display.list().catch(() => []);
     rememberNormal(monitors);
     return {
-      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error(), hotkeyDefault: hotkey.DEFAULT_KEY }, version: app.getVersion(), busy, zoom: zoomFactor,
+      steam: steamState(), accounts: accs, games, settings: { ...store.settings(), startup: startsWithWindows(), hotkeyError: hotkey.error(), hotkeyDefault: hotkey.DEFAULT_KEY }, devProfile: process.argv.includes('--dev-profile'), version: app.getVersion(), busy, zoom: zoomFactor,
       update: updater.current(), vault: v, lib: library.build(loc.dir), monitors, winAccent: winAccent(), session: player.current(),
       displaySaved: !!store.displaySaved(), monPos: store.monPos(), resProfiles: store.resProfiles(), playLog: store.playLog(), sessions: store.sessions(), newInstall: !store.existedBefore(),
     };

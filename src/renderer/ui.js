@@ -227,6 +227,8 @@ class App extends Component {
     if (this._wnDone) return this.state.wn;
     this._wnDone = true;
     const v = st.version, last = st.settings && st.settings.lastSeenVersion;
+    // npm run dev: show What's new on every start, so its text can be checked (never in the installed app).
+    if (st.devProfile && CHANGELOG.some(r => r.v === v)) return true;
     if (st.newInstall || !CHANGELOG.some(r => r.v === v)) { if (last !== v) api.setSettings({ lastSeenVersion: v }); return false; }
     return !last || newer(v, last);
   }
