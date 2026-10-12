@@ -1133,7 +1133,8 @@ class App extends Component {
       else this.toast('warning', 'A game is already running', r.error);
     }
   }
-  stopGame() { api.stopGame(); }
+  // Classic follows "When I press Stop" (Settings, General); the Library layout asks through libstop.js.
+  stopGame() { api.stopGame(!isLibLayout(this) && this.state.settings.stopPref === 'close' ? 'close' : 'track'); }
   onLaunchEnd(e) {
     const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon(), prev = this.state.launch;
     // Library layout: a failed start stays on the start screen with what went wrong, instead of a toast.
@@ -1319,6 +1320,7 @@ class App extends Component {
       defMenu: S.defMenu, onDefMenu: () => this.setState(s => ({ defMenu: !s.defMenu })), defBd: S.defMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
       defName: dg ? dg.name : inst.length ? 'Pick a game' : 'No installed games', defBg: dg ? this.cardBg(dg) : 'rgba(var(--fg-rgb),.06)',
       defOpts: inst.map(g => ({ name: g.name, cover: this.cardBg(g), sel: !!dg && g.id === dg.id, bg: dg && g.id === dg.id ? 'rgba(var(--accent-rgb),.08)' : 'transparent', on: () => { this.setCfg({ defaultGame: String(g.appid) }); this.setState({ defMenu: false }); } })),
+      stopOpts: [['track', 'Stop tracking only'], ['close', 'Close the game too']].map(([k, l]) => { const on = (cfg.stopPref === 'close' ? 'close' : 'track') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ stopPref: k }) }; }),
       startOpts: [['acc', 'Accounts'], ['lib', 'Library']].map(([k, l]) => { const on = (cfg.startView || 'acc') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ startView: k }) }; }),
       styleOpts: [['grid', 'Grid'], ['gallery', 'Gallery']].map(([k, l]) => { const on = (cfg.accountStyle || 'grid') === k; return { label: l, bg: on ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: on ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setCfg({ accountStyle: k }) }; }),
       swBg: cfg.startup ? on : off, swX: cfg.startup ? 'translateX(18px)' : 'translateX(0px)', onSw: () => this.setCfg({ startup: !cfg.startup }),

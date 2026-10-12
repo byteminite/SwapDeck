@@ -748,7 +748,7 @@ function ipc() {
     const accs = accounts().filter(a => !hidden.has(a.sid) || a.sid === act), lib = library.build(loc.dir), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
-      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.layout === 'library' ? s.stopPref || 'ask' : 'track' },
+      settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.layout === 'library' ? s.stopPref || 'ask' : s.stopPref === 'close' ? 'close' : 'track' },
       accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       // Every installed game SwapDeck knows (Steam and added ones), newest played first; the panel scrolls and searches.
       games: lib.filter(g => g.installed && !(s.layout === 'library' && (s.hiddenGames || []).includes(g.id))).sort((a, b) => b.lastPlayed - a.lastPlayed)
