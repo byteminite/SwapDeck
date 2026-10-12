@@ -40,3 +40,10 @@
 .gp-soon{padding:50px 20px;text-align:center;font:500 14px 'Geist',sans-serif;color:var(--text-muted)}
 .gp-back:focus-visible,.gp-chip:focus-visible,.gp-cta:focus-visible,.gp-tab:focus-visible,.gp-ach:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-height:760px){.gp-band{height:170px}}
+
+/* Compact CS2 stats: four tiles in a row when the card is wide, 2 x 2 when it is narrow. */
+.cs-cwrap{container-type:inline-size}
+.cs-cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@container (min-width:620px){.cs-cgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cs-cgrid>div{min-width:0}
+.cs-cgrid span,.cs-cgrid div{overflow-wrap:anywhere}
