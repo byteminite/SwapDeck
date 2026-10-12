@@ -24,7 +24,9 @@ ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 }
 
 // The heart on a game page: adding it makes the heart jump and sparkle (after the re-render, so the class sticks).
-const SPARKS = html`<span class="gp-sparks" aria-hidden="true">${[0, 1, 2, 3, 4, 5, 6, 7].map(i => html`<i style=${'--a:' + i * 45 + 'deg'}></i>`)}</span>`;
+// Seven pairs of dots in a rainbow burst out around the heart (a big dot and a smaller one just behind it).
+const BURST = ['#7ee8a6', '#c4e35f', '#f2a65a', '#e8d25f', '#f472b6', '#a78bfa', '#818cf8'];
+const SPARKS = html`<span class="gp-sparks" aria-hidden="true"><b class="gp-ring"></b>${BURST.flatMap((c, i) => [0, 1].map(k => html`<i class=${k ? 'sm' : ''} style=${'--a:' + (i * 360 / 7 + k * 14) + 'deg;--c:' + c}></i>`))}</span>`;
 function favPop(e, P) {
   const btn = e.currentTarget, adding = !P.fav;
   P.onFav();

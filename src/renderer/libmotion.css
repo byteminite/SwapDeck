@@ -67,14 +67,21 @@
 .gp-fav.on{color:#ff8fa3;border-color:rgba(255,143,163,.45)}
 .gp-fav.on svg path{fill:currentColor}
 .gp-fav svg{position:relative;z-index:1}
-.gp-fav.pop svg{animation:favJump .55s cubic-bezier(.23,1,.32,1)}
-@keyframes favJump{0%{transform:scale(1)}20%{transform:translateY(0) scale(.75)}50%{transform:translateY(-9px) scale(1.25)}75%{transform:translateY(1px) scale(.95)}100%{transform:none}}
+/* Burst, like a social-app like: the heart pops in with a bounce while a ring flashes out and coloured dots scatter. */
+.gp-fav.pop svg{animation:favPop .7s cubic-bezier(.17,.89,.32,1.49)}
+@keyframes favPop{0%,25%{transform:scale(0)}100%{transform:scale(1)}}
 .gp-sparks{position:absolute;inset:0;pointer-events:none}
-.gp-sparks i{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;box-shadow:0 0 6px currentColor;color:#ff8fa3;border-radius:99px;background:#ff8fa3;opacity:0}
-.gp-sparks i:nth-child(even){width:5px;height:5px;margin:-2.5px;background:#ffd27a;color:#ffd27a}
-.gp-fav.pop .gp-sparks i{animation:favSpark .6s cubic-bezier(.23,1,.32,1) .08s}
-@keyframes favSpark{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(-38px) scale(.4)}}
-.gp-fav.pop::after{content:'';position:absolute;inset:-1px;border-radius:99px;box-shadow:0 0 0 0 rgba(255,143,163,.55);animation:favRing .6s cubic-bezier(.23,1,.32,1)}
-@keyframes favRing{to{box-shadow:0 0 0 14px rgba(255,143,163,0)}}
-.ls.rm .gp-fav.pop svg,.ls.rm .gp-fav.pop .gp-sparks i,.ls.rm .gp-fav.pop::after{animation:none}
-@media (prefers-reduced-motion:reduce){.gp-fav.pop svg,.gp-fav.pop .gp-sparks i,.gp-fav.pop::after{animation:none}}
+.gp-ring{position:absolute;left:50%;top:50%;width:0;height:0;border-radius:99px;opacity:0;box-sizing:border-box;z-index:0}
+.gp-fav.pop .gp-ring{animation:favRing .65s cubic-bezier(.23,1,.32,1)}
+@keyframes favRing{0%{opacity:1;width:20px;height:20px;margin:-10px;border:6px solid #f472b6}
+  60%{opacity:.9;width:84px;height:84px;margin:-42px;border:1.5px solid #a78bfa}
+  100%{opacity:0;width:96px;height:96px;margin:-48px;border:1px solid #a78bfa}}
+.gp-sparks i{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px;border-radius:99px;background:var(--c);opacity:0}
+.gp-sparks i.sm{width:5px;height:5px;margin:-2.5px}
+.gp-fav.pop .gp-sparks i{animation:favDot .8s cubic-bezier(.23,1,.32,1) .12s}
+.gp-fav.pop .gp-sparks i.sm{animation-name:favDotSm}
+@keyframes favDot{0%{opacity:0;transform:rotate(var(--a)) translateY(-22px) scale(.6)}15%{opacity:1;transform:rotate(var(--a)) translateY(-28px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-42px) scale(.3)}}
+@keyframes favDotSm{0%{opacity:0;transform:rotate(var(--a)) translateY(-20px) scale(.6)}15%{opacity:1;transform:rotate(var(--a)) translateY(-24px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-34px) scale(.3)}}
+.gp-fav.pop::after{display:none}
+.ls.rm .gp-fav.pop svg,.ls.rm .gp-fav.pop .gp-sparks i,.ls.rm .gp-fav.pop .gp-ring{animation:none}
+@media (prefers-reduced-motion:reduce){.gp-fav.pop svg,.gp-fav.pop .gp-sparks i,.gp-fav.pop .gp-ring{animation:none}}
