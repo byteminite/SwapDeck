@@ -1059,7 +1059,7 @@ class App extends Component {
           ach ? ach.cell : null,
         ].filter(Boolean),
         links: [['Store page', 'store'], ['DLC', 'dlc'], ['Community hub', 'hub'], ['Discussions', 'discussions'], ['Guides', 'guides'], ['Workshop', 'workshop'], ['Market', 'market'], ['Support', 'support']].map(([label, kind]) => ({ label, on: page(kind) })),
-        left: [isCs2(g) ? cs2StatsCard(this.cs2StatsVals(g)) : null, I ? activityCard(this.activityVals(g)) : null, shots ? screenshotsCard(shots) : null],
+        left: [isCs2(g) ? cs2StatsCard({ ...this.cs2StatsVals(g), compact: isLibLayout(this), expanded: !!this.state.csMore, onMore: () => this.setState(s => ({ csMore: !s.csMore })) }) : null, I ? activityCard(this.activityVals(g)) : null, shots ? screenshotsCard(shots) : null],
         right: [
           ach ? achievementsCard(ach.card) : null,
           tagsCard(ed, g.tags.length ? g.tags.length + ' selected' : ''),
