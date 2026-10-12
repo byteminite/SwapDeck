@@ -78,6 +78,7 @@ export function libGamesVals(app) {
       anyFilter, shown: shown.length, total: applyFilters(games, { ...f, tag: null, acct: null, src: 'all' }).length,
       clear: () => app.setState({ lsTag: null, lsAcct: null, lsSrc: 'all', lsQ: '', lsDd: null }),
       noSteam: app.steamState === 'not-found', onFindSteam: () => app.browse(),
+      niHidden: app.showNotInst() ? 0 : all.filter(g => !g.installed).length, showNi: () => app.setCfg({ showNotInstalled: true }),
       loading: S.libLoading && !S.lib.length, cards: shown.map(g => card(app, g, me, L)),
     },
   };

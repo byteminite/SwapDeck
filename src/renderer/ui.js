@@ -601,6 +601,8 @@ class App extends Component {
     const r = await api.refreshStats(id);
     if (!r.ok) { this.setState(s => { const f = { ...s.fetching }; delete f[id]; return { fetching: f }; }); return; }
     if (r.account) this.replaceAcc(r.account);
+    // The account's game list may have changed which games it owns (and which not-installed games show).
+    this.reloadLib();
     const b = r.account;
     for (const w of r.warnings) this.toast(w.type, w.title, w.msg);
     if (!r.warnings.some(w => w.type === 'error')) this.toast('success', 'Stats updated', (b ? b.name : '') + (b && b.linked ? ' · profile, account, games and CS2' : ' · public profile'));
