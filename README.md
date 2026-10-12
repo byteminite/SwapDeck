@@ -39,6 +39,19 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 
 <table>
 <tr>
+<td width="45%" valign="middle">
+<h3>🗂️ A Library layout, if you like</h3>
+<ul>
+<li>Pick <b>Library</b> in Settings → Appearance: a rail on the left and your games up front as <b>covers</b>. <b>Classic</b> stays the default</li>
+<li><b>Home</b> shows your running or last game, <i>Jump back in</i>, recent sessions with the setup they used, this week and your <b>latest achievements</b></li>
+<li><b>Favourites</b> as big cards in your own order, and an <b>Updates</b> tab with what Steam is updating and what it updated lately</li>
+<li><b>Right-click</b> any game: Play as another account, tags, Change artwork, Open folder, Hide from Library and more</li>
+<li><b>Stop asks</b> whether to only stop tracking or close the game too, like Alt+F4</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/11-library-layout.png" alt="The Library layout"></td>
+</tr>
+<tr>
 <td width="55%"><img src="docs/screenshots/02-account-details.png" alt="Accounts, sorted your way"></td>
 <td width="45%" valign="middle">
 <h3>👥 Accounts, sorted your way</h3>
@@ -165,9 +178,9 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 
 <table>
   <tr>
-    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, with update status for each game</sub></td>
+    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, with update status for each game. A green dot shows while you play</sub></td>
     <td width="33%" valign="top">⌨️ <b>Tray shortcut</b><br><sub>Open the tray panel from any app with <code>Ctrl + Alt + S</code>. Off by default, key of your choice</sub></td>
-    <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X, and LB / RB to change tabs</sub></td>
+    <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X / Y, and LB / RB to change pages or tabs</sub></td>
   </tr>
   <tr>
     <td width="33%" valign="top">💾 <b>Backup & restore</b><br><sub>Tags, notes, games and profiles. Never sign-ins</sub></td>
@@ -183,6 +196,11 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
     <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
     <td width="33%" valign="top">⭐ <b>Favourites</b><br><sub>Star accounts and games, and they come first</sub></td>
     <td width="33%" valign="top">🏆 <b>Achievements per account</b><br><sub>Latest unlocks and progress, from Steam's files on your PC. Hidden ones stay hidden</sub></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">🔎 <b>Search everything</b><br><sub><code>Ctrl + K</code> in the Library layout: games, tags, accounts and actions</sub></td>
+    <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, a running game, accounts to connect and SwapDeck updates under the bell</sub></td>
+    <td width="33%" valign="top">🏷️ <b>Tags manager</b><br><sub>Rename, recolour and delete tags everywhere at once</sub></td>
   </tr>
 </table>
 
@@ -208,8 +226,9 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 | Read patch notes | A game's page → Activity → click a post |
 | Tray panel from anywhere | `Ctrl + Alt + S` (turn it on in Settings → General) |
 | Move around | Arrow keys, or a controller's d-pad / stick |
-| Controller | `A` select · `B` back · `X` details · `LB`/`RB` switch Accounts ↔ Library |
-| Search | `/` |
+| Controller | `A` select · `B` back · `X` details · `LB`/`RB` switch Accounts ↔ Library. In the Library layout: `X` options, `Y` play, `LB`/`RB` pages, `☰` search |
+| Search | `/` (Classic), `Ctrl + K` (Library layout) |
+| Game options (Library layout) | Right-click a cover, or `X` on a controller |
 | UI scale | `Ctrl +` / `Ctrl −` / `Ctrl 0` (auto), or Settings |
 
 ## Privacy
@@ -226,6 +245,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
   reads Steam's own files on your PC, which list the games they've played here. Nothing is sent anywhere for this.
 - For accounts connected for stats, a game's details also show friends who play it and which DLC the account owns. That
   uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
+- The Library layout's latest achievements and recently updated games come from Steam's own files on your PC. Nothing is sent anywhere.
+- *Close the game too* (when you press Stop) asks the game's windows on your PC to close, like Alt+F4. It never forces a game closed.
 
 ## FAQ
 

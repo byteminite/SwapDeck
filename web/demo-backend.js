@@ -3,7 +3,7 @@
 // Nothing here talks to Steam or Windows, and nothing leaves the browser.
 (() => {
   'use strict';
-  const VERSION = '1.4.0';
+  const VERSION = '1.5.0';
   const H = 3600e3, D = 24 * H, now = Date.now();
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const clone = v => JSON.parse(JSON.stringify(v));
