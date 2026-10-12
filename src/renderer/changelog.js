@@ -28,6 +28,7 @@ export const CHANGELOG = [
         'Mods, updates and your Minecraft account stay in the launcher. SwapDeck only starts the pack',
         'SwapDeck reads the launchers\' own pack lists on your PC. Nothing is sent anywhere',
         'If a launcher asks something first, like signing in or updating the pack, answer it there. SwapDeck waits up to 5 minutes for Minecraft',
+        'CurseForge packs need CurseForge set to Use CurseForge launcher (Settings > Minecraft). With the Mojang launcher, CurseForge doesn\'t start packs from shortcuts',
         'ATLauncher and MultiMC packs aren\'t listed yet. Add them with Add game and the launcher\'s own launch options',
       ]],
     ],

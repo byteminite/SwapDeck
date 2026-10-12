@@ -235,7 +235,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
   // Find that process once (its command line names the pack's folder), then just check it's still there.
   function watchPack(s, pack) {
     const startedAt = Date.now();
-    let pid = null, looking = false;
+    let pid = null, looking = false, hinted = false;
     s.timer = setInterval(async () => {
       if (session !== s) return clearInterval(s.timer);
       if (pid) { if (!modpacks.alive(pid)) end('exit'); return; }
@@ -245,6 +245,11 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       looking = false;
       if (session !== s) return;
       if (found) { pid = found; s.seenAt = Date.now(); s.closeTarget = 'pid:' + found; return; }
+      // CurseForge refuses shortcut launches while it's set to use Mojang's launcher, so say how to fix it.
+      if (pack.launcher === 'curseforge' && !hinted && Date.now() - startedAt > 25000) {
+        hinted = true;
+        send('notice', { type: 'info', title: "Did CurseForge say it can't launch?", msg: "If it can't launch with the Mojang launcher: in CurseForge, open Settings > Minecraft and pick Use CurseForge launcher. Then press Stop and Play again." });
+      }
       if (Date.now() - startedAt > 300000) {
         clearInterval(s.timer);
         send('notice', { type: 'warning', title: "SwapDeck can't see Minecraft running", msg: 'If ' + pack.label + " didn't start it, press Stop to put your display and sound back." });
