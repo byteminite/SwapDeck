@@ -67,3 +67,11 @@
 .ls-win{position:fixed;top:22px;right:18px;z-index:99;margin:0;-webkit-app-region:no-drag}
 .ls-topr{margin-right:112px}
 .ls-drag{position:fixed;left:0;right:130px;top:0;height:44px;z-index:98;-webkit-app-region:drag}
+
+/* Bell, Settings and your avatar sit at the bottom of the rail; their panels open beside it, from the bottom. */
+.ls-rail .ls-me{width:38px;height:38px;margin-top:8px;font-size:12px;background-size:cover!important}
+.ls-rail .ls-me .ls-tip{font:600 12px 'Geist',sans-serif;color:var(--text)}
+.ls-rail .ls-me:hover .ls-tip{opacity:1}
+.ls-rail .ls-cnt{top:2px;right:2px;box-shadow:0 0 0 2px var(--background,#0a0a0c)}
+.am{top:auto!important;right:auto!important;left:90px;bottom:16px;transform-origin:bottom left}
+.nt{top:auto!important;right:auto!important;left:90px;bottom:60px;transform-origin:bottom left}

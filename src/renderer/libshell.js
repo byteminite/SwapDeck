@@ -1,4 +1,5 @@
-// Library layout: the window frame (rail on the left, greeting + page pills + bell + avatar on top).
+// Library layout: the window frame (rail on the left with the bell, Settings and your avatar at the bottom;
+// greeting and page pills on top).
 // Each page renders into the content area; Classic's overlays (settings, profile, launch, toasts) stay on top.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
@@ -15,7 +16,9 @@ ${btn('fav', 'heart', 'Favourites', () => L.go('fav'))}
 ${btn('games', 'grid', 'Library', () => L.go('games'))}
 ${btn('upd', 'refresh', 'Updates', () => L.go('upd'), L.updCount)}
 <div class="ls-grow"></div>
+<button class=${'ls-rbtn' + (L.bellOn ? ' on' : '')} aria-label=${'Notifications' + (L.bellN ? ', ' + L.bellN + ' unread' : '')} aria-expanded=${L.bellOn} onClick=${L.onBell}>${icon('bell')}${L.bellN ? html`<span class="ls-cnt">${L.bellN}</span>` : null}<span class="ls-tip">Notifications</span></button>
 <button class=${'ls-rbtn' + (L.setOn ? ' on' : '')} aria-label="Settings" aria-current=${L.setOn ? 'page' : null} onClick=${L.onSettings}>${icon('settings')}<span class="ls-tip">Settings</span></button>
+<button class="ls-me" aria-label="Accounts" aria-haspopup="dialog" aria-expanded=${!!L.menu} style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}<span class="ls-tip">Accounts</span></button>
 </nav>`;
 }
 
@@ -29,10 +32,7 @@ function top(L, b) {
   return html`<header class="ls-top">
 <div class="ls-hi"><b>${L.hiName}</b><span>${L.hiSub}</span></div>
 <div class="ls-pills">${L.pills.map(p => html`<button class=${'ls-pill' + (p.on ? ' on' : '')} aria-current=${p.on ? 'page' : null} onClick=${p.go}>${p.label}</button>`)}</div>
-<div class="ls-topr">
-<button class=${'ls-circ' + (L.bellOn ? ' on' : '')} aria-label=${'Notifications' + (L.bellN ? ', ' + L.bellN + ' unread' : '')} aria-expanded=${L.bellOn} onClick=${L.onBell}>${icon('bell', 17)}${L.bellN ? html`<span class="ls-cnt">${L.bellN}</span>` : null}</button>
-<button class="ls-me" aria-label="Accounts" aria-haspopup="dialog" aria-expanded=${!!L.menu} style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}</button>
-</div>
+<div class="ls-topr"></div>
 </header>`;
 }
 
