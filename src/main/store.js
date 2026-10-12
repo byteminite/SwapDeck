@@ -31,6 +31,7 @@ const DEFAULTS = {
     hiddenGames: [],         // Library layout: games hidden from the Library (Steam still has them)
     notesRead: [],           // Library layout: ids of notifications already read
     stopPref: 'ask',         // Library layout: Stop asks, only stops tracking, or also closes the game
+    darkBase: 'dark',        // the dark base the light / dark switch goes back to
     obDone: false,           // first-start screens finished or skipped
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed

@@ -83,3 +83,9 @@
 [data-tb="0"]:has(.ln) .sd-toasts{top:64px;bottom:auto!important}
 /* While a dialog is open, toasts sit behind its backdrop so they never cover its buttons. */
 [data-tb="0"]:has(.tm-ov) .sd-toasts{z-index:61}
+
+/* Light base: the pale accent and status colours made for dark backgrounds are too faint on white, so they
+   darken here. The starting / switching screens stay dark, so they keep the pale ones. */
+.ls.light{--accent-light:var(--accent-strong);--ls-good:#15803d;--ls-warn:#a16207}
+.ls.light :is(.ln,.so,.ap-band,.uq-hero,.rp-hero,.gp-band,.fv-card){--accent-light:var(--accent-pale);--ls-good:#7ee8a6;--ls-warn:#ffd27a}
+.ls.light .wn-ver{background:linear-gradient(100deg,var(--text) 30%,rgb(var(--accent-rgb)) 75%,#a78bfa);-webkit-background-clip:text;background-clip:text}

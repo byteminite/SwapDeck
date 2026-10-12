@@ -459,6 +459,7 @@ function ipc() {
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
     if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
     if ('obDone' in patch) allowed.obDone = !!patch.obDone;
+    if ('darkBase' in patch) allowed.darkBase = patch.darkBase === 'oled' ? 'oled' : 'dark';
     if ('stopPref' in patch) allowed.stopPref = ['ask', 'track', 'close'].includes(patch.stopPref) ? patch.stopPref : 'ask';
     if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;

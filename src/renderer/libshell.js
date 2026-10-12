@@ -16,6 +16,7 @@ ${btn('fav', 'heart', 'Favourites', () => L.go('fav'))}
 ${btn('games', 'grid', 'Library', () => L.go('games'))}
 ${btn('upd', 'refresh', 'Updates', () => L.go('upd'), L.updCount)}
 <div class="ls-grow"></div>
+<button class="ls-rbtn ls-flip" aria-label=${L.light ? 'Switch to dark' : 'Switch to light'} onClick=${L.onFlip}>${icon(L.light ? 'moon' : 'sun')}<span class="ls-tip">${L.light ? 'Dark mode' : 'Light mode'}</span></button>
 <button class=${'ls-rbtn' + (L.bellOn ? ' on' : '')} aria-label=${'Notifications' + (L.bellN ? ', ' + L.bellN + ' unread' : '')} aria-expanded=${L.bellOn} onClick=${L.onBell}>${icon('bell')}${L.bellN ? html`<span class="ls-cnt">${L.bellN}</span>` : null}<span class="ls-tip">Notifications</span></button>
 <button class=${'ls-rbtn' + (L.setOn ? ' on' : '')} aria-label="Settings" aria-current=${L.setOn ? 'page' : null} onClick=${L.onSettings}>${icon('settings')}<span class="ls-tip">Settings</span></button>
 <button class="ls-me" aria-label="Accounts" aria-haspopup="dialog" aria-expanded=${!!L.menu} style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}<span class="ls-tip">Accounts</span></button>
@@ -44,5 +45,5 @@ export function libShell(b) {
   const L = b.ls;
   // Lock now: nothing of the library stays on screen (or in the page) behind the lock screen.
   if (b.lockOn) return null;
-  return html`<div class=${'ls' + (L.rm ? ' rm' : '')}>${rail(L)}<div class="ls-main">${top(L, b)}<main class="ls-content" ref=${L.contentRef}>${L.banner ? html`<div class=${'ls-banner ' + L.banner.tone} role="status">${icon(L.banner.ic, 16)}<span>${L.banner.text}</span>${L.banner.act ? html`<button onClick=${L.banner.go}>${L.banner.act}</button>` : null}</div>` : null}<div class="ls-page" key=${L.viewKey}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</div></main></div>${L.menu}${L.notes}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}${L.stop}${L.wn}${L.pad}${L.lnScreen || L.sw || L.stop ? html`<div class="ls-drag"></div>` : null}${winBtns(b)}</div>`;
+  return html`<div class=${'ls' + (L.rm ? ' rm' : '') + (L.light ? ' light' : '')}>${rail(L)}<div class="ls-main">${top(L, b)}<main class="ls-content" ref=${L.contentRef}>${L.banner ? html`<div class=${'ls-banner ' + L.banner.tone} role="status">${icon(L.banner.ic, 16)}<span>${L.banner.text}</span>${L.banner.act ? html`<button onClick=${L.banner.go}>${L.banner.act}</button>` : null}</div>` : null}<div class="ls-page" key=${L.viewKey}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</div></main></div>${L.menu}${L.notes}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}${L.stop}${L.wn}${L.pad}${L.lnScreen || L.sw || L.stop ? html`<div class="ls-drag"></div>` : null}${winBtns(b)}</div>`;
 }

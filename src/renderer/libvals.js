@@ -51,7 +51,7 @@ export function libShellVals(app, gv, dw) {
       pills: PAGES.map(([k, label]) => ({ label, on: page === k && !ap && !onSet, go: () => go(k) })),
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',
       meOnline: !!(me && me.current),
-      onSettings: () => app.openSettings('general'), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu, lsNotes: false })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
+      onSettings: () => app.openSettings('general'), light: (S.settings.base || 'dark') === 'light', onFlip: e => app.flipBase(e.currentTarget), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu, lsNotes: false })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => openSpot(app), onBell: () => app.setState(s => ({ lsNotes: !s.lsNotes, lsMenu: false })), bellN: unreadCount(app), bellOn: !!S.lsNotes,
       notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, stop: (S.stopAsk || S.stopping) && stopVals(app) ? stopOverlay(stopVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
       gm: S.gm && libMenuVals(app) ? gameMenu(libMenuVals(app)) : null, art: S.art && libArtVals(app) ? artOverlay(libArtVals(app)) : null,

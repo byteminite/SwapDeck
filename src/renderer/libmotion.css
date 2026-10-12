@@ -81,3 +81,8 @@
 @keyframes favDotSm{0%{opacity:0;transform:rotate(var(--a)) translateY(-20px) scale(.6)}15%{opacity:1;transform:rotate(var(--a)) translateY(-24px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-34px) scale(.3)}}
 .ls.rm :is(.gp-fav,.lg-fv,.fv-add).pop svg{animation:none}
 @media (prefers-reduced-motion:reduce){.ls :is(.gp-fav,.lg-fv,.fv-add).pop svg,.hb{animation:none;display:none}}
+
+/* Light / dark switch (themeflip.js): the new colours are revealed through an animated shape, no cross-fade. */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-new(root){z-index:2}
+.flipping .hb{display:none}

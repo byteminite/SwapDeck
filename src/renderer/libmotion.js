@@ -34,7 +34,14 @@ export function heartBurst(btn) {
   el.style.cssText = 'left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 2) + 'px;--s:' + Math.max(0.6, Math.min(1, box.height / 48));
   el.innerHTML = '<b></b>' + DOTS;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1100);
+  // Follow the heart while the burst plays: a cover springs back from its press (or moves) right after the click.
+  const end = performance.now() + 1100, heart = btn.querySelector('svg') || btn;
+  const follow = () => {
+    if (performance.now() > end || !el.isConnected) { el.remove(); return; }
+    if (heart.isConnected) { const h = heart.getBoundingClientRect(); el.style.left = (h.left + h.width / 2) + 'px'; el.style.top = (h.top + h.height / 2) + 'px'; }
+    requestAnimationFrame(follow);
+  };
+  requestAnimationFrame(follow);
   // After the re-render, so Preact's class update doesn't wipe it.
   requestAnimationFrame(() => { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); });
 }

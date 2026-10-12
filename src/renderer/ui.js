@@ -13,6 +13,7 @@ import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 import { syncTabInk } from './libmotion.js';
+import { flipTheme } from './themeflip.js';
 import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
@@ -257,6 +258,13 @@ class App extends Component {
     for (const n in t) r.style.setProperty('--' + n, t[n]);
     document.documentElement.style.background = t.background;
     document.body.style.background = t.background;
+  }
+  // The sun / moon button: Light and back to the dark base you used (Dark or OLED Black), poured in from the button.
+  flipBase(btn) {
+    const cur = this.state.settings.base || 'dark', next = cur === 'light' ? (this.state.settings.darkBase || 'dark') : 'light';
+    const patch = cur === 'light' ? { base: next } : { base: next, darkBase: cur };
+    flipTheme(btn, () => new Promise(res => this.setState(s => ({ settings: { ...s.settings, ...patch } }), () => { this.applyTheme(); res(); })));
+    api.setSettings(patch);
   }
   rootRef = el => { this._root = el; if (el) this.applyTheme(); };
   lsContentRef = el => {
@@ -1737,7 +1745,7 @@ class App extends Component {
       stLabel: cur ? 'Signed in as' : 'Steam running', stName: cur ? cur.name : '', stSub: cur ? '· next start signs in as ' + cur.name : '',
       stBusyText: busy === 'closing' ? 'Closing Steam…' : 'Starting Steam…',
       showClose: running && !busy, showStart: steam === 'closed' && !busy,
-      onCloseSteam: () => this.closeSteam(), onStartSteam: () => this.startSteam(), onAdd: () => this.addAcc(), onSetOpen: () => this.openSettings(),
+      onCloseSteam: () => this.closeSteam(), onStartSteam: () => this.startSteam(), onAdd: () => this.addAcc(), onSetOpen: () => this.openSettings(), isLightBase: (S.settings.base || 'dark') === 'light', onFlipBase: e => this.flipBase(e.currentTarget),
       connectAllN: this.accts.filter(a => !a.linked).length, onConnectAll: () => this.connectAll(),
       showToolbar: !nf && has, searchRef: this.searchRef, q: S.q, onQ: e => this.setState({ q: e.target.value, hover: null }), accPick: this.tagPickVals('acc'), sorts,
       showGallery: !nf && has && vis.length > 0, galRef: this.galRef, onGalLeave: () => this.setState({ hover: null }),
