@@ -16,6 +16,7 @@ import { libMenuVals, gameMenu } from './libmenu.js';
 import { libArtVals, artOverlay } from './libart.js';
 import { libNotesVals, notesPanel, unreadCount } from './libnotes.js';
 import { stopVals, stopOverlay } from './libstop.js';
+import { libWnVals, wnOverlay } from './libwn.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -56,6 +57,7 @@ export function libShellVals(app, gv, dw) {
       ...launchVals(app), sw: switchVals(app),
       banner: app.steamState === 'not-found' ? { tone: 'warn', ic: 'search', text: "SwapDeck can't find Steam. Switching and Steam games need it.", act: 'Find Steam', go: () => app.browse() }
         : !navigator.onLine ? { tone: 'warn', ic: 'alert', text: "You're offline. Switching and playing still work; news and stats come back when you reconnect." } : null,
+      wn: libWnVals(app) ? wnOverlay(libWnVals(app)) : null,
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
       contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },

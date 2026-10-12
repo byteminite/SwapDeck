@@ -3,6 +3,59 @@
 
 export const CHANGELOG = [
   {
+    v: '1.5.0', date: '12 Oct 2026',
+    title: 'A new Library layout',
+    intro: 'Pick the new Library layout in Settings: your games up front as covers, with Home, Favourites, Updates, search and full pages for games, accounts and settings.',
+    highlights: [
+      ['Library layout', 'A rail on the left, your games as covers and full pages for every game. Classic stays the default, switch in Settings → Appearance.'],
+      ['Home', 'Your running or last game, Jump back in, recent sessions with the setup they used, this week and your latest achievements.'],
+      ['Search', 'Press Ctrl + K to find a game, a tag or an account, or run an action. Enter opens, Ctrl + Enter plays.'],
+      ['Stop asks', 'Stop tracking only, or close the game too, like Alt+F4. Pick once or let SwapDeck remember.'],
+      ['Updates tab', 'What Steam is updating, what\'s waiting and what it updated lately. Play when done starts a game as soon as its update finishes.'],
+    ],
+    sections: [
+      ['Library layout', [
+        'Pick it in Settings → Appearance, or on first start. Classic stays exactly as it was and stays the default',
+        'My games shows covers with tabs (All, Installed, Not installed, Never played), Tag, Account and Source filters and sorting',
+        'Hover a cover for Play, details, a heart and who it plays as, like "Switches to Crosshair"',
+        'Right-click a game: Play, Play as another account once, tags, its account, Change artwork, Open folder, Desktop shortcut, Store page or Hide from Library',
+        'Every game opens as a full page with Overview, Achievements and Setup, with Setup in two columns',
+        'Starting a game shows each step, with steps that were already right marked Ready. Back to library keeps a Now playing bar at the bottom',
+      ]],
+      ['Home, Favourites and Updates', [
+        'Home shows the running or last played game, Jump back in, recent sessions by day, this week\'s hours and your accounts with Switch',
+        'Sessions show the monitor, resolution, sound device and companion apps they used (games you play from now on)',
+        'Latest achievements across all your accounts, read from Steam on this PC, no sign-in needed',
+        'Favourites as big cards. Drag them into your own order, or sort by last played or name. You play these a lot suggests more',
+        'Updates shows what Steam is updating and what\'s waiting, This week and Recently updated. Open Steam downloads to pause or reorder',
+        'Play when done starts a game when its update finishes, while SwapDeck is open (the tray is fine)',
+      ]],
+      ['Accounts', [
+        'Your avatar at the top right opens the account menu: switch, Connect, Connect all and Add account',
+        'Each account has a full page with stats, games, sessions, its game after switching, a note and Advanced',
+        'Remove from SwapDeck hides an account here and keeps it saved in Steam. Show it again from the account menu or Settings',
+        'Switching waits while a game runs, so Steam never restarts under it',
+      ]],
+      ['Search, tags and notifications', [
+        'Ctrl + K searches games, tags, accounts and actions, with your last searches kept',
+        'The Tags manager renames, recolours and deletes tags across every game and account, and makes new ones',
+        'The bell shows what needs you: updates, a running game, accounts to connect, a SwapDeck update, Steam closed or not found, offline',
+      ]],
+      ['Settings and tray', [
+        'Settings is a full page with a menu, Find a setting, and every setting from before',
+        'New: When I press Stop, Open SwapDeck on, Hide account names (initials, for streaming), Lock now, Hidden accounts and games, Replay first start',
+        'The tray panel shows a game starting, asks before Stop closes anything, and finds games as you type. The tray icon gets a green dot while you play',
+        'Change artwork gives a Steam game your own cover and banner in SwapDeck. Steam\'s own library keeps its art',
+      ]],
+      ['Good to know', [
+        'Stop still never closes a game unless you pick Close the game too. Closing asks the game\'s windows to close, like Alt+F4, and never forces it',
+        'If a game doesn\'t close (for example it asks to save), SwapDeck says so and puts your display and sound back anyway',
+        'New installs get a short first start: finding Steam, your accounts, layout and accent. You can skip it',
+        'Latest achievements and Recently updated read Steam\'s files on this PC. Nothing is sent anywhere',
+      ]],
+    ],
+  },
+  {
     v: '1.4.0', date: '11 Oct 2026',
     title: 'A new account profile',
     intro: 'Account details open as a full profile, the Library shows every game your accounts own, and everything CS2 now lives on CS2\'s own page.',

@@ -2,6 +2,7 @@
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { tg, btn, badge, row } from './libsetui.js';
+import { openWn } from './libwn.js';
 
 function masterForm(b) {
   const pw = (label, value, on) => html`<label class="st-fl"><span>${label}</span><input class="st-in" type="password" autocomplete="off" value=${value} onInput=${on} onKeyDown=${b.onMpKey} /></label>`;
@@ -32,7 +33,7 @@ export function updatesSec(app, b) {
         : btn('Check for updates', b.onUpdCheck, { ic: 'refresh', off: !b.updCanCheck });
   return { k: 'updates', title: 'Updates', sub: 'SwapDeck updates itself in the background.', rows: [
     row('SwapDeck ' + b.verShort, b.updReady ? b.updVer + ' is downloaded. It installs when you restart.' : html`<span style=${'color:' + b.updIdleFg}>${b.updIdleText}</span>`, ctrl, '', 'updates version check restart'),
-    row("What's new", 'See what changed in every version.', btn('Open', () => app.setState({ wn: true }), { ic: 'info' })),
+    row("What's new", 'See what changed in every version.', btn('Open', () => openWn(app), { ic: 'info' })),
   ] };
 }
 
