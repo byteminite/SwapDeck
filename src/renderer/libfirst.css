@@ -35,7 +35,7 @@
 .ob-find.ok .ob-ic{background:rgba(126,232,166,.14);color:#7ee8a6}
 .ob-find.bad .ob-ic{background:rgba(255,210,122,.12);color:#ffd27a}
 .ob-find b{display:block;font:650 15px 'Geist',sans-serif}
-.ob-find span{display:block;font:500 12.5px 'Geist',sans-serif;color:var(--text-muted);margin-top:3px}
+.ob-find div>span{display:block;font:500 12.5px 'Geist',sans-serif;color:var(--text-muted);margin-top:3px}
 .ob-find code{font:500 12px 'Geist Mono',Consolas,monospace;color:var(--text);word-break:break-all}
 .ob-acc{display:flex;align-items:center;gap:14px;padding:11px 4px;border-top:1px solid rgba(var(--fg-rgb),.07)}
 .ob-acc:first-child{border-top:0}
