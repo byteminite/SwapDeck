@@ -15,12 +15,17 @@ export const CHANGELOG = [
     ],
     sections: [
       ['Library layout', [
-        'Pick it in Settings → Appearance, or on first start. Classic stays exactly as it was and stays the default',
+        'Pick it in Settings → Appearance, or on first start. Classic stays as it was and stays the default',
         'My games shows covers with tabs (All, Installed, Not installed, Never played), Tag, Account and Source filters and sorting',
         'Hover a cover for Play, details, a heart and who it plays as, like "Switches to Crosshair"',
         'Right-click a game: Play, Play as another account once, tags, its account, Change artwork, Open folder, Desktop shortcut, Store page or Hide from Library',
-        'Every game opens as a full page with Overview, Achievements and Setup, with Setup in two columns',
         'Starting a game shows each step, with steps that were already right marked Ready. Back to library keeps a Now playing bar at the bottom',
+        'Cancel stops a game while it starts. If it can\'t start, the screen says what went wrong, with Try again',
+      ]],
+      ['Game pages', [
+        'Every game opens as a full page with Overview, Achievements and Setup, with Setup in two columns',
+        'An Achievements tab on every game: how rare each one is, which of your accounts have it, filters and sorting',
+        'CS2 stats fit in one row. Commendations and medals open with a button',
       ]],
       ['Home, Favourites and Updates', [
         'Home shows the running or last played game, Jump back in, recent sessions by day, this week\'s hours and your accounts with Switch',
@@ -40,11 +45,13 @@ export const CHANGELOG = [
         'Ctrl + K searches games, tags, accounts and actions, with your last searches kept',
         'The Tags manager renames, recolours and deletes tags across every game and account, and makes new ones',
         'The bell shows what needs you: updates, a running game, accounts to connect, a SwapDeck update, Steam closed or not found, offline',
+        'New patch notes for games you\'ve played show in the bell too, and open straight in the news reader',
       ]],
       ['Settings and tray', [
         'Settings is a full page with a menu, Find a setting, and every setting from before',
         'New: When I press Stop, Open SwapDeck on, Hide account names (initials, for streaming), Lock now, Hidden accounts and games, Replay first start',
-        'The tray panel shows a game starting, asks before Stop closes anything, and finds games as you type. The tray icon gets a green dot while you play',
+        'The tray panel lists every installed game, shows a game starting and finds games as you type. The tray icon gets a green dot while you play',
+        'Classic Settings get Hide account names (Security) and When I press Stop (General) too',
         'Change artwork gives a Steam game your own cover and banner in SwapDeck. Steam\'s own library keeps its art',
       ]],
       ['Good to know', [
@@ -52,6 +59,7 @@ export const CHANGELOG = [
         'If a game doesn\'t close (for example it asks to save), SwapDeck says so and puts your display and sound back anyway',
         'New installs get a short first start: finding Steam, your accounts, layout and accent. You can skip it',
         'Latest achievements and Recently updated read Steam\'s files on this PC. Nothing is sent anywhere',
+        'Achievement rarity and patch notes come from Steam\'s public servers, no sign-in. Patch notes are checked every 6 hours for your 10 most recently played games',
       ]],
     ],
   },

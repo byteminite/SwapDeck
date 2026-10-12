@@ -195,7 +195,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
   <tr>
     <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
     <td width="33%" valign="top">⭐ <b>Favourites</b><br><sub>Star accounts and games, and they come first</sub></td>
-    <td width="33%" valign="top">🏆 <b>Achievements per account</b><br><sub>Latest unlocks and progress, from Steam's files on your PC. Hidden ones stay hidden</sub></td>
+    <td width="33%" valign="top">🏆 <b>Achievements per account</b><br><sub>Latest unlocks and progress from Steam's files on your PC, and how rare each one is. Hidden ones stay hidden</sub></td>
   </tr>
   <tr>
     <td width="33%" valign="top">🔎 <b>Search everything</b><br><sub><code>Ctrl + K</code> in the Library layout: games, tags, accounts and actions</sub></td>
