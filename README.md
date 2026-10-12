@@ -202,6 +202,11 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
     <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, new patch notes, a running game, accounts to connect and SwapDeck updates under the bell</sub></td>
     <td width="33%" valign="top">🏷️ <b>Tags manager</b><br><sub>Rename, recolour and delete tags everywhere at once</sub></td>
   </tr>
+  <tr>
+    <td width="33%" valign="top">⛏️ <b>Minecraft modpacks</b><br><sub>Packs from Modrinth, CurseForge and Prism Launcher show up as games. Play starts the pack with its own monitor and sound</sub></td>
+    <td width="33%" valign="top">🌗 <b>Light and dark</b><br><sub>One click on the sun or moon, and the new colours pour in from the button</sub></td>
+    <td width="33%" valign="top">🎞️ <b>Animations</b><br><sub>Pages, covers and tabs ease in. <i>Reduce motion</i> turns them off</sub></td>
+  </tr>
 </table>
 
 ## Install
@@ -222,6 +227,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 | Account profile | `ⓘ` on a card, or right-click. *See all games* lists everything the account owns |
 | CS2 settings per account | CS2's page → the ⚙️ gear → CS2 settings |
 | Play a game | Library → hover a game → Play, or double-click |
+| Play a Minecraft modpack | Library → Source → Minecraft, then Play. The pack opens in its launcher |
 | Game page | Click a game in the Library. The ⚙️ gear next to the close button opens its setup |
 | Read patch notes | A game's page → Activity → click a post |
 | Tray panel from anywhere | `Ctrl + Alt + S` (turn it on in Settings → General) |
@@ -247,6 +253,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
   uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
 - The Library layout's latest achievements and recently updated games come from Steam's own files on your PC. Nothing is sent anywhere.
 - How rare each achievement is, and the bell's new patch notes, come from Steam's public servers with no sign-in: rarity when you open a game's Achievements tab, patch notes every 6 hours for your 10 most recently played games. Only the games' Steam app IDs are sent.
+- Minecraft modpacks are read from Modrinth's, CurseForge's and Prism Launcher's own pack lists on your PC. To notice when Minecraft
+  runs, SwapDeck looks at the Java programs running on your PC. Nothing is sent anywhere.
 - *Close the game too* (when you press Stop) asks the game's windows on your PC to close, like Alt+F4. It never forces a game closed.
 
 ## FAQ

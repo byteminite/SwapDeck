@@ -33,7 +33,7 @@ export function isLibLayout(app) {
 
 function gameSub(app, id) {
   const g = app.gfind(id), a = g && g.steam && g.acct && app.find(g.acct);
-  return !g ? '' : !g.steam ? 'No Steam account needed' : a ? 'Plays as ' + a.name : 'Plays on whoever is signed in';
+  return !g ? '' : !g.steam ? (g.pack ? 'Plays in ' + g.pack.label : 'No Steam account needed') : a ? 'Plays as ' + a.name : 'Plays on whoever is signed in';
 }
 
 export function libShellVals(app, gv, dw) {

@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], hiddenGames: [], notesRead: [], stopPref: 'ask', darkBase: 'dark', obDone: true, tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], hiddenGames: [], notesRead: [], stopPref: 'ask', darkBase: 'dark', showPacks: true, obDone: true, tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -94,6 +94,9 @@
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
   });
+  const pack = (launcher, label, name, hours, ago) => ({ id: 'mc:' + launcher + ':' + name.length.toString(16).padStart(16, '0'), steam: false, pack: { launcher, label }, name,
+    exe: ['C:', 'Users', 'you', 'AppData', 'Local', label, label + '.exe'].join(String.fromCharCode(92)), installed: true, folder: ['C:', 'Users', 'you', label, name].join(String.fromCharCode(92)), acct: null, opts: '',
+    display: {}, audio: null, apps: [], tags: [], fav: false, note: '', img: null, iconMode: 'gen', lastPlayed: now - ago, hours });
   const lib = [
     game('730', 'Counter-Strike 2', 'Counter-Strike Global Offensive', 'NightOwl', 412.5, 50 * 60e3, { opts: '-novid -high +fps_max 0', display: { res: 'r1700000000001' }, tags: ['fps'], fav: true }),
     game('244210', 'Assetto Corsa', 'assettocorsa', 'ApexDrift', 186.2, 2 * D, {
@@ -110,6 +113,9 @@
     game('252490', 'Rust', 'Rust', null, 166, 20 * D, { owners: ['NightOwl', 'Crosshair'] }),
     { ...game('1172470', 'Apex Legends', '', 'NightOwl', 95, 40 * D), installed: false, folder: null, acctAuto: true },
     game('690790', 'DiRT Rally 2.0', 'DiRT Rally 2.0', 'ApexDrift', 22.6, 25 * D, { tags: ['racing'] }),
+    // Minecraft modpacks, as the real app finds them in Modrinth and CurseForge.
+    pack('modrinth', 'Modrinth', 'Fabulously Optimized', 12.4, 3 * D),
+    pack('curseforge', 'CurseForge', 'All the Mods 10', 31.8, 6 * D),
   ];
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));
   const findGame = id => lib.find(g => g.id === id);

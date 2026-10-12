@@ -4,7 +4,7 @@
 const path = require('path');
 const { createHelper } = require('./native');
 
-const run = createHelper({ name: 'close', version: 2, source: 'close-helper.cs', cls: 'SDClose' });
+const run = createHelper({ name: 'close', version: 3, source: 'close-helper.cs', cls: 'SDClose' });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const parse = out => { try { return JSON.parse(out.slice(out.indexOf('{'))); } catch { return { procs: [], windows: 0 }; } };
 

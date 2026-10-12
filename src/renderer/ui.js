@@ -426,6 +426,8 @@ class App extends Component {
     this.setState(s => ({ settings: { ...s.settings, ...patch } }));
     const settings = await api.setSettings(patch);
     if (settings) this.setState({ settings });
+    // Showing or hiding modpacks changes which games the Library lists.
+    if ('showPacks' in patch) this.reloadLib();
   }
 
   // Settings > General shortcut recorder: the next real key pressed with Ctrl or Alt becomes the shortcut.
@@ -1108,7 +1110,7 @@ class App extends Component {
   }
   coverOf(g) { return g.img || (g.steam ? g.cover : null); }
   gradOf(g) { const p = GPAL[hash(g.name || 'x') % GPAL.length]; return G(p[0], p[1]); }
-  cardBg(g) { const c = this.coverOf(g); return c ? 'url("' + c + '") center/cover no-repeat,' + this.gradOf(g) : 'radial-gradient(120% 70% at 18% 8%,rgba(var(--fg-rgb),.24),transparent 58%),' + this.gradOf(g); }
+  cardBg(g) { const c = this.coverOf(g); if (g.pack && c) return 'url("' + c + '") center 44%/52% no-repeat,radial-gradient(120% 70% at 18% 8%,rgba(255,255,255,.18),transparent 58%),' + this.gradOf(g); return c ? 'url("' + c + '") center/cover no-repeat,' + this.gradOf(g) : 'radial-gradient(120% 70% at 18% 8%,rgba(var(--fg-rgb),.24),transparent 58%),' + this.gradOf(g); }
   mons() { return this.state.monitors; }
   monOf(g) { return g.display.mon ? this.mons().find(m => m.id === g.display.mon) || null : null; }
   normMon() { const s = this.state.settings, m = this.mons(); return m.find(x => x.id === s.normalMon) || m.find(x => x.primary) || null; }
@@ -1400,10 +1402,10 @@ class App extends Component {
     // Not-installed games show only while "Not installed" is ticked in the Tags menu (on unless turned off).
     const games = this.showNotInst() ? S.lib : S.lib.filter(g => g.installed);
     const q = S.lq.trim().toLowerCase(), byN = (x, y) => x.name.localeCompare(y.name);
-    const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || (S.lf === 'steam') === g.steam) && matchTags(g, S.libTags, g.fav));
+    const vis = games.filter(g => g.name.toLowerCase().includes(q) && (S.lf === 'all' || S.lf === (g.steam ? 'steam' : g.pack ? 'mc' : 'nonsteam')) && matchTags(g, S.libTags, g.fav));
     const bySort = S.ls === 'name' ? byN : S.ls === 'recent' ? (x, y) => (y.lastPlayed - x.lastPlayed) || byN(x, y) : (x, y) => (y.hours - x.hours) || byN(x, y);
     vis.sort((x, y) => (+!!y.fav - +!!x.fav) || bySort(x, y));
-    const libSources = [['all', 'All', games.length], ['steam', 'Steam', games.filter(g => g.steam).length], ['nonsteam', 'Non-Steam', games.filter(g => !g.steam).length]]
+    const libSources = [['all', 'All', games.length], ['steam', 'Steam', games.filter(g => g.steam).length], ['nonsteam', 'Non-Steam', games.filter(g => !g.steam && !g.pack).length], ...(games.some(g => g.pack) ? [['mc', 'Minecraft', games.filter(g => g.pack).length]] : [])]
       .map(([k, label, n]) => ({ label, n, bg: S.lf === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: S.lf === k ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setState({ lf: k }) }));
     const libSorts = [['recent', 'Last played'], ['hours', 'Most played'], ['name', 'Name']].map(([k, l]) => ({ label: l, bg: S.ls === k ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: S.ls === k ? 'var(--text)' : 'var(--text-subtle)', on: () => this.setState({ ls: k }) }));
     this._libVis = vis;
@@ -1413,11 +1415,11 @@ class App extends Component {
       return {
         id: g.id, name: g.name, ini: iniOf(g), noArt, exeIcon: exe, iniChip: noArt && !exe,
         bg: this.cardBg(g), filter: g.installed ? 'none' : 'grayscale(1) brightness(.55)', nameFg: g.installed ? 'var(--text)' : 'var(--text-subtle)',
-        typeLbl: g.steam ? 'STEAM' : 'NON-STEAM', typeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', typeBd: g.steam ? 'rgba(var(--fg-rgb),.22)' : 'rgba(251,191,36,.4)',
+        typeLbl: g.steam ? 'STEAM' : g.pack ? 'MINECRAFT' : 'NON-STEAM', typeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', typeBd: g.steam ? 'rgba(var(--fg-rgb),.22)' : 'rgba(251,191,36,.4)',
         hasMon: !!mon || !!this.resOf(g), monTitle: [mon ? 'Display: ' + mon.label : null, this.resOf(g) ? 'Resolution: ' + this.resOf(g).name : null].filter(Boolean).join(' · '),
         hasAcct: !!a, aIni: a && !a.avatar ? a.ini : '', aBg: a ? avBg(a) : '',
         // Outline the account that's signed in to Steam right now.
-        aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? this.ownersLabel(g) : 'no account needed',
+        aRing: a && a.current && this.steamState === 'running' ? '0 0 0 1.5px var(--background),0 0 0 3px var(--accent)' : 'none', aFg: a && a.current && this.steamState === 'running' ? 'var(--accent-strong)' : 'var(--text-muted)', aTip: a ? a.name + (a.current && this.steamState === 'running' ? ' · signed in now' : '') : '', aName: a ? a.name : '', noAcct: !a, noAcctLbl: g.steam ? this.ownersLabel(g) : g.pack ? 'plays in ' + g.pack.label : 'no account needed',
         upd: g.steam && g.installed && !run ? updateBadge(S.libUpd[g.appid]) : null,
         notInst: !g.installed, running: run && L.running, canPlay: g.installed && !run, canInstall: !g.installed,
         fav: !!g.fav, starOp: g.fav || hov ? 1 : 0, starTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onStar: e => { e.stopPropagation(); this.toggleFav(g.id); },
@@ -1445,7 +1447,7 @@ class App extends Component {
     const a = g.steam && g.acct ? this.find(g.acct) : null, mon = this.monOf(g), res = this.resOf(g), cur = this.accts.find(x => x.current), nm = this.normMon();
     const logoOk = g.steam && !!g.logo && !S.logoFail[g.id], noArt = !this.coverOf(g);
     const rows = [['Last played', L && L.gid === g.id ? 'playing now' : rel(g.lastPlayed)], ['Playtime', g.hours ? g.hours.toFixed(1) + ' h' + (g.steam ? '' : ' · tracked by SwapDeck') : 'Not played yet'], ['Install folder', g.installed ? g.folder : 'Not installed', g.installed]];
-    if (!g.steam) rows.push(['Executable', g.exe, true]);
+    if (g.pack) rows.push(['Modpack folder', g.folder, true]); else if (!g.steam) rows.push(['Executable', g.exe, true]);
     const lastS = S.sessions.find(x => x.gid === g.id && x.ms > 0);
     if (lastS) { const la = this.find(lastS.sid); rows.splice(2, 0, ['Last session', dur(lastS.ms) + (la ? ' on ' + la.name : '') + ' · ' + when(lastS.start)]); }
     const opt = sel => ({ bg: sel ? 'rgba(var(--accent-rgb),.08)' : 'transparent', sel });
@@ -1463,11 +1465,11 @@ class App extends Component {
       // A soft shade behind the logo keeps it readable on bright banners.
       gLogoEl: html`<span key=${g.id} style="display:inline-block;padding:10px 16px 8px 4px;margin:-10px -16px -8px -4px;background:radial-gradient(closest-side,rgba(0,0,0,.4),rgba(0,0,0,.2) 60%,transparent);border-radius:40px"><img src=${g.logo} alt=${g.name} style="display:block;max-width:320px;max-height:76px;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 4px 18px rgba(0,0,0,.6))" onError=${logoFail} /></span>`,
       gExeIcon: !g.steam && g.iconMode === 'exe' && !g.img, gIniChip: !(!g.steam && g.iconMode === 'exe' && !g.img),
-      gHeroBg: g.steam ? 'url("' + g.hero + '") center/cover no-repeat,' + this.gradOf(g) : g.img ? 'url("' + g.img + '") center 30%/cover no-repeat,' + this.gradOf(g) : 'radial-gradient(90% 120% at 15% 0%,rgba(var(--fg-rgb),.22),transparent 60%),' + this.gradOf(g),
+      gHeroBg: g.pack && g.img ? 'url("' + g.img + '") 92% 50%/auto 64% no-repeat,radial-gradient(70% 140% at 85% 50%,rgba(255,255,255,.14),transparent 70%),' + this.gradOf(g) : g.steam ? 'url("' + g.hero + '") center/cover no-repeat,' + this.gradOf(g) : g.img ? 'url("' + g.img + '") center 30%/cover no-repeat,' + this.gradOf(g) : 'radial-gradient(90% 120% at 15% 0%,rgba(var(--fg-rgb),.22),transparent 60%),' + this.gradOf(g),
       onLogoErr: logoFail,
-      gTypeLbl: g.steam ? 'STEAM' : 'NON-STEAM', gTypeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', gTypeBd: g.steam ? 'rgba(var(--fg-rgb),.25)' : 'rgba(251,191,36,.45)',
+      gTypeLbl: g.steam ? 'STEAM' : g.pack ? 'MINECRAFT' : 'NON-STEAM', gTypeFg: g.steam ? 'var(--text-soft)' : 'var(--warn-fg)', gTypeBd: g.steam ? 'rgba(var(--fg-rgb),.25)' : 'rgba(251,191,36,.45)',
       gNotInst: !g.installed, gRunning: !!(L && L.gid === g.id),
-      gMeta: g.steam ? 'Steam · App ' + g.appid : 'Non-Steam · ' + g.exe.split('\\').pop(),
+      gMeta: g.steam ? 'Steam · App ' + g.appid : g.pack ? g.pack.label + ' modpack' : 'Non-Steam · ' + g.exe.split('\\').pop(),
       gTagEd: this.tagEditVals({ tags: g.tags, keep: S.gdKeep, where: 'game', setTags: tags => this.setGameTags(g.id, tags), draftKey: 'gTagDraft' }),
       gFav: !!g.fav, gStarFg: g.fav ? '#fbbf24' : '#fff', gStarFill: g.fav ? '#fbbf24' : 'none', gStarBd: g.fav ? 'rgba(251,191,36,.5)' : 'rgba(var(--fg-rgb),.2)',
       gStarTitle: g.fav ? 'Remove from favourites' : 'Add to favourites', onGStar: () => this.toggleFav(g.id),
@@ -1475,9 +1477,9 @@ class App extends Component {
       ...this.overviewVals(g),
       ...this.cs2Vals(g),
       gCanPlay: g.installed && !(L && L.gid === g.id), gCanInstall: !g.installed,
-      gPlaySub: this.updating(g) ? 'Steam finishes the update first' : [a ? 'as ' + a.name : g.steam ? 'current account' : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
+      gPlaySub: this.updating(g) ? 'Steam finishes the update first' : [a ? 'as ' + a.name : g.steam ? 'current account' : g.pack ? 'in ' + g.pack.label : 'no account', mon ? mon.label : 'default display', res ? res.name : null, g.launcher ? 'via ' + g.launcher.split('\\').pop().replace(/\.exe$/i, '') : null].filter(Boolean).join(' · '),
       onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null, gNews: null }); },
-      gSteam: g.steam, gNonSteam: !g.steam,
+      gSteam: g.steam, gNonSteam: !g.steam && !g.pack, gPack: !!g.pack,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
       gAcctSub: a ? a.loginShown + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
       gAcctBd: S.acctMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
@@ -1762,6 +1764,7 @@ class App extends Component {
       unlinkOn: !!unlinkAcc, unlinkName: unlinkAcc ? unlinkAcc.name : '', onUnlinkNo: () => this.setState({ unlinkId: null }), onUnlinkYes: () => this.unlink(),
       setOpen: S.setOpen, onSetClose: () => this.setState({ setOpen: false, rp: null, hkRec: false }), stop: e => e.stopPropagation(),
       clBg: cfg.closeAfter ? onBg : offBg, clX: cfg.closeAfter ? 'translateX(18px)' : 'translateX(0px)', onCl: () => this.setCfg({ closeAfter: !cfg.closeAfter }),
+      pkBg: cfg.showPacks !== false ? onBg : offBg, pkX: cfg.showPacks !== false ? 'translateX(18px)' : 'translateX(0px)', onPk: () => this.setCfg({ showPacks: cfg.showPacks === false }),
       cfgOpts: cfg.steamArgs || '', onOpts: e => { const v = e.target.value; this.setState(s => ({ settings: { ...s.settings, steamArgs: v } })); clearTimeout(this._argT); this._argT = setTimeout(() => api.setSettings({ steamArgs: v }), 400); },
       pathText: nf ? 'Not found — browse to steam.exe' : S.steam.exe || '', pathFg: nf ? 'var(--bad-fg)' : 'var(--text-soft)', pathBd: nf ? 'rgba(248,113,113,.4)' : 'rgba(var(--fg-rgb),.1)',
       addOpen: S.addOpen, onAddCancel: () => this.cancelAdd(),

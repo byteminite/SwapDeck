@@ -40,6 +40,14 @@ public static class SDClose
     // let us read (protected or elevated) are skipped.
     static List<Process> Find(string target)
     {
+        // "pid:1234": exactly that process (a modpack's Minecraft, which runs as java).
+        if (target.StartsWith("pid:"))
+        {
+            var one = new List<Process>();
+            int id;
+            if (int.TryParse(target.Substring(4), out id)) { try { one.Add(Process.GetProcessById(id)); } catch { } }
+            return one;
+        }
         bool exact = target.ToLowerInvariant().EndsWith(".exe");
         var root = exact ? Path.GetFullPath(target).ToLowerInvariant() : Norm(target);
         var list = new List<Process>();
@@ -69,7 +77,7 @@ public static class SDClose
 
     public static string Run(string cmd, string arg)
     {
-        if (string.IsNullOrEmpty(arg) || !(Directory.Exists(arg) || File.Exists(arg))) return "{\"procs\":[],\"windows\":0}";
+        if (string.IsNullOrEmpty(arg) || !(arg.StartsWith("pid:") || Directory.Exists(arg) || File.Exists(arg))) return "{\"procs\":[],\"windows\":0}";
         var procs = Find(arg);
         if (cmd != "close") return Json(procs, 0);
         var pids = new HashSet<uint>();

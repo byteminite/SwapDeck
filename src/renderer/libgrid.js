@@ -3,7 +3,9 @@
 
 export const SUBS = [['all', 'All games'], ['inst', 'Installed'], ['ni', 'Not installed'], ['never', 'Never played']];
 export const SORTS = [['recent', 'Last played'], ['hours', 'Most played'], ['name', 'Name']];
-export const SOURCES = [['all', 'All sources'], ['steam', 'Steam'], ['ns', 'Non-Steam']];
+export const SOURCES = [['all', 'All sources'], ['steam', 'Steam'], ['ns', 'Non-Steam'], ['mc', 'Minecraft']];
+// Minecraft modpacks are their own source, so Non-Steam means the games you added yourself.
+const SRC_OF = g => g.steam ? 'steam' : g.pack ? 'mc' : 'ns';
 
 // Accounts that can play a game: the picked one, else every owner SwapDeck knows about.
 export const accountsOf = g => (g.acct ? [g.acct] : (g.owners || []));
@@ -15,7 +17,7 @@ export function applyFilters(games, f, skip) {
   return games.filter(g => (skip === 'sub' || inSub(g, f.sub))
     && (skip === 'tag' || !f.tag || (g.tags || []).includes(f.tag))
     && (skip === 'acct' || !f.acct || accountsOf(g).includes(f.acct))
-    && (skip === 'src' || f.src === 'all' || (f.src === 'steam') === !!g.steam));
+    && (skip === 'src' || f.src === 'all' || f.src === SRC_OF(g)));
 }
 
 const byName = (x, y) => x.name.localeCompare(y.name);
@@ -47,5 +49,5 @@ export function acctCounts(games, f, ids) {
 
 export function srcCounts(games, f) {
   const base = applyFilters(games, f, 'src');
-  return { all: base.length, steam: base.filter(g => g.steam).length, ns: base.filter(g => !g.steam).length };
+  return { all: base.length, ...Object.fromEntries(['steam', 'ns', 'mc'].map(k => [k, base.filter(g => SRC_OF(g) === k).length])) };
 }

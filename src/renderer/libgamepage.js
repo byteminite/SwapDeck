@@ -14,7 +14,7 @@ ${P.ach ? html`<button class="gp-ach" title="Achievements" onClick=${P.ach.open}
 }
 
 function banner(P) {
-  return html`<div class="gp-band" style=${'background:' + P.heroBg}>
+  return html`<div class=${'gp-band' + (P.isPack ? ' pack' : '')} style=${'background:' + P.heroBg}>
 ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 <div class="gp-band-in">
 <div class="gp-who">${P.who.faces.map(f => html`<i style=${'background:' + f}></i>`)}<span>${P.who.text}</span></div>

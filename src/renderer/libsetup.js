@@ -61,7 +61,7 @@ ${b.gNonSteam ? html`<button class="su-btn" onClick=${b.onGEdit}>Edit game</butt
 
 export function setupTab(b) {
   return html`<div class="su">
-<div class="su-col">${b.gSteam ? account(b) : null}${sound(b)}${launcher(b)}${options(b)}${b.gCs2 ? html`<div class="su-cs2">${cs2Card(b.gCs2)}</div>` : null}${b.gNoteSetup ? notesCard(b.gNoteSetup) : null}</div>
+<div class="su-col">${b.gSteam ? account(b) : null}${sound(b)}${launcher(b)}${b.gPack ? null : options(b)}${b.gCs2 ? html`<div class="su-cs2">${cs2Card(b.gCs2)}</div>` : null}${b.gNoteSetup ? notesCard(b.gNoteSetup) : null}</div>
 <div class="su-col">${display(b)}${apps(b)}${extras(b)}</div>
 </div>`;
 }

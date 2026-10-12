@@ -12,6 +12,7 @@ const display = require('./display');
 const audio = require('./audio');
 const { closeGame, targetOf } = require('./closegame');
 const library = require('./library');
+const modpacks = require('./modpacks');
 
 const ex = (cmd, args) => new Promise(r => execFile(cmd, args, { windowsHide: true }, (e, out) => r(e ? '' : String(out))));
 const isRunning = async name => (await ex('tasklist', ['/FI', 'IMAGENAME eq ' + name, '/NH', '/FO', 'CSV'])).toLowerCase().includes('"' + name.toLowerCase() + '"');
@@ -48,9 +49,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     for (const name of s.closeOnEnd) closeApp(name);
     const cfg = store.gameCfg(s.gid);
     const ms = s.runningAt ? Date.now() - s.runningAt : 0;
-    store.setGameCfg(s.gid, { lastPlayed: Date.now(), playMs: (cfg.playMs || 0) + (s.steam ? 0 : ms) });
-    // Playtime per account: Steam games count from when Steam reported them running.
-    const played = s.steam ? (s.seenAt ? Date.now() - s.seenAt : 0) : ms;
+    // Steam games and modpacks count from when the game itself was seen running, not from the launch.
+    const played = s.steam || s.pack ? (s.seenAt ? Date.now() - s.seenAt : 0) : ms;
+    store.setGameCfg(s.gid, { lastPlayed: Date.now(), playMs: (cfg.playMs || 0) + (s.steam ? 0 : played) });
     if (s.logAcct && played > 0) store.addPlay(s.logAcct, s.gid, played, s.setup);
     send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
@@ -69,7 +70,10 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (!g) return { ok: false, error: 'That game is no longer in your library.' };
     if (g.steam && !g.installed) { await shell.openExternal('steam://install/' + g.appid); return { ok: true, install: true }; }
     if (g.steam && !loc.exe) return { ok: false, code: 'NOT_FOUND', error: 'Steam not found' };
+    if (g.pack && !g.installed) return { ok: false, error: "This modpack's folder is gone. It may have been deleted in " + g.pack.label + '.' };
     if (!g.steam && !g.installed) return { ok: false, error: 'The game\'s .exe is missing: ' + g.exe };
+    const pack = g.pack ? modpacks.scan().find(p => p.id === g.id) : null;
+    if (g.pack && !pack) return { ok: false, error: g.pack.label + " doesn't list this modpack any more." };
 
     const st = await steam.status();
     // Right-click > Play as: one launch on another account, without changing the game's own setting.
@@ -112,16 +116,16 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       ? { k: 'apps', label: 'Starting companion apps', sub: toStart.map(a => path.basename(a.path, '.exe')).join(', ') }
       : { k: 'apps', label: 'Companion apps', sub: 'Already running · skipped', skip: true });
     const viaLauncher = g.steam && !!g.launcher;
-    steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: viaLauncher ? 'via ' + path.basename(g.launcher) + (g.opts ? ' ' + g.opts : '') : g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
+    steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: pack ? 'via ' + pack.label : viaLauncher ? 'via ' + path.basename(g.launcher) + (g.opts ? ' ' + g.opts : '') : g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
 
     const s = session = {
-      gid: id, appid: g.appid, steam: g.steam, steps, step: 0, running: false,
+      gid: id, appid: g.appid, steam: g.steam, pack: !!pack, steps, step: 0, running: false,
       monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
       saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [],
       logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
       // What the game was set up with, kept on the session so Recently played can show it.
-      closeTarget: targetOf(g),
+      closeTarget: pack ? null : targetOf(g),
       setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: apps.map(a => path.basename(a.path, '.exe')) },
     };
     emit(s);
@@ -171,7 +175,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       if (session !== s) return { ok: false, cancelled: true };
       if (beforeLaunch && g.steam) beforeLaunch(g, s.logAcct);
 
-      if (viaLauncher) {
+      if (pack) {
+        await modpacks.launch(pack);
+      } else if (viaLauncher) {
         // A launcher such as Content Manager: start it instead of the game. Steam stays signed in,
         // and the game is tracked through Steam's RunningAppID as usual once the launcher starts it.
         const child = spawn(g.launcher, steam.splitArgs(g.opts), { cwd: path.dirname(g.launcher), detached: true, stdio: 'ignore', windowsHide: false });
@@ -200,6 +206,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       s.running = true; s.runningAt = Date.now();
       emit(s);
 
+      if (pack) watchPack(s, pack);
       if (g.steam) {
         // Steam reports the running game in the registry (RunningAppID). Wait for it to appear, then to go away.
         let seen = false, gone = 0;
@@ -222,6 +229,27 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       await end('error', e.message);
       return { ok: false, error: e.message };
     }
+  }
+
+  // A modpack: the launcher starts Minecraft as java(w).exe, often after a few minutes of loading or updating.
+  // Find that process once (its command line names the pack's folder), then just check it's still there.
+  function watchPack(s, pack) {
+    const startedAt = Date.now();
+    let pid = null, looking = false;
+    s.timer = setInterval(async () => {
+      if (session !== s) return clearInterval(s.timer);
+      if (pid) { if (!modpacks.alive(pid)) end('exit'); return; }
+      if (looking) return;
+      looking = true;
+      const found = await modpacks.findGame(pack.folder).catch(() => null);
+      looking = false;
+      if (session !== s) return;
+      if (found) { pid = found; s.seenAt = Date.now(); s.closeTarget = 'pid:' + found; return; }
+      if (Date.now() - startedAt > 300000) {
+        clearInterval(s.timer);
+        send('notice', { type: 'warning', title: "SwapDeck can't see Minecraft running", msg: 'If ' + pack.label + " didn't start it, press Stop to put your display and sound back." });
+      }
+    }, 4000);
   }
 
   const stop = () => end('stopped');

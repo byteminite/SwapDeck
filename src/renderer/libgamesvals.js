@@ -11,7 +11,7 @@ export function libList(app) {
 }
 
 const SUB_IC = { all: 'gamepad', inst: 'drive', ni: 'download', never: 'dashed' };
-const SRC_IC = { all: 'layers', steam: 'gamepad', ns: 'app' };
+const SRC_IC = { all: 'layers', steam: 'gamepad', ns: 'app', mc: 'box' };
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
 
 function filtersOf(S) { return { sub: S.lsSub || 'all', tag: S.lsTag || null, acct: S.lsAcct || null, src: S.lsSrc || 'all' }; }
@@ -20,7 +20,7 @@ function filtersOf(S) { return { sub: S.lsSub || 'all', tag: S.lsTag || null, ac
 function playInfo(app, g, me, run) {
   if (!g.installed) return ['Installs through Steam', false, null];
   if (run) return ['Running now', false, null];
-  if (!g.steam) return ['No Steam account needed', false, null];
+  if (!g.steam) return [g.pack ? 'Plays in ' + g.pack.label : 'No Steam account needed', false, null];
   if (!app.accts.length) return ['No account yet', false, null];
   const ids = accountsOf(g), id = g.acct || (ids.includes(me && me.id) ? me.id : ids[0]), a = id && app.find(id);
   if (!a) return ['Plays on whoever is signed in', false, null];
@@ -31,12 +31,12 @@ export function card(app, g, me, L) {
   const S = app.state, run = !!(L && L.gid === g.id && L.running), [hint, hintSw] = playInfo(app, g, me, run);
   const owners = accountsOf(g).map(id => app.find(id)).filter(Boolean), dotA = g.acct ? app.find(g.acct) : owners[0];
   const upd = g.steam && g.installed && !run ? updateBadge(S.libUpd[g.appid]) : null;
-  const flag = run ? { label: 'Running', cls: 'run' } : upd ? { label: upd.label, cls: upd.busy ? 'upd' : 'warn' } : !g.installed ? { label: 'Not installed', cls: '' } : !g.steam ? { label: 'Non-Steam', cls: '' } : null;
+  const flag = run ? { label: 'Running', cls: 'run' } : upd ? { label: upd.label, cls: upd.busy ? 'upd' : 'warn' } : !g.installed ? { label: 'Not installed', cls: '' } : !g.steam ? { label: g.pack ? g.pack.label : 'Non-Steam', cls: '' } : null;
   const stop = f => e => { e.stopPropagation(); f(); };
   return {
     id: g.id, name: g.name, bg: app.cardBg(g), ni: !g.installed, fallback: !app.coverOf(g), flag, fav: !!g.fav, hint, hintSw,
     dot: dotA ? avBg(dotA) : 'rgba(var(--fg-rgb),.14)',
-    who: !g.steam ? 'No account needed' : !app.accts.length ? 'No account yet' : g.acct && dotA ? dotA.name : owners.length ? owners.map(a => a.name).join(', ') : 'Any account',
+    who: !g.steam ? (g.pack ? 'Plays in ' + g.pack.label : 'No account needed') : !app.accts.length ? 'No account yet' : g.acct && dotA ? dotA.name : owners.length ? owners.map(a => a.name).join(', ') : 'Any account',
     playLabel: g.installed ? 'Play' : 'Install', playIc: g.installed ? 'play' : 'download',
     onOpen: () => app.openGame(g.id), onInfo: stop(() => app.openGame(g.id)), onPlay: stop(() => app.play(g.id)), onFav: stop(() => app.toggleFav(g.id)),
     onKey: e => { if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); e.ctrlKey ? app.play(g.id) : app.openGame(g.id); } },

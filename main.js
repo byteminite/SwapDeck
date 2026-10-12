@@ -23,6 +23,7 @@ const steamweb = require('./src/main/steamweb');
 const uiscale = require('./src/main/uiscale');
 const connected = require('./src/main/connected');
 const gameinfo = require('./src/main/gameinfo');
+const modpacks = require('./src/main/modpacks');
 const achievements = require('./src/main/achievements');
 
 // Local Steam library art and custom covers are served to the UI through sdimg://
@@ -459,6 +460,7 @@ function ipc() {
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
     if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
     if ('obDone' in patch) allowed.obDone = !!patch.obDone;
+    if ('showPacks' in patch) allowed.showPacks = !!patch.showPacks;
     if ('darkBase' in patch) allowed.darkBase = patch.darkBase === 'oled' ? 'oled' : 'dark';
     if ('stopPref' in patch) allowed.stopPref = ['ask', 'track', 'close'].includes(patch.stopPref) ? patch.stopPref : 'ask';
     if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
@@ -695,7 +697,7 @@ function ipc() {
   ipcMain.handle('game:play', (_, id, asSid) => player.play(String(id), /^\d{17}$/.test(String(asSid)) ? String(asSid) : null));
   // Right-click > Open folder: the game's install folder (Steam) or the folder its .exe is in.
   ipcMain.handle('game:folder', (_, id) => {
-    const g = findGame(String(id)), dir = g && (g.steam ? g.folder : g.exe && path.dirname(g.exe));
+    const g = findGame(String(id)), dir = g && (g.steam || g.pack ? g.folder : g.exe && path.dirname(g.exe));
     if (!dir || !fs.existsSync(dir)) return { ok: false };
     shell.openPath(dir);
     return { ok: true };
@@ -1067,6 +1069,7 @@ if (!app.requestSingleInstanceLock()) {
       let file = null;
       if (u.hostname === 'lc' && parts.length === 2 && /^\d+$/.test(parts[0]) && ['library_600x900.jpg', 'library_hero.jpg', 'logo.png'].includes(parts[1])) file = steam.artFile(loc.dir, parts[0], parts[1]);
       else if (u.hostname === 'cover' && parts.length === 1 && /^[\w.-]+$/.test(parts[0])) file = path.join(app.getPath('userData'), 'covers', parts[0]);
+      else if (u.hostname === 'pack' && parts.length === 1 && /^[0-9a-f]{16}$/.test(parts[0])) file = modpacks.iconOf(parts[0]);
       else if (u.hostname === 'shot' && parts.length >= 3) file = gameinfo.screenshotFile(loc.dir, parts[0], parts.slice(1).join('/'));
       if (!file || !fs.existsSync(file)) return new Response('', { status: 404 });
       return net.fetch(pathToFileURL(file).toString());

@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const steam = require('./steam');
 const store = require('./store');
+const modpacks = require('./modpacks');
 
 const CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps/';
 const steamId = appid => 'steam:' + appid;
@@ -86,6 +87,17 @@ function build(dir) {
       acct: null, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       img: c.img ? `sdimg://cover/${encodeURIComponent(c.img)}` : null, iconMode: c.iconMode || 'gen',
       lastPlayed: cfg.lastPlayed || 0, hours: Math.round((cfg.playMs || 0) / 360000) / 10,
+    });
+  }
+  // Minecraft modpacks from Modrinth, CurseForge and Prism Launcher (Settings > General can hide them).
+  for (const p of modpacks.scan(store.settings().showPacks !== false)) {
+    const cfg = store.gameCfg(p.id);
+    out.push({
+      id: p.id, steam: false, pack: { launcher: p.launcher, label: p.label }, name: p.name, exe: p.exe, installed: fs.existsSync(p.folder), folder: p.folder,
+      acct: null, opts: '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
+      img: p.icon ? 'sdimg://pack/' + p.id.split(':')[2] : null, iconMode: 'gen',
+      // The launcher's own play time counts everything, including sessions started outside SwapDeck.
+      lastPlayed: Math.max(p.lastPlayed, cfg.lastPlayed || 0), hours: Math.round(Math.max(p.secs * 1000, cfg.playMs || 0) / 360000) / 10,
     });
   }
   return out;
