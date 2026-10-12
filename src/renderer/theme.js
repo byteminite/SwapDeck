@@ -14,6 +14,8 @@ const mixc = (a, b, t) => { const A = hx(a), B = hx(b); return toHex(A.map((v, i
 const toHsl = s => { const [r, g, b] = hx(s).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b); let H = 0, S = 0; const L = (mx + mn) / 2; if (mx !== mn) { const d = mx - mn; S = L > .5 ? d / (2 - mx - mn) : d / (mx + mn); H = (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60; } return [H, S, L]; };
 const fromHsl = (H, S, L) => { H = ((H % 360) + 360) % 360; const C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs((H / 60) % 2 - 1)), m = L - C / 2; const [r, g, b] = H < 60 ? [C, X, 0] : H < 120 ? [X, C, 0] : H < 180 ? [0, C, X] : H < 240 ? [0, X, C] : H < 300 ? [X, 0, C] : [C, 0, X]; return toHex([(r + m) * 255, (g + m) * 255, (b + m) * 255]); };
 const lum = s => { const [r, g, b] = hx(s).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+// Text on an accent-coloured button: black or white, whichever reads better (WCAG contrast).
+const onAccent = acc => { const L = lum(acc); return (L + .05) / .05 >= 1.05 / (L + .05) ? '#0a0a0c' : '#ffffff'; };
 function themeTokens(baseKey, acc, still) {
   const B = BASES[baseKey] || BASES.dark, [H, S, L] = toHsl(acc), out = {};
   const a2 = fromHsl(H >= 60 && H < 300 ? H + 45 : H - 30, Math.min(1, S * .9), Math.max(.5, Math.min(.66, L)));
@@ -21,7 +23,7 @@ function themeTokens(baseKey, acc, still) {
   Object.assign(out, {
     accent: acc, 'accent-rgb': hx(acc).join(','), 'accent-2': a2, 'accent2-rgb': hx(a2).join(','),
     'accent-strong': B.light ? mixc(acc, '#000000', .4) : mixc(acc, '#ffffff', .38), 'accent-light': mixc(acc, '#ffffff', .5), 'accent-pale': mixc(acc, '#ffffff', .5),
-    'accent-soft': 'rgba(' + hx(acc).join(',') + (B.light ? ',.14)' : ',.12)'), 'accent-contrast': lum(acc) > .4 ? '#0a0a0c' : '#ffffff',
+    'accent-soft': 'rgba(' + hx(acc).join(',') + (B.light ? ',.14)' : ',.12)'), 'accent-contrast': onAccent(acc),
     'accent-chip': 'rgba(' + hx(mixc(acc, '#050507', .8)).join(',') + ',.82)', 'accent-tint': B.light ? 'rgba(' + hx(acc).join(',') + ',.14)' : 'rgba(' + hx(mixc(acc, '#050507', .8)).join(',') + ',.82)', 'btn-hover': B.light ? mixc(acc, '#000000', .35) : mixc(acc, '#ffffff', .55),
     'm-spin-slow': still ? 'none' : 'bspin 3.4s linear infinite', 'm-spin': still ? 'none' : 'bspin 1.6s linear infinite', 'm-pop': still ? 'none' : 'dfade .25s cubic-bezier(.22,1,.36,1)',
   });
