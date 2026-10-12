@@ -5,6 +5,17 @@
 const rnd = (a, b) => a + Math.random() * (b - a);
 const N = 56;
 
+// A smooth closed curve through the points (Catmull-Rom as cubic Beziers), so the edge never shows corners.
+function curve(pts) {
+  const n = pts.length, f = v => v.toFixed(1), p = i => pts[(i + n) % n];
+  let d = 'M' + f(pts[0][0]) + ' ' + f(pts[0][1]);
+  for (let i = 0; i < n; i++) {
+    const a = p(i - 1), b = p(i), c = p(i + 1), e = p(i + 2);
+    d += 'C' + f(b[0] + (c[0] - a[0]) / 6) + ' ' + f(b[1] + (c[1] - a[1]) / 6) + ' ' + f(c[0] - (e[0] - b[0]) / 6) + ' ' + f(c[1] - (e[1] - b[1]) / 6) + ' ' + f(c[0]) + ' ' + f(c[1]);
+  }
+  return "path('" + d + "Z')";
+}
+
 // Ink splash: a blob around the button whose outline wobbles with a few random waves, growing past every corner.
 function splash(ox, oy, W, H) {
   const far = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy)) * 1.25;
@@ -14,9 +25,9 @@ function splash(ox, oy, W, H) {
     const a = (i / N) * Math.PI * 2;
     const wob = waves.reduce((s, w) => s + w.amp * Math.sin(w.k * a + w.ph + twist), 0) * (1 - calm);
     const rr = Math.max(0, r * (1 + wob));
-    return (ox + Math.cos(a) * rr).toFixed(1) + 'px ' + (oy + Math.sin(a) * rr).toFixed(1) + 'px';
-  }).join(',');
-  return [shape(0, 0, 0), shape(far * rnd(0.28, 0.42), spin, 0), shape(far * 1.05, spin * 2, 0.6)].map(p => 'polygon(' + p + ')');
+    return [ox + Math.cos(a) * rr, oy + Math.sin(a) * rr];
+  });
+  return [shape(0.5, 0, 0), shape(far * rnd(0.28, 0.42), spin, 0), shape(far * 1.05, spin * 2, 0.6)].map(curve);
 }
 
 // Wavy wipe: a front with a random wavy edge sweeps across at a random angle, starting from the button's side.
@@ -33,8 +44,8 @@ function wipe(ox, oy, W, H) {
       const along = front + w;
       pts.push([cx + dx * along + px * s, cy + dy * along + py * s]);
     }
-    pts.push([cx + dx * -D * 2 + px * D, cy + dy * -D * 2 + py * D], [cx + dx * -D * 2 - px * D, cy + dy * -D * 2 - py * D]);
-    return 'polygon(' + pts.map(([x, y]) => x.toFixed(1) + 'px ' + y.toFixed(1) + 'px').join(',') + ')';
+    pts.push([cx + dx * -D * 3 + px * D, cy + dy * -D * 3 + py * D], [cx + dx * -D * 3 - px * D, cy + dy * -D * 3 - py * D]);
+    return curve(pts);
   };
   return [at(-D * 0.75), at(rnd(-0.2, 0.1) * D), at(D * 0.8)];
 }
@@ -48,7 +59,7 @@ export function flipTheme(btn, apply) {
   document.documentElement.classList.add('flipping');
   const t = document.startViewTransition(apply);
   t.ready.then(() => {
-    document.documentElement.animate({ clipPath: frames, offset: [0, rnd(0.35, 0.55), 1] }, { duration: rnd(620, 820), easing: 'cubic-bezier(.45,.05,.25,1)', pseudoElement: '::view-transition-new(root)' });
+    document.documentElement.animate({ clipPath: frames, offset: [0, rnd(0.35, 0.55), 1] }, { duration: rnd(1400, 1750), easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' });
   }).catch(() => {});
   t.finished.finally(() => document.documentElement.classList.remove('flipping'));
 }
