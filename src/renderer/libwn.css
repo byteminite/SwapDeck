@@ -65,3 +65,11 @@
 .wn-s li::before{top:14px;background:rgb(var(--hue));box-shadow:0 0 8px rgba(var(--hue),.6)}
 .wn-v.on{background:linear-gradient(90deg,rgba(var(--accent-rgb),.16),rgba(var(--accent-rgb),.04));box-shadow:inset 3px 0 0 var(--accent)}
 .wn-pi span{color:var(--text-soft,#d4d4d8)}
+/* Calmer: no edge stripes or divider lines; colour lives in the icon tiles, counts and bullets only. */
+.wn-c::before{display:none}
+.wn-c{background:var(--ls-surface);border-color:var(--ls-line)}
+.wn-c:hover{border-color:var(--ls-line-strong)}
+.wn-s{border:0;padding:18px 20px 14px}
+.wn-s li{border-top:0;padding:4px 0 4px 18px}
+.wn-s li::before{top:11px;box-shadow:none}
+.wn-v.on{background:var(--ls-surface-2);box-shadow:none}
