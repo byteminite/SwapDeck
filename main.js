@@ -617,7 +617,7 @@ function ipc() {
     return { ok: !!url };
   });
   ipcMain.handle('open', (_, url) => {
-    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases' || url === 'https://github.com/byteminite/SwapDeck/issues/new' || url === 'https://store.steampowered.com/about/') shell.openExternal(url);
+    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases' || url === 'https://github.com/byteminite/SwapDeck/issues/new' || url === 'https://store.steampowered.com/about/' || url === 'https://munderdiffl.in/' || url === 'https://pandaos.ai/') shell.openExternal(url);
   });
 
   // ---- library ----

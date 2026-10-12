@@ -39,7 +39,8 @@ export function updatesSec(app, b) {
 
 export function aboutSec(app, b) {
   return { k: 'about', title: 'About', sub: 'Free and open source, MIT licence.', rows: [
-    { raw: html`<div class="st-about"><img class="st-logo" src="app-icon.png" alt="" draggable="false" /><div><b>SwapDeck</b><span>${b.verShort} · Steam account switcher for Windows · Made with Claude Code</span></div></div>`, q: 'about swapdeck version' },
+    { raw: html`<div class="st-about"><img class="st-logo" src="app-icon.png" alt="" draggable="false" /><div><b>SwapDeck</b><span>${b.verShort} · Steam account switcher for Windows</span></div></div>`, q: 'about swapdeck version' },
+    row('How it\'s made', 'Written by Claude with Claude Code, in Munder Difflin and PandaOS. Designed, directed and tested by byteminite.', html`<span class="st-ctl">${btn('Munder Difflin', () => window.api.openProfile('https://munderdiffl.in/'), { ic: 'external' })}${btn('PandaOS', () => window.api.openProfile('https://pandaos.ai/'), { ic: 'external' })}</span>`, '', 'how made claude code munder difflin pandaos credits'),
     row('Releases on GitHub', 'Release notes, downloads and older versions.', btn('Open', b.onAbout, { ic: 'external' })),
     row('Report a problem', 'Opens a new issue on GitHub.', btn('Report', () => window.api.openProfile('https://github.com/byteminite/SwapDeck/issues/new'), { ic: 'external' })),
   ] };
