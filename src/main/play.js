@@ -54,14 +54,14 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
 
-  async function play(id) {
+  async function play(id, asSid) {
     if (session || starting) return { ok: false, code: 'RUNNING', error: 'A game is already running through SwapDeck.' };
     if (testing) return { ok: false, error: 'A display test is running. Try again in a few seconds.' };
     starting = true;
-    try { return await start(id); } finally { starting = false; }
+    try { return await start(id, asSid); } finally { starting = false; }
   }
 
-  async function start(id) {
+  async function start(id, asSid) {
     const loc = getLoc();
     const lib = library.build(loc.dir);
     const g = lib.find(x => x.id === id);
@@ -71,7 +71,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (!g.steam && !g.installed) return { ok: false, error: 'The game\'s .exe is missing: ' + g.exe };
 
     const st = await steam.status();
-    const acc = g.steam && g.acct ? accounts().find(a => a.sid === g.acct) : null;
+    // Right-click > Play as: one launch on another account, without changing the game's own setting.
+    const pick = g.steam ? asSid || g.acct : null;
+    const acc = pick ? accounts().find(a => a.sid === pick) : null;
     const needSw = !!acc && !(st.running && st.activeSid === acc.sid);
     let mon = null, needD = false;
     const res = g.display.res ? store.resProfiles().find(p => p.id === g.display.res) || null : null;

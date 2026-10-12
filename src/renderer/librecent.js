@@ -1,7 +1,7 @@
 // Library layout: Recently played (running or last game, Jump back in, sessions by day, this week, accounts).
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
-import { card } from './libgamesvals.js';
+import { card, libList } from './libgamesvals.js';
 import { cover } from './libgames.js';
 
 const DAY = 86400000;
@@ -23,7 +23,7 @@ function hero(app, L) {
     const g = app.gfind(L.gid), a = L.acct && app.find(L.acct);
     if (g) return { g, live: true, label: 'Running now' + (a ? ' on ' + a.name : ''), text: 'Stop puts your display and sound back. It never closes the game.', a };
   }
-  const g = S.lib.filter(x => x.installed && x.lastPlayed).sort((x, y) => y.lastPlayed - x.lastPlayed)[0];
+  const g = libList(app).filter(x => x.installed && x.lastPlayed).sort((x, y) => y.lastPlayed - x.lastPlayed)[0];
   return g ? { g, live: false, label: 'Last played ' + dayLabel(g.lastPlayed, midnight(Date.now())).toLowerCase(), text: g.hours ? Math.round(g.hours).toLocaleString() + ' h played' : '' } : null;
 }
 
@@ -52,7 +52,7 @@ export function libRecentVals(app) {
   const sess = (S.sessions || []).filter(s => app.gfind(s.gid)).slice(0, 40);
   const week = sess.filter(s => s.start >= weekAgo);
   const ids = [...new Set(sess.map(s => s.gid))].filter(id => !(L && L.gid === id));
-  const rest = S.lib.filter(g => g.installed && g.lastPlayed && !ids.includes(g.id) && !(L && L.gid === g.id)).sort((x, y) => y.lastPlayed - x.lastPlayed).map(g => g.id);
+  const rest = libList(app).filter(g => g.installed && g.lastPlayed && !ids.includes(g.id) && !(L && L.gid === g.id)).sort((x, y) => y.lastPlayed - x.lastPlayed).map(g => g.id);
   const jump = [...ids, ...rest].map(id => app.gfind(id)).filter(g => g && g.installed).slice(0, 12).map(g => card(app, g, me, L));
   let day = '';
   const rows = sess.slice(0, 14).map(s => { const g = app.gfind(s.gid), a = app.find(s.sid), d = dayLabel(s.start, today), head = d !== day ? d : null; day = d;

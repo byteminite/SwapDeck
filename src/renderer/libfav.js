@@ -2,7 +2,7 @@
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { dropdown } from './libgames.js';
-import { card } from './libgamesvals.js';
+import { card, libList } from './libgamesvals.js';
 
 const SORTS = [['mine', 'Your order'], ['last', 'Last played'], ['name', 'Name']];
 let dragId = null;
@@ -16,7 +16,7 @@ function rel(ms) {
 
 // Favourites in the saved order; new favourites go to the end, removed ones drop out.
 function ordered(app) {
-  const favs = app.state.lib.filter(g => g.fav), saved = app.state.settings.favOrder || [];
+  const favs = libList(app).filter(g => g.fav), saved = app.state.settings.favOrder || [];
   const known = saved.filter(id => favs.some(g => g.id === id));
   return [...known, ...favs.filter(g => !known.includes(g.id)).map(g => g.id)].map(id => app.gfind(id));
 }
@@ -54,7 +54,7 @@ export function libFavVals(app) {
       last: run ? 'Playing now' : rel(g.lastPlayed), hours: g.hours ? Math.round(g.hours).toLocaleString() + ' h played' : '',
       playLabel: !g.installed ? 'Install' : run ? 'Running' : 'Play', onKey: keyMove, drag: dragHandlers(app, g.id, mine) };
   });
-  const sug = S.lib.filter(g => !g.fav && g.installed && g.hours).sort((x, y) => y.hours - x.hours).slice(0, 6)
+  const sug = libList(app).filter(g => !g.fav && g.installed && g.hours).sort((x, y) => y.hours - x.hours).slice(0, 6)
     .map(g => ({ name: g.name, bg: app.cardBg(g), sub: Math.round(g.hours).toLocaleString() + ' h · ' + rel(g.lastPlayed).replace('Played ', '').replace('Not played yet', 'not played yet'),
       open: () => app.openGame(g.id), add: e => { e.stopPropagation(); app.toggleFav(g.id); } }));
   const pick = k => () => app.setState({ fvSort: k, lsDd: null });
@@ -67,7 +67,7 @@ export function libFavVals(app) {
 }
 
 function favCard(c) {
-  return html`<div class="fv-card" role="listitem" tabindex="0" aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
+  return html`<div class="fv-card" role="listitem" tabindex="0" onContextMenu=${c.onMenu} aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
 <div class="fv-bg" style=${'background:' + c.hero}></div>
 ${c.flag && c.flag.label !== 'Non-Steam' ? html`<div class="fv-flags"><span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span></div>` : null}
 <div class="fv-in"><span class="fv-cv" style=${'background:' + c.bg}>${c.fallback ? html`<em>${c.name}</em>` : null}</span>

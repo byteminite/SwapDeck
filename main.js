@@ -446,6 +446,7 @@ function ipc() {
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if (Array.isArray(patch.favOrder)) allowed.favOrder = patch.favOrder.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 1000);
     if (Array.isArray(patch.spRecent)) allowed.spRecent = patch.spRecent.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 4);
+    if (Array.isArray(patch.hiddenGames)) allowed.hiddenGames = patch.hiddenGames.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 2000);
     if (Array.isArray(patch.hiddenAccts)) allowed.hiddenAccts = patch.hiddenAccts.filter(x => typeof x === 'string' && /^\d{1,20}$/.test(x)).slice(0, 200);
     if ('layout' in patch) allowed.layout = patch.layout === 'library' ? 'library' : 'classic';
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
@@ -616,6 +617,11 @@ function ipc() {
     if ('fav' in patch) allowed.fav = !!patch.fav;
     if ('note' in patch) allowed.note = String(patch.note || '').slice(0, 1000);
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
+    // Change artwork (Steam games): only files lib:pickImage copied into the covers folder, or null to go back.
+    const artFile = v => typeof v === 'string' && /^c\d{10,16}\.(jpg|jpeg|png|webp)$/.test(v) ? v : null;
+    if (g.steam && 'artCover' in patch) allowed.artCover = artFile(patch.artCover);
+    if (g.steam && 'artHero' in patch) allowed.artHero = artFile(patch.artHero);
+    if ('heroPos' in patch) allowed.heroPos = Math.max(0, Math.min(100, Math.round(Number(patch.heroPos) || 0)));
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
       ...('mode' in patch.display ? { mode: patch.display.mode === 'only' ? 'only' : 'primary' } : {}),
@@ -666,7 +672,14 @@ function ipc() {
     if (saved.cfg) store.setGameCfg(saved.rec.id, saved.cfg);
     return true;
   });
-  ipcMain.handle('game:play', (_, id) => player.play(String(id)));
+  ipcMain.handle('game:play', (_, id, asSid) => player.play(String(id), /^\d{17}$/.test(String(asSid)) ? String(asSid) : null));
+  // Right-click > Open folder: the game's install folder (Steam) or the folder its .exe is in.
+  ipcMain.handle('game:folder', (_, id) => {
+    const g = findGame(String(id)), dir = g && (g.steam ? g.folder : g.exe && path.dirname(g.exe));
+    if (!dir || !fs.existsSync(dir)) return { ok: false };
+    shell.openPath(dir);
+    return { ok: true };
+  });
   ipcMain.handle('game:stop', () => player.stop());
   ipcMain.handle('game:shortcut', (_, id) => {
     const g = findGame(String(id)); if (!g) return { ok: false, error: 'Game not found.' };

@@ -1,0 +1,30 @@
+/* Library layout: right-click menu on a game, and the Change artwork window. */
+.gm-catch{position:fixed;inset:0;z-index:63}
+.gm{position:fixed;z-index:64;width:260px;max-height:420px;display:flex;flex-direction:column;padding:6px;border-radius:14px;background:var(--surface-raised);border:1px solid var(--ls-line-strong);box-shadow:0 24px 60px var(--shadow-c);transform-origin:top left;animation:amIn .12s var(--ls-ease)}
+.gm-name{padding:8px 10px 6px;font:700 11px 'Geist',sans-serif;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-list{overflow:auto}
+.gm-it{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border-radius:9px;border:0;background:transparent;color:var(--text);font:500 13px 'Geist',sans-serif;cursor:pointer;text-align:left}
+.gm-it:hover:not(:disabled),.gm-it:focus-visible{background:var(--ls-surface-2);outline:none}
+.gm-it:disabled{color:var(--text-subtle);cursor:default}
+.gm-it.d{color:#ff9a8b}
+.gm-it.on{color:var(--accent-light)}
+.gm-it>svg{flex:none}
+.gm-ic{width:18px;display:grid;place-items:center;color:var(--text-muted);flex:none}
+.gm-it.d .gm-ic{color:#ff9a8b}
+.gm-av{width:20px;height:20px;border-radius:99px;display:grid;place-items:center;font:700 8px 'Geist',sans-serif;color:#fff;flex:none;background-size:cover!important}
+.gm-dot{width:9px;height:9px;margin:0 5px;border-radius:99px;flex:none}
+.gm-l{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-h{font:500 11.5px 'Geist',sans-serif;color:var(--text-muted);white-space:nowrap}
+.gm-more{display:flex;color:var(--text-muted);transform:rotate(-90deg)}
+.gm-back .gm-l{font-weight:700}
+.gm-sep{height:1px;margin:5px 4px;background:var(--ls-line)}
+.tm.art{width:min(720px,calc(100vw - 48px))}
+.art-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px}
+.art-cv{aspect-ratio:2/3;border-radius:12px;background-size:cover!important;background-position:center!important}
+.art-hero{aspect-ratio:1920/620;border-radius:12px}
+.art-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.art-pos{display:flex;align-items:center;gap:12px;margin-top:10px;font:600 12px 'Geist',sans-serif;color:var(--text-muted)}
+.art-pos input{flex:1;accent-color:var(--accent)}
+.tm-mut{margin-top:14px;font:500 12px 'Geist',sans-serif;color:var(--text-subtle)}
+@media (max-width:700px){.art-grid{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.gm{animation:none}}

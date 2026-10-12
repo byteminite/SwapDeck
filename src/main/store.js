@@ -27,7 +27,8 @@ const DEFAULTS = {
     hiddenAccts: [],
     hideNames: false,        // show initials instead of account names (streaming)
     libStart: 'games',       // Library layout: page shown when SwapDeck opens
-    tagMade: [],             // tags made in the Tags manager, listed even before a game uses them         // Library layout: accounts removed from SwapDeck (still saved in Steam)
+    tagMade: [],
+    hiddenGames: [],         // Library layout: games hidden from the Library (Steam still has them)             // tags made in the Tags manager, listed even before a game uses them         // Library layout: accounts removed from SwapDeck (still saved in Steam)
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)

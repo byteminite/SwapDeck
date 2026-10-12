@@ -2,6 +2,13 @@
 import { SUBS, SORTS, SOURCES, accountsOf, applyFilters, sortGames, subCounts, tagCounts, acctCounts, srcCounts } from './libgrid.js';
 import { updateBadge } from './updatebadge.js';
 import { openTags } from './libtags.js';
+import { openGameMenu } from './libmenu.js';
+
+// The Library layout's game list: everything except games hidden from the Library (right-click, Hide).
+export function libList(app) {
+  const hidden = app.state.settings.hiddenGames || [];
+  return hidden.length ? app.state.lib.filter(g => !hidden.includes(g.id)) : app.state.lib;
+}
 
 const SUB_IC = { all: 'gamepad', inst: 'drive', ni: 'download', never: 'dashed' };
 const SRC_IC = { all: 'layers', steam: 'gamepad', ns: 'app' };
@@ -32,7 +39,7 @@ export function card(app, g, me, L) {
     playLabel: g.installed ? 'Play' : 'Install', playIc: g.installed ? 'play' : 'download',
     onOpen: () => app.openGame(g.id), onInfo: stop(() => app.openGame(g.id)), onPlay: stop(() => app.play(g.id)), onFav: stop(() => app.toggleFav(g.id)),
     onKey: e => { if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); e.ctrlKey ? app.play(g.id) : app.openGame(g.id); } },
-    onMenu: null,
+    onMenu: e => openGameMenu(app, g.id, e),
   };
 }
 
@@ -46,7 +53,7 @@ function dd(app, key, label, set, opts, clearPatch, extra) {
 export function libGamesVals(app) {
   const S = app.state, f = filtersOf(S), me = app.accts.find(a => a.current), L = S.launch;
   const pick = patch => () => app.setState({ ...patch, lsDd: null });
-  const games = app.showNotInst() ? S.lib : S.lib.filter(g => g.installed);
+  const all = libList(app), games = app.showNotInst() ? all : all.filter(g => g.installed);
   const q = (S.lsQ || '').trim().toLowerCase();
   const searched = q ? games.filter(g => g.name.toLowerCase().includes(q)) : games;
   const shown = sortGames(applyFilters(searched, f), S.lsSort || 'recent', L && L.running ? L.gid : null);

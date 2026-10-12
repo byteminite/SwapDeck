@@ -12,6 +12,8 @@ import { acctMenu, acctPage } from './libacct.js';
 import { libSpotVals, spotOverlay, openSpot } from './libspot.js';
 import { settingsPage } from './libset.js';
 import { libTagsVals, tagsOverlay } from './libtags.js';
+import { libMenuVals, gameMenu } from './libmenu.js';
+import { libArtVals, artOverlay } from './libart.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -47,6 +49,7 @@ export function libShellVals(app, gv, dw) {
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings('general'), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => openSpot(app), onBell: () => {}, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
+      gm: S.gm && libMenuVals(app) ? gameMenu(libMenuVals(app)) : null, art: S.art && libArtVals(app) ? artOverlay(libArtVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
       contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),

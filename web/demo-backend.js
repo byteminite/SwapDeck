@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tagMade: [], hiddenGames: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -228,10 +228,10 @@
     return { ok: true };
   }
 
-  async function play(id) {
+  async function play(id, asSid) {
     const g = findGame(id); if (!g) return { ok: false, error: 'Game not found.' };
     if (session) return { ok: false, code: 'RUNNING', error: 'A game is already running. Stop tracking it first.' };
-    const acct = g.acct && accounts.find(a => a.sid === g.acct);
+    const pickA = g.steam ? asSid || g.acct : null, acct = pickA && accounts.find(a => a.sid === pickA);
     const mon = g.display.mon && monitors.find(m => m.id === g.display.mon);
     const res = g.display.res && resProfiles.find(p => p.id === g.display.res);
     const dev = g.audio && audio.find(d => d.id === g.audio);
@@ -367,6 +367,9 @@
       if (Array.isArray(patch.tags)) g.tags = patch.tags.map(String).slice(0, 12);
       if ('fav' in patch) g.fav = !!patch.fav;
       if ('note' in patch) g.note = String(patch.note || '').slice(0, 1000);
+      if (g.steam && 'artCover' in patch) { g._cover = g._cover || g.cover; g.cover = patch.artCover ? covers[patch.artCover] || g._cover : g._cover; g.artCover = !!patch.artCover; }
+      if (g.steam && 'artHero' in patch) { g._hero = g._hero || g.hero; g.hero = patch.artHero ? covers[patch.artHero] || g._hero : g._hero; g.artHero = !!patch.artHero; }
+      if ('heroPos' in patch) g.heroPos = Math.max(0, Math.min(100, +patch.heroPos || 0));
       return clone(g);
     },
     libPickExe: () => pick('exe', 'Choosing files'), libPickImage: () => pick('image', 'Choosing files'), libPickApp: () => pick('app', 'Choosing files'),
@@ -381,7 +384,8 @@
       return id;
     },
     libRemoveCustom: async () => null, libRestoreCustom: async () => null,
-    play: id => play(String(id)),
+    play: (id, asSid) => play(String(id), asSid || null),
+    gameFolder: async () => no('Folders'),
     stopGame: async () => stopGame(),
     shortcut: async () => ({ ok: false, error: DEMO }),
     displays: async () => clone(monitors),

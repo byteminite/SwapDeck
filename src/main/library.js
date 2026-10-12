@@ -41,8 +41,10 @@ function steamGame(dir, id, appid, name, installed, extra) {
     id, steam: true, appid, name, installed, folder: extra.folder || null, owners,
     acct: acctAuto ? owners[0] : cfg.acct, acctAuto,
     opts: cfg.opts || '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, launcher: cfg.launcher || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
-    cover: installed ? art(dir, appid, 'library_600x900.jpg') : CDN + appid + '/library_600x900.jpg',
-    hero: installed ? art(dir, appid, 'library_hero.jpg') : CDN + appid + '/library_hero.jpg',
+    // Change artwork: the owner's own cover or banner wins over Steam's; heroPos is the banner's vertical position.
+    cover: cfg.artCover ? 'sdimg://cover/' + encodeURIComponent(cfg.artCover) : installed ? art(dir, appid, 'library_600x900.jpg') : CDN + appid + '/library_600x900.jpg',
+    hero: cfg.artHero ? 'sdimg://cover/' + encodeURIComponent(cfg.artHero) : installed ? art(dir, appid, 'library_hero.jpg') : CDN + appid + '/library_hero.jpg',
+    artCover: !!cfg.artCover, artHero: !!cfg.artHero, heroPos: Number.isFinite(cfg.heroPos) ? cfg.heroPos : 30,
     logo: installed ? art(dir, appid, 'logo.png') : CDN + appid + '/logo.png',
     lastPlayed: Math.max(extra.play.last || 0, cfg.lastPlayed || 0), hours: Math.max(Math.round((extra.play.mins || 0) / 6) / 10, extra.hours || 0),
   };

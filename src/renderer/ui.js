@@ -434,6 +434,8 @@ class App extends Component {
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
       if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
+      if (S.gm) return this.setState({ gm: S.gm.sub ? { ...S.gm, sub: null } : null });
+      if (S.art) return this.setState({ art: null });
       if (S.lsSpot) return this.setState({ lsSpot: false });
       if (S.lsDd) return this.setState({ lsDd: null });
       if (S.lsMenu) return this.setState({ lsMenu: false });
@@ -1094,12 +1096,12 @@ class App extends Component {
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
 
-  async play(gid) {
+  async play(gid, asSid) {
     const g = this.gfind(gid), S = this.state; if (!g) return;
     if (S.launch) { this.toast('warning', 'A game is already running', 'Stop tracking it first, or quit it.'); return; }
     if (g.steam && this.steamState === 'not-found') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings to launch Steam games.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return; }
     this.setState({ gd: null, acctMenu: false, hovG: null });
-    const r = await api.play(gid);
+    const r = await api.play(gid, asSid);
     if (r.install) { this.toast('info', 'Opening Steam to install', g.name + " isn't installed. Steam's install dialog is opening."); return; }
     if (!r.ok && !r.cancelled) {
       if (this.busyToast(r)) return;

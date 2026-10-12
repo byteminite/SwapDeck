@@ -2,7 +2,8 @@
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { searchAll, resultOrder } from './libsearch.js';
-import { card } from './libgamesvals.js';
+import { card, libList } from './libgamesvals.js';
+import { openGameMenu } from './libmenu.js';
 import { libSwitch } from './libacctvals.js';
 import { updatingGames } from './libupd.js';
 import { accountsOf } from './libgrid.js';
@@ -37,7 +38,7 @@ function actionList(app) {
 export function libSpotVals(app) {
   const S = app.state; if (!S.lsSpot) return null;
   const me = app.accts.find(a => a.current), L = S.launch, q = S.spQ || '', cat = S.spCat || 'all';
-  const games = app.showNotInst() ? S.lib : S.lib.filter(g => g.installed);
+  const all = libList(app), games = app.showNotInst() ? all : all.filter(g => g.installed);
   const acts = actionList(app), tags = app.tagOrder().filter(t => games.some(g => (g.tags || []).includes(t)));
   const r = searchAll({ q, cat, tags, actions: acts, accounts: app.accts.map(a => ({ id: a.id, name: a.name })),
     games: games.map(g => ({ id: g.id, name: g.name, tags: g.tags, owners: accountsOf(g), acct: g.acct, installed: g.installed, lastPlayed: g.lastPlayed })) });
@@ -47,6 +48,7 @@ export function libSpotVals(app) {
     const st = c.flag && c.flag.label !== 'Non-Steam' ? c.flag.label : played(g.lastPlayed);
     return { name: g.name, cap: app.cardBg(g), hero: g.steam && g.hero ? 'url("' + g.hero + '") center 30%/cover no-repeat,' + app.gradOf(g) : app.cardBg(g), line: c.hint + ' · ' + st, why: r.why[id],
       playLabel: c.flag && c.flag.cls === 'run' ? 'Running' : c.playLabel, playIc: c.playIc,
+      menu: e => { close(); openGameMenu(app, g.id, e); },
       run: () => { remember(g.name); close(); app.openGame(g.id); }, play: () => { remember(g.name); close(); app.play(g.id); } }; };
   const acct = id => { const a = app.find(id);
     return { name: a.name, ini: a.avatar ? '' : a.ini, bg: avBg(a), cur: a.current, line: a.current ? 'Signed in now' : (a.linked ? 'Saved account' : 'Not connected for stats'),
@@ -82,7 +84,7 @@ export function spotOverlay(P) {
   const top = P.top ? html`<div class="sp-sec">Top result</div><div role="button" tabindex="-1" class=${'sp-top' + (P.top.sel ? ' sel' : '')} style=${'background:' + P.top.hero} onClick=${P.top.pick}><div class="sp-tm"><div class="sp-k">GAME</div><b>${hl(P.top.name, q)}</b><span>${P.top.line}</span></div>
 <button class="sp-pl" disabled=${P.top.playLabel === 'Running'} onClick=${e => { e.stopPropagation(); P.top.play(); }}>${icon(P.top.playIc, 14)}${P.top.playLabel}</button></div>` : null;
   const covers = P.covers.length ? html`<div class="sp-sec">Recently played</div><div class="sp-covers">${P.covers.map(c => html`<button class=${'sp-cv' + (c.sel ? ' sel' : '')} tabindex="-1" onClick=${c.pick}><i style=${'background:' + c.cap}></i><span>${c.name}</span></button>`)}</div>` : null;
-  const row = (x, lead, name, line, h) => html`<button class=${'sp-it' + (x.sel ? ' sel' : '')} tabindex="-1" onClick=${x.pick}>${lead}<span class="sp-m"><b>${name}</b>${line ? html`<span>${line}</span>` : null}</span>${x.why ? html`<span class="sp-why">${x.why}</span>` : null}${hint(h)}</button>`;
+  const row = (x, lead, name, line, h) => html`<button class=${'sp-it' + (x.sel ? ' sel' : '')} tabindex="-1" onClick=${x.pick} onContextMenu=${x.menu}>${lead}<span class="sp-m"><b>${name}</b>${line ? html`<span>${line}</span>` : null}</span>${x.why ? html`<span class="sp-why">${x.why}</span>` : null}${hint(h)}</button>`;
   const games = P.gameRows.length ? html`<div class="sp-sec">${P.gamesHead}</div>${P.gameRows.map(g => row(g, html`<span class="sp-cap" style=${'background:' + g.cap}></span>`, hl(g.name, q), g.line, 'Open'))}` : null;
   const accts = P.acctRows.length ? html`<div class="sp-sec">Accounts</div>${P.acctRows.map(a => row(a, html`<span class="sp-av" style=${'background:' + a.bg}>${a.ini}</span>`, html`${a.cur ? '' : 'Switch to '}${hl(a.name, q)}`, a.line, a.cur ? 'Details' : 'Switch'))}` : null;
   const acts = P.actRows.length ? html`<div class="sp-sec">Actions</div>${P.actRows.map(x => row(x, html`<span class="sp-ic">${icon(x.ic, 15)}</span>`, hl(x.label, q), '', 'Run'))}` : null;

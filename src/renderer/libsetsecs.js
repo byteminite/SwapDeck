@@ -22,6 +22,14 @@ function hiddenAccts(app) {
   return row('Hidden accounts', 'Removed from SwapDeck, still saved in Steam.', list, 'col', 'hidden accounts removed show again');
 }
 
+function hiddenGames(app) {
+  const S = app.state, ids = (S.settings.hiddenGames || []).filter(id => S.lib.some(g => g.id === id));
+  if (!ids.length) return null;
+  const show = id => app.setCfg({ hiddenGames: (S.settings.hiddenGames || []).filter(x => x !== id) });
+  const list = html`<div class="st-list">${ids.map(id => { const g = S.lib.find(x => x.id === id); return html`<div class="st-li"><b>${g.name}</b><span>${g.installed ? 'Installed' : 'Not installed'}</span>${btn('Show again', () => show(id))}</div>`; })}</div>`;
+  return row('Hidden games', 'Hidden from the Library with right-click. Steam still has them.', list, 'col', 'hidden games show again');
+}
+
 export function generalSec(app, b) {
   const cfg = app.state.settings, start = app.state.settings.libStart || 'games';
   const defDd = { label: b.defName, set: false, open: !!b.defMenu, right: true, toggle: b.onDefMenu, clear: () => {}, opts: (b.defOpts || []).map(o => ({ label: o.name, on: o.sel, pick: o.on })) };
@@ -36,6 +44,7 @@ export function generalSec(app, b) {
     row('Start with Windows', b.swSub, tg(cfg.startup, b.onSw, 'Start with Windows')),
     row('Tags', (() => { const t = app.tagOrder(); return t.length ? t.length + (t.length === 1 ? ' tag: ' : ' tags: ') + t.join(', ') : 'No tags yet.'; })(), btn('Manage tags', () => openTags(app), { ic: 'tags' }), '', 'tags group colour color rename delete manage'),
     hiddenAccts(app),
+    hiddenGames(app),
     row('Backup', 'Tags, notes, games, display and resolution profiles. Sign-ins and passwords are never included.', html`<div class="st-ctl">${btn('Export', b.onExport, { ic: 'download' })}${btn('Import', b.onImport, { ic: 'refresh' })}</div>`),
   ].filter(Boolean) };
 }
