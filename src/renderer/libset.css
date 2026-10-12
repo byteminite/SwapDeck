@@ -104,9 +104,7 @@
 .st-about{display:flex;align-items:center;gap:18px;padding:20px}
 .st-about b{font:700 20px 'Geist',sans-serif}
 .st-about span{display:block;font:500 13px 'Geist',sans-serif;color:var(--text-muted);margin-top:3px}
-.st-logo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#fff,#cfd2d8);display:grid;place-items:center;flex:none}
-.st-logo i{width:28px;height:28px;border-radius:8px;background:#141416;position:relative}
-.st-logo i::after{content:'';position:absolute;right:-6px;bottom:-6px;width:16px;height:16px;border-radius:5px;background:#55565c}
+.st-logo{width:64px;height:64px;flex:none;display:block}
 .st-spin{width:13px;height:13px;border-radius:99px;border:2px solid rgba(var(--fg-rgb),.2);border-top-color:var(--accent);animation:spin .8s linear infinite}
 .st-none{padding:30px;text-align:center;font:500 13.5px 'Geist',sans-serif;color:var(--text-muted);border:1px dashed var(--ls-line-strong);border-radius:16px}
 .stp button:focus-visible,.stp input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

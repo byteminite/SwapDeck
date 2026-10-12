@@ -39,7 +39,7 @@ export function updatesSec(app, b) {
 
 export function aboutSec(app, b) {
   return { k: 'about', title: 'About', sub: 'Free and open source, MIT licence.', rows: [
-    { raw: html`<div class="st-about"><span class="st-logo"><i></i></span><div><b>SwapDeck</b><span>${b.verShort} · Steam account switcher for Windows · Made with Claude Code</span></div></div>`, q: 'about swapdeck version' },
+    { raw: html`<div class="st-about"><img class="st-logo" src="app-icon.png" alt="" draggable="false" /><div><b>SwapDeck</b><span>${b.verShort} · Steam account switcher for Windows · Made with Claude Code</span></div></div>`, q: 'about swapdeck version' },
     row('Releases on GitHub', 'Release notes, downloads and older versions.', btn('Open', b.onAbout, { ic: 'external' })),
     row('Report a problem', 'Opens a new issue on GitHub.', btn('Report', () => window.api.openProfile('https://github.com/byteminite/SwapDeck/issues/new'), { ic: 'external' })),
   ] };
