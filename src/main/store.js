@@ -24,7 +24,9 @@ const DEFAULTS = {
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
     favOrder: [],            // Library layout: favourite game ids in the owner's own order
     spRecent: [],            // Library layout: last 4 Ctrl K searches
-    hiddenAccts: [],         // Library layout: accounts removed from SwapDeck (still saved in Steam)
+    hiddenAccts: [],
+    hideNames: false,        // show initials instead of account names (streaming)
+    libStart: 'games',       // Library layout: page shown when SwapDeck opens         // Library layout: accounts removed from SwapDeck (still saved in Steam)
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)

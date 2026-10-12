@@ -92,6 +92,13 @@ function unlock(password) {
   return { ok: true };
 }
 
+// Lock now: forget the key until the master password is typed again (auto-unlock only applies at startup).
+function lock() {
+  if (!vault) return;
+  key = null;
+  unlocked = false;
+}
+
 function writeVault() { fs.writeFileSync(file, JSON.stringify(vault)); }
 
 // Build a fresh master vault. Caller must re-encrypt existing secrets around this
@@ -135,4 +142,4 @@ function disable() {
   try { fs.unlinkSync(file); } catch {}
 }
 
-module.exports = { load, encrypt, decrypt, status, isLocked, unlock, enable, change, disable, setAutoUnlock, mode };
+module.exports = { load, encrypt, decrypt, status, isLocked, unlock, lock, enable, change, disable, setAutoUnlock, mode };

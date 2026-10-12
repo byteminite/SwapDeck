@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('api', {
   installUpdate: () => invoke('update:install'),
   vaultStatus: () => invoke('vault:status'),
   vaultUnlock: pw => invoke('vault:unlock', pw),
+  vaultLock: () => invoke('vault:lock'),
   vaultSet: (pw, autoUnlock) => invoke('vault:set', pw, autoUnlock),
   vaultChange: (oldPw, newPw) => invoke('vault:change', oldPw, newPw),
   vaultRemove: pw => invoke('vault:remove', pw),

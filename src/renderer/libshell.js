@@ -5,7 +5,7 @@ import { icon } from './libicons.js';
 import { launchScreen, switchScreen, nowPlaying } from './liblaunch.js';
 
 function rail(L) {
-  const btn = (k, ic, tip, on, badge) => html`<button class=${'ls-rbtn' + (L.page === k ? ' on' : '')} aria-label=${tip} aria-current=${L.page === k ? 'page' : null} onClick=${on}>${icon(ic)}${badge ? html`<span class="ls-badge">${badge}</span>` : null}<span class="ls-tip">${tip}</span></button>`;
+  const btn = (k, ic, tip, on, badge) => html`<button class=${'ls-rbtn' + (L.page === k && !L.setOn ? ' on' : '')} aria-label=${tip} aria-current=${L.page === k && !L.setOn ? 'page' : null} onClick=${on}>${icon(ic)}${badge ? html`<span class="ls-badge">${badge}</span>` : null}<span class="ls-tip">${tip}</span></button>`;
   return html`<nav class="ls-rail" aria-label="Main">
 <button class="ls-logo" aria-label="Recently played" onClick=${() => L.go('recent')}><i></i></button>
 <button class="ls-rbtn" aria-label="Search" onClick=${L.onSearch}>${icon('search')}<span class="ls-tip">Search  Ctrl K</span></button>
@@ -15,7 +15,7 @@ ${btn('fav', 'heart', 'Favourites', () => L.go('fav'))}
 ${btn('games', 'grid', 'Library', () => L.go('games'))}
 ${btn('upd', 'refresh', 'Updates', () => L.go('upd'), L.updCount)}
 <div class="ls-grow"></div>
-<button class="ls-rbtn" aria-label="Settings" onClick=${L.onSettings}>${icon('settings')}<span class="ls-tip">Settings</span></button>
+<button class=${'ls-rbtn' + (L.setOn ? ' on' : '')} aria-label="Settings" aria-current=${L.setOn ? 'page' : null} onClick=${L.onSettings}>${icon('settings')}<span class="ls-tip">Settings</span></button>
 </nav>`;
 }
 
@@ -36,5 +36,7 @@ function placeholder(L) {
 
 export function libShell(b) {
   const L = b.ls;
-  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.content || placeholder(L)}</main></div>${L.menu}${L.spot}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
+  // Lock now: nothing of the library stays on screen (or in the page) behind the lock screen.
+  if (b.lockOn) return null;
+  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</main></div>${L.menu}${L.spot}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
 }

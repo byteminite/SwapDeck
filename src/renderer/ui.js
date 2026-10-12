@@ -264,12 +264,14 @@ class App extends Component {
   decorate(a) {
     const s = this.state.steam;
     const current = s.running ? a.sid === s.activeSid : !!(s.autoLoginUser && a.login.toLowerCase() === s.autoLoginUser.toLowerCase());
-    return { ...a, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
+    // Hide account names (Settings, Security) swaps every name for its initials.
+    const shown = this.state.settings.hideNames ? initials(a.name) : a.name;
+    return { ...a, name: shown, realName: a.name, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
   }
   get accts() {
-    const hid = this.state.settings.hiddenAccts;
-    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam || this._accHid !== hid) {
-      this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accHid = hid;
+    const hid = this.state.settings.hiddenAccts, hn = !!this.state.settings.hideNames;
+    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam || this._accHid !== hid || this._accHn !== hn) {
+      this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accHid = hid; this._accHn = hn;
       // Accounts removed from SwapDeck stay saved in Steam; the one Steam is signed in to always shows.
       const hidden = new Set(hid || []);
       this._accts = this.state.accounts.map(a => this.decorate(a)).filter(a => !hidden.has(a.sid) || a.current);
@@ -655,6 +657,10 @@ class App extends Component {
     const v = await api.vaultAutoUnlock(on);
     this.setState({ vault: v });
     this.toast('info', on ? 'Auto-unlock on' : 'Auto-unlock off', on ? "SwapDeck won't ask for the master password on this PC." : 'SwapDeck will ask for the master password at launch.');
+  }
+  async lockNow() {
+    const vault = await api.vaultLock();
+    if (vault && vault.locked) this.setState({ locked: true, vault, setOpen: false, unlockPw: '', unlockErr: false });
   }
   async unlock() {
     const pw = this.state.unlockPw; if (!pw) return;

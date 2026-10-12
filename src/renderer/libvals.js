@@ -10,6 +10,7 @@ import { libUpdVals, updPage, updatingGames } from './libupd.js';
 import { acctMenuVals, acctPageVals } from './libacctvals.js';
 import { acctMenu, acctPage } from './libacct.js';
 import { libSpotVals, spotOverlay, openSpot } from './libspot.js';
+import { settingsPage } from './libset.js';
 const CONTENT = {
   games: app => gamesPage(libGamesVals(app).lsGames),
   recent: app => recentPage(libRecentVals(app)),
@@ -30,23 +31,24 @@ function gameSub(app, id) {
 
 export function libShellVals(app, gv, dw) {
   if (!isLibLayout(app)) return { libLayout: false };
-  const S = app.state, page = S.libPage || 'games', me = app.accts.find(a => a.current) || app.accts[0];
+  const S = app.state, page = S.libPage || S.settings.libStart || 'games', me = app.accts.find(a => a.current) || app.accts[0];
   const meta = PAGES.find(p => p[0] === page) || PAGES[0];
-  const go = k => app.setState({ libPage: k, gd: null, drawerId: null, lsMenu: false, lgTab: 'ov', gdTab: 'ov' });
-  const onGame = !!(S.gd && gv && gv.gdOn), ap = !onGame && dw ? acctPageVals(app, dw) : null;
+  const go = k => app.setState({ libPage: k, gd: null, drawerId: null, setOpen: false, rp: null, hkRec: false, lsMenu: false, lgTab: 'ov', gdTab: 'ov' });
+  const onSet = !!S.setOpen, onGame = !onSet && !!(S.gd && gv && gv.gdOn), ap = !onSet && !onGame && dw ? acctPageVals(app, dw) : null;
   const updCount = updatingGames(app).length;
   return {
     libLayout: true,
     ls: {
       page, go, updCount: updCount || null,
-      hiName: me ? 'Hi, ' + me.name + '!' : 'Hi there!', hiSub: onGame ? gameSub(app, S.gd) : ap ? 'Account details' : meta[2], pageTitle: meta[1],
-      pills: PAGES.map(([k, label]) => ({ label, on: page === k && !ap, go: () => go(k) })),
+      hiName: me ? 'Hi, ' + me.name + '!' : 'Hi there!', hiSub: onSet ? 'Settings' : onGame ? gameSub(app, S.gd) : ap ? 'Account details' : meta[2], pageTitle: meta[1],
+      pills: PAGES.map(([k, label]) => ({ label, on: page === k && !ap && !onSet, go: () => go(k) })),
       meIni: me ? (me.avatar ? '' : me.ini) : '+', meBg: me ? (me.avatar ? 'url("' + me.avatar + '") center/cover no-repeat,#111' : me.grad) : 'rgba(var(--fg-rgb),.1)',
       meOnline: !!(me && me.current),
-      onSettings: () => app.openSettings(), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
+      onSettings: () => app.openSettings('general'), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => openSpot(app), onBell: () => {}, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
-      contentRef: app.lsContentRef, content: onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
+      setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
+      contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },
   };
 }

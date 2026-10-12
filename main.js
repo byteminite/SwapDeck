@@ -419,6 +419,8 @@ function ipc() {
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
+    if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
+    if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
     if (patch.tagColor && typeof patch.tagColor === 'object') allowed.tagColors = withTagColor(patch.tagColor);
     let keyError = null;
@@ -459,6 +461,7 @@ function ipc() {
   });
   ipcMain.handle('vault:status', () => store.vault.status());
   ipcMain.handle('vault:unlock', (_, password) => store.vault.unlock(String(password)));
+  ipcMain.handle('vault:lock', () => { store.vault.lock(); return store.vault.status(); });
   ipcMain.handle('vault:set', (_, password, autoUnlock) => {
     if (store.vault.mode() === 'master') return { ok: false, error: 'A master password is already set.' };
     if (!password || String(password).length < 4) return { ok: false, error: 'Use at least 4 characters.' };
@@ -554,7 +557,7 @@ function ipc() {
     return { ok: !!url };
   });
   ipcMain.handle('open', (_, url) => {
-    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases') shell.openExternal(url);
+    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases' || url === 'https://github.com/byteminite/SwapDeck/issues/new') shell.openExternal(url);
   });
 
   // ---- library ----
@@ -677,7 +680,7 @@ function ipc() {
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
-      accounts: accs.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
+      accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
         .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
     };

@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], hideNames: false, libStart: 'games', tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -325,6 +325,7 @@
     installUpdate: async () => {},
     vaultStatus: async () => state().vault,
     vaultUnlock: async () => ({ ok: true }),
+    vaultLock: async () => ({ mode: 'dpapi', locked: false }),
     vaultSet: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultChange: async () => ({ ok: false, error: 'Not in the browser demo.' }),
     vaultRemove: async () => ({ ok: false, error: 'Not in the browser demo.' }),
