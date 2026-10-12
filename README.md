@@ -7,7 +7,7 @@
 **Switch Steam accounts in one click, and launch every game with the right account, monitor, resolution and sound.**<br>
 Built for people who keep separate FPS, sim racing and horror accounts. Your Minecraft modpacks fit in too.
 
-[![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made) [![Made in Munder Difflin](https://img.shields.io/badge/made%20in-Munder%20Difflin-f5b942?style=flat-square)](https://munderdiffl.in/)
+[![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made) [![Made in Munder Difflin](https://img.shields.io/badge/made%20in-Munder%20Difflin-f5b942?style=flat-square)](https://munderdiffl.in/) [![Made with PandaOS](https://img.shields.io/badge/made%20with-PandaOS-7c5cf0?style=flat-square)](https://pandaos.ai/)
 
 ### [⬇ Download the latest release](https://github.com/byteminite/SwapDeck/releases/latest) · [▶ Try it in your browser](https://byteminite.github.io/SwapDeck/)
 
@@ -30,7 +30,7 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
-  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck's Library layout: a heart on a cover bursts into a favourite, Counter-Strike 2's page opens and its Achievements tab slides in, the Source filter shows Minecraft modpacks, Play starts Fabulously Optimized with its setup steps, then the light and dark switch pours the other colours in">
+  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck's Library layout: a heart on a cover bursts into a favourite, Phasmophobia's page opens and its Achievements tab slides in with rarity and two accounts, the Source filter shows Minecraft modpacks, Play starts Fabulously Optimized with its setup steps, then the light and dark switch pours the other colours in">
 </picture>
 
 <sub>The real app: covers, a game page, Minecraft modpacks, Play, and one click from dark to light</sub>
@@ -352,7 +352,7 @@ with `SwapDeck-Setup-X.Y.Z.exe`, its `.blockmap` and `latest.yml`. Installed cop
 
 SwapDeck is vibe coded: it was designed, directed and tested by me ([@byteminite](https://github.com/byteminite)), and the code was
 written by **Claude**, Anthropic's AI, using [Claude Code](https://claude.com/claude-code) running in
-[Munder Difflin](https://munderdiffl.in/), a free, open source multi-agent harness. That includes the app, the native display
+[Munder Difflin](https://munderdiffl.in/), a free, open source multi-agent harness, and [PandaOS](https://pandaos.ai/). That includes the app, the native display
 and sound helpers, the browser demo, this README and its animated demo. Every feature was tried on a real setup (multiple
 accounts, three monitors, sim racing gear, Minecraft modpacks) before it shipped, and the full source is here for anyone to read.
 
