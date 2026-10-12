@@ -434,6 +434,7 @@ class App extends Component {
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
       if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
+      if (S.lsNotes) return this.setState({ lsNotes: false });
       if (S.gm) return this.setState({ gm: S.gm.sub ? { ...S.gm, sub: null } : null });
       if (S.art) return this.setState({ art: null });
       if (S.lsSpot) return this.setState({ lsSpot: false });

@@ -446,6 +446,7 @@ function ipc() {
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if (Array.isArray(patch.favOrder)) allowed.favOrder = patch.favOrder.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 1000);
     if (Array.isArray(patch.spRecent)) allowed.spRecent = patch.spRecent.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 4);
+    if (Array.isArray(patch.notesRead)) allowed.notesRead = patch.notesRead.filter(x => typeof x === 'string' && x.length <= 400).slice(-200);
     if (Array.isArray(patch.hiddenGames)) allowed.hiddenGames = patch.hiddenGames.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 2000);
     if (Array.isArray(patch.hiddenAccts)) allowed.hiddenAccts = patch.hiddenAccts.filter(x => typeof x === 'string' && /^\d{1,20}$/.test(x)).slice(0, 200);
     if ('layout' in patch) allowed.layout = patch.layout === 'library' ? 'library' : 'classic';

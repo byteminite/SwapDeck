@@ -24,7 +24,7 @@ function top(L) {
 <div class="ls-hi"><b>${L.hiName}</b><span>${L.hiSub}</span></div>
 <div class="ls-pills">${L.pills.map(p => html`<button class=${'ls-pill' + (p.on ? ' on' : '')} aria-current=${p.on ? 'page' : null} onClick=${p.go}>${p.label}</button>`)}</div>
 <div class="ls-topr">
-<button class="ls-circ" aria-label="Notifications" onClick=${L.onBell}>${icon('bell', 17)}</button>
+<button class=${'ls-circ' + (L.bellOn ? ' on' : '')} aria-label=${'Notifications' + (L.bellN ? ', ' + L.bellN + ' unread' : '')} aria-expanded=${L.bellOn} onClick=${L.onBell}>${icon('bell', 17)}${L.bellN ? html`<span class="ls-cnt">${L.bellN}</span>` : null}</button>
 <button class="ls-me" aria-label="Accounts" aria-haspopup="dialog" aria-expanded=${!!L.menu} style=${'background:' + L.meBg} onClick=${L.onMe}>${L.meIni}${L.meOnline ? html`<i></i>` : null}</button>
 </div>
 </header>`;
@@ -38,5 +38,5 @@ export function libShell(b) {
   const L = b.ls;
   // Lock now: nothing of the library stays on screen (or in the page) behind the lock screen.
   if (b.lockOn) return null;
-  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</main></div>${L.menu}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
+  return html`<div class="ls">${rail(L)}<div class="ls-main">${top(L)}<main class="ls-content" ref=${L.contentRef}>${L.settings ? L.settings(b) : L.content || placeholder(L)}</main></div>${L.menu}${L.notes}${L.spot}${L.tags}${L.gm}${L.art}${L.lnBar ? nowPlaying(L.lnBar) : null}${L.lnScreen ? launchScreen(L.lnScreen) : null}${L.sw ? switchScreen(L.sw) : null}</div>`;
 }
