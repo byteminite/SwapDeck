@@ -456,6 +456,7 @@ function ipc() {
     if ('tray' in patch) allowed.tray = !!patch.tray;
     if ('showNotInstalled' in patch) allowed.showNotInstalled = !!patch.showNotInstalled;
     if ('hideNames' in patch) allowed.hideNames = !!patch.hideNames;
+    if ('obDone' in patch) allowed.obDone = !!patch.obDone;
     if ('stopPref' in patch) allowed.stopPref = ['ask', 'track', 'close'].includes(patch.stopPref) ? patch.stopPref : 'ask';
     if ('libStart' in patch) allowed.libStart = ['games', 'recent', 'fav', 'upd'].includes(patch.libStart) ? patch.libStart : 'games';
     if ('hotkeyOn' in patch) allowed.hotkeyOn = !!patch.hotkeyOn;
@@ -597,7 +598,7 @@ function ipc() {
     return { ok: !!url };
   });
   ipcMain.handle('open', (_, url) => {
-    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases' || url === 'https://github.com/byteminite/SwapDeck/issues/new') shell.openExternal(url);
+    if (/^https:\/\/steamcommunity\.com\/profiles\/\d{17}\/?$/.test(url) || url === 'https://github.com/byteminite/SwapDeck/releases' || url === 'https://github.com/byteminite/SwapDeck/issues/new' || url === 'https://store.steampowered.com/about/') shell.openExternal(url);
   });
 
   // ---- library ----

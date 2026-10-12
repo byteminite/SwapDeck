@@ -594,5 +594,5 @@ ${t.isErr ? html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" str
 ${t.hasAction ? html`<button style="margin-top:8px;padding:5px 11px;border-radius:8px;border:1px solid ${t.bd};background:transparent;color:${t.fg};font:600 11.5px 'Geist',sans-serif;cursor:pointer" onClick=${t.onAction} class="dch35">${t.actionLabel}</button>` : null}
 </div><button style="flex:none;width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--text-subtle);display:grid;place-items:center;cursor:pointer" onClick=${t.onClose} aria-label="Dismiss" class="dch36"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></div>
 `)}
-</div></div>`;
+</div>${b.obView || null}</div>`;
 }

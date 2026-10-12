@@ -54,6 +54,8 @@ export function libShellVals(app, gv, dw) {
       notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, stop: (S.stopAsk || S.stopping) && stopVals(app) ? stopOverlay(stopVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
       gm: S.gm && libMenuVals(app) ? gameMenu(libMenuVals(app)) : null, art: S.art && libArtVals(app) ? artOverlay(libArtVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
+      banner: app.steamState === 'not-found' ? { tone: 'warn', ic: 'search', text: "SwapDeck can't find Steam. Switching and Steam games need it.", act: 'Find Steam', go: () => app.browse() }
+        : !navigator.onLine ? { tone: 'warn', ic: 'alert', text: "You're offline. Switching and playing still work; news and stats come back when you reconnect." } : null,
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
       contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },

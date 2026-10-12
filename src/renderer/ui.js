@@ -14,6 +14,7 @@ import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
+import { firstOverlay, firstDue, startFirst } from './libfirst.js';
 
 const api = window.api;
 
@@ -215,7 +216,9 @@ class App extends Component {
     return st;
   }
   // What's new: once after an update. A fresh install just remembers the version without showing it.
+  // A fresh install also gets the first-start screens once.
   wnCheck(st) {
+    if (!this._obChecked) { this._obChecked = true; if (firstDue(this, st)) this.later(0, () => startFirst(this)); }
     if (this._wnDone) return this.state.wn;
     this._wnDone = true;
     const v = st.version, last = st.settings && st.settings.lastSeenVersion;
@@ -333,6 +336,7 @@ class App extends Component {
   padPress(k) {
     const S = this.state;
     if (S.locked) return;
+    if (S.ob) return; // first start: only its own buttons, no app shortcuts behind it
     const key = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k];
     if (k === 'b') return this.onKey({ key: 'Escape', target: document.body, preventDefault() {} });
     if (isLibLayout(this)) return;
@@ -430,6 +434,7 @@ class App extends Component {
   onKey(e) {
     const S = this.state, tag = (e.target && e.target.tagName || '').toLowerCase(), typing = tag === 'input' || tag === 'textarea' || tag === 'select';
     if (S.locked) return;
+    if (S.ob) return; // first start: only its own buttons, no app shortcuts behind it
     if (S.hkRec && S.setOpen && (S.setSec || 'general') === 'general' && S.settings.tray && S.settings.hotkeyOn) return this.recordHotkey(e);
     if (isLibLayout(this) && (e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && !S.setOpen && !S.link && !S.sw) { e.preventDefault(); return S.lsSpot ? this.setState({ lsSpot: false }) : openSpot(this); }
     if (e.key === 'Escape') {
@@ -1731,7 +1736,7 @@ class App extends Component {
     );
     return {
       ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...this.libraryVals(), ...gv, ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this),
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this),
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

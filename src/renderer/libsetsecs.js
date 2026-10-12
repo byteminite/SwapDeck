@@ -5,6 +5,7 @@ import { icon } from './libicons.js';
 import { dropdown } from './libgames.js';
 import { tg, seg, btn, row } from './libsetui.js';
 import { openTags } from './libtags.js';
+import { startFirst } from './libfirst.js';
 
 const START = [['games', 'My games'], ['recent', 'Recently played'], ['fav', 'Favourites'], ['upd', 'Updates']];
 
@@ -46,6 +47,7 @@ export function generalSec(app, b) {
     row('Tags', (() => { const t = app.tagOrder(); return t.length ? t.length + (t.length === 1 ? ' tag: ' : ' tags: ') + t.join(', ') : 'No tags yet.'; })(), btn('Manage tags', () => openTags(app), { ic: 'tags' }), '', 'tags group colour color rename delete manage'),
     hiddenAccts(app),
     hiddenGames(app),
+    row('Replay first start', 'Walk through the welcome screens again: Steam, accounts, layout and accent.', btn('Replay', () => startFirst(app), { ic: 'play' })),
     row('Backup', 'Tags, notes, games, display and resolution profiles. Sign-ins and passwords are never included.', html`<div class="st-ctl">${btn('Export', b.onExport, { ic: 'download' })}${btn('Import', b.onImport, { ic: 'refresh' })}</div>`),
   ].filter(Boolean) };
 }

@@ -31,6 +31,7 @@ export function gamesPage(G) {
   const bar = G.anyFilter ? html`<div class="lg-fbar">${G.shown} of ${G.total} games<button onClick=${G.clear}>Clear filters</button></div>` : null;
   const body = G.loading ? html`<div class="lg-grid">${[0, 1, 2, 3, 4, 5].map(i => html`<div class="lg-skel" style=${'animation-delay:' + i / 10 + 's'}></div>`)}</div>`
     : G.cards.length ? html`<div class="lg-grid">${G.cards.map(cover)}</div>`
-      : html`<div class="lg-empty">${G.total ? 'No games match these filters.' : 'No games yet.'}${G.total ? html`<button onClick=${G.clear}>Clear filters</button>` : null}</div>`;
+      : G.total ? html`<div class="lg-empty">No games match these filters.<button onClick=${G.clear}>Clear filters</button></div>`
+        : html`<div class="lg-empty big"><span class="lg-eic">${icon('grid', 26)}</span><b>No games yet</b><span>${G.noSteam ? "SwapDeck can't find Steam, so there are no Steam games to show. Point it to Steam, or add a game that isn't on Steam." : "Install a game in Steam and it shows up here, or add one that isn't on Steam."}</span><div class="lg-eacts">${G.noSteam ? html`<button onClick=${G.onFindSteam}>Find Steam</button>` : null}<button onClick=${G.onAdd}>${icon('plus', 15)}Add a game</button></div></div>`;
   return html`<div class="lg">${G.ddOpen ? html`<div class="lg-catch" onClick=${G.closeDd}></div>` : null}${tabs}${filters}${bar}${body}</div>`;
 }

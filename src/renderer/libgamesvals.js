@@ -21,6 +21,7 @@ function playInfo(app, g, me, run) {
   if (!g.installed) return ['Installs through Steam', false, null];
   if (run) return ['Running now', false, null];
   if (!g.steam) return ['No Steam account needed', false, null];
+  if (!app.accts.length) return ['No account yet', false, null];
   const ids = accountsOf(g), id = g.acct || (ids.includes(me && me.id) ? me.id : ids[0]), a = id && app.find(id);
   if (!a) return ['Plays on whoever is signed in', false, null];
   return a.current ? ['Plays as ' + a.name, false, a] : ['Switches to ' + a.name, true, a];
@@ -35,7 +36,7 @@ export function card(app, g, me, L) {
   return {
     id: g.id, name: g.name, bg: app.cardBg(g), ni: !g.installed, fallback: !app.coverOf(g), flag, fav: !!g.fav, hint, hintSw,
     dot: dotA ? avBg(dotA) : 'rgba(var(--fg-rgb),.14)',
-    who: !g.steam ? 'No account needed' : g.acct && dotA ? dotA.name : owners.length ? owners.map(a => a.name).join(', ') : 'Any account',
+    who: !g.steam ? 'No account needed' : !app.accts.length ? 'No account yet' : g.acct && dotA ? dotA.name : owners.length ? owners.map(a => a.name).join(', ') : 'Any account',
     playLabel: g.installed ? 'Play' : 'Install', playIc: g.installed ? 'play' : 'download',
     onOpen: () => app.openGame(g.id), onInfo: stop(() => app.openGame(g.id)), onPlay: stop(() => app.play(g.id)), onFav: stop(() => app.toggleFav(g.id)),
     onKey: e => { if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); e.ctrlKey ? app.play(g.id) : app.openGame(g.id); } },
@@ -76,6 +77,7 @@ export function libGamesVals(app) {
       q: S.lsQ || '', onQ: e => app.setState({ lsQ: e.target.value }), onAdd: () => app.openAddGame(),
       anyFilter, shown: shown.length, total: applyFilters(games, { ...f, tag: null, acct: null, src: 'all' }).length,
       clear: () => app.setState({ lsTag: null, lsAcct: null, lsSrc: 'all', lsQ: '', lsDd: null }),
+      noSteam: app.steamState === 'not-found', onFindSteam: () => app.browse(),
       loading: S.libLoading && !S.lib.length, cards: shown.map(g => card(app, g, me, L)),
     },
   };
