@@ -740,7 +740,8 @@ function ipc() {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion, stopPref: s.layout === 'library' ? s.stopPref || 'ask' : 'track' },
       accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
-      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15)
+      // Every installed game SwapDeck knows (Steam and added ones), newest played first; the panel scrolls and searches.
+      games: lib.filter(g => g.installed && !(s.layout === 'library' && (s.hiddenGames || []).includes(g.id))).sort((a, b) => b.lastPlayed - a.lastPlayed)
         .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
     };
   });

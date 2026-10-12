@@ -133,6 +133,7 @@ class Tray extends Component {
     <div style=${H + ';padding:0 8px 6px'}>PLAY</div>
     ${d.games.length > 6 ? html`<input value=${this.state.q} placeholder="Find a game" aria-label="Find a game" onInput=${e => this.setState({ q: e.target.value })} style="box-sizing:border-box;width:calc(100% - 16px);margin:0 8px 6px;height:30px;padding:0 10px;border-radius:9px;border:1px solid rgba(var(--fg-rgb),.12);background:rgba(var(--fg-rgb),.04);color:var(--text);font:500 12px 'Geist',sans-serif;outline:none" />` : null}
     <div ref=${this.listRef} onWheel=${this.listWheel} style="max-height:262px;overflow-y:auto;padding-right:2px">
+    ${d.games.length > 6 && this.state.q.trim() && !d.games.some(g => g.name.toLowerCase().includes(this.state.q.trim().toLowerCase())) ? html`<div style="padding:10px 8px;font:500 12px 'Geist',sans-serif;color:var(--text-muted)">No game called "${this.state.q.trim()}"</div>` : null}
     ${d.games.filter(g => !this.state.q.trim() || g.name.toLowerCase().includes(this.state.q.trim().toLowerCase())).map(g => {
       const dis = !!sess, upd = sess && sess.gid === g.id ? null : updateBadge(g.upd);
       return html`<div class="tp-row" style=${`display:flex;align-items:center;gap:11px;padding:6px 8px;border-radius:10px;cursor:${dis ? 'default' : 'pointer'};opacity:${dis && !(sess && sess.gid === g.id) ? .5 : 1}`} onClick=${() => !dis && this.play(g)}>
