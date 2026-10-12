@@ -87,12 +87,13 @@
 /* Light base: the pale accent and status colours made for dark backgrounds are too faint on white, so they
    darken here. The starting / switching screens stay dark, so they keep the pale ones. */
 .ls.light{--accent-light:var(--accent-strong);--ls-good:#15803d;--ls-warn:#a16207}
-.ls.light :is(.ln,.so,.ap-band,.uq-hero,.rp-hero,.gp-band,.fv-card){--accent-light:var(--accent-pale);--ls-good:#7ee8a6;--ls-warn:#ffd27a}
+.ls.light :is(.ln,.so,.ap-band,.uq-hero,.rp-hero,.gp-band,.fv-card,.lg-art){--accent-light:var(--accent-pale);--ls-good:#7ee8a6;--ls-warn:#ffd27a}
 .ls.light .wn-ver{background:linear-gradient(100deg,var(--text) 30%,rgb(var(--accent-rgb)) 75%,#a78bfa);-webkit-background-clip:text;background-clip:text}
 
 /* ".ls button{color:inherit}" above outranks a button's own colour. These buttons sit on game art or on the
    accent colour, so they must keep their own: white on art, and black or white text on accent, whichever reads. */
 .ls :is(.gp-cta,.fv-play,.ln-cta,.sp-pl,.st-btn.p){color:var(--accent-contrast)}
-.ls :is(.gp-fav,.lg-fv,.gp-chip){color:#fff}
+.ls :is(.gp-fav,.lg-fv,.gp-chip,.lg-ab){color:#fff}
+.ls .lg-ab.play{color:#111}
 .ls :is(.gp-fav,.lg-fv,.gp-chip).on{color:#ff8fa3}
 .ls .ln-note{color:#e4e4e7}
