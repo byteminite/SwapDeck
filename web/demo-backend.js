@@ -94,9 +94,9 @@
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
   });
-  const pack = (launcher, label, name, hours, ago) => ({ id: 'mc:' + launcher + ':' + name.length.toString(16).padStart(16, '0'), steam: false, pack: { launcher, label }, name,
+  const pack = (launcher, label, name, hours, ago, img) => ({ id: 'mc:' + launcher + ':' + name.length.toString(16).padStart(16, '0'), steam: false, pack: { launcher, label }, name,
     exe: ['C:', 'Users', 'you', 'AppData', 'Local', label, label + '.exe'].join(String.fromCharCode(92)), installed: true, folder: ['C:', 'Users', 'you', label, name].join(String.fromCharCode(92)), acct: null, opts: '',
-    display: {}, audio: null, apps: [], tags: [], fav: false, note: '', img: null, iconMode: 'gen', lastPlayed: now - ago, hours });
+    display: {}, audio: null, apps: [], tags: [], fav: false, note: '', img, iconMode: 'gen', lastPlayed: now - ago, hours });
   const lib = [
     game('730', 'Counter-Strike 2', 'Counter-Strike Global Offensive', 'NightOwl', 412.5, 50 * 60e3, { opts: '-novid -high +fps_max 0', display: { res: 'r1700000000001' }, tags: ['fps'], fav: true }),
     game('244210', 'Assetto Corsa', 'assettocorsa', 'ApexDrift', 186.2, 2 * D, {
@@ -114,8 +114,8 @@
     { ...game('1172470', 'Apex Legends', '', 'NightOwl', 95, 40 * D), installed: false, folder: null, acctAuto: true },
     game('690790', 'DiRT Rally 2.0', 'DiRT Rally 2.0', 'ApexDrift', 22.6, 25 * D, { tags: ['racing'] }),
     // Minecraft modpacks, as the real app finds them in Modrinth and CurseForge.
-    pack('modrinth', 'Modrinth', 'Fabulously Optimized', 12.4, 3 * D),
-    pack('curseforge', 'CurseForge', 'All the Mods 10', 31.8, 6 * D),
+    pack('modrinth', 'Modrinth', 'Fabulously Optimized', 12.4, 3 * D, 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%238a5a36%22/%3E%3Crect%20width%3D%2264%22%20height%3D%2222%22%20fill%3D%22%235bbf4a%22/%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2232%22%20y%3D%2216%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2248%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2216%22%20y%3D%2232%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%228%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2248%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2224%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%233f8f33%22/%3E%3C/svg%3E'),
+    pack('curseforge', 'CurseForge', 'All the Mods 10', 31.8, 6 * D, 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%232a2550%22/%3E%3Crect%20width%3D%2264%22%20height%3D%2222%22%20fill%3D%22%237c5cf0%22/%3E%3Crect%20x%3D%228%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2232%22%20y%3D%2216%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2248%22%20y%3D%228%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2216%22%20y%3D%2232%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2240%22%20y%3D%2240%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%228%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2248%22%20y%3D%2248%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3Crect%20x%3D%2224%22%20y%3D%2224%22%20width%3D%228%22%20height%3D%228%22%20fill%3D%22%23b9a6ff%22/%3E%3C/svg%3E'),
   ];
   const gamesList = () => lib.filter(g => g.steam).map(g => ({ appid: g.appid, name: g.name, folder: g.folder, icon: null }));
   const findGame = id => lib.find(g => g.id === id);

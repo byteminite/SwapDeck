@@ -34,7 +34,7 @@ export function card(app, g, me, L) {
   const flag = run ? { label: 'Running', cls: 'run' } : upd ? { label: upd.label, cls: upd.busy ? 'upd' : 'warn' } : !g.installed ? { label: 'Not installed', cls: '' } : !g.steam ? { label: g.pack ? g.pack.label : 'Non-Steam', cls: '' } : null;
   const stop = f => e => { e.stopPropagation(); f(); };
   return {
-    id: g.id, name: g.name, bg: app.cardBg(g), ni: !g.installed, fallback: !app.coverOf(g), flag, fav: !!g.fav, hint, hintSw,
+    id: g.id, name: g.name, bg: g.pack && g.img ? app.gradOf(g) : app.cardBg(g), packIcon: g.pack && g.img ? g.img : null, ni: !g.installed, fallback: !app.coverOf(g), flag, fav: !!g.fav, hint, hintSw,
     dot: dotA ? avBg(dotA) : 'rgba(var(--fg-rgb),.14)',
     who: !g.steam ? (g.pack ? 'Plays in ' + g.pack.label : 'No account needed') : !app.accts.length ? 'No account yet' : g.acct && dotA ? dotA.name : owners.length ? owners.map(a => a.name).join(', ') : 'Any account',
     playLabel: g.installed ? 'Play' : 'Install', playIc: g.installed ? 'play' : 'download',

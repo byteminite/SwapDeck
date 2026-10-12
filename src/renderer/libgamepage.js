@@ -2,6 +2,7 @@
 // same cards as Classic's game details, so both layouts show the same data.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { packArt } from './libgames.js';
 import { heartBurst } from './libmotion.js';
 import { gameOverview } from './gamepage.js';
 
@@ -15,7 +16,7 @@ ${P.ach ? html`<button class="gp-ach" title="Achievements" onClick=${P.ach.open}
 
 function banner(P) {
   return html`<div class=${'gp-band' + (P.isPack ? ' pack' : '')} style=${'background:' + P.heroBg}>
-${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
+${P.packIcon ? packArt(P.packIcon, 'band') : P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 <div class="gp-band-in">
 <div class="gp-who">${P.who.faces.map(f => html`<i style=${'background:' + f}></i>`)}<span>${P.who.text}</span></div>
 <div class="gp-btns">

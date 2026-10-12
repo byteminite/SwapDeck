@@ -10,10 +10,13 @@ ${d.open ? html`<div class=${'lg-ddm' + (d.right ? ' r' : '')} role="listbox">${
 </div>`;
 }
 
+// A modpack has only a small square icon: blur it big behind, show it sharp in the middle like an app icon.
+export const packArt = (src, cls = '') => html`<span class=${'pk-bg ' + cls} style=${'background-image:url("' + src + '")'}></span><span class=${'pk-ic ' + cls} style=${'background-image:url("' + src + '")'}></span>`;
+
 export function cover(c) {
   return html`<div class="lg-cover" role="button" tabindex="0" data-gid=${c.id} aria-label=${c.name} onClick=${c.onOpen} onKeyDown=${c.onKey} onContextMenu=${c.onMenu}>
 <div class=${'lg-art' + (c.ni ? ' ni' : '')} style=${'background:' + c.bg}>
-${c.fallback ? html`<div class="lg-fall">${c.name}</div>` : null}
+${c.packIcon ? packArt(c.packIcon) : c.fallback ? html`<div class="lg-fall">${c.name}</div>` : null}
 <div class="lg-shade"></div>
 ${c.flag ? html`<span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span>` : null}
 <button class=${'lg-fv' + (c.fav ? ' on' : '')} aria-label=${c.fav ? 'Remove from favourites' : 'Add to favourites'} title=${c.fav ? 'Remove from favourites' : 'Add to favourites'} onClick=${e => { if (!c.fav) heartBurst(e.currentTarget); c.onFav(e); }}>${icon('heart', 14)}</button>

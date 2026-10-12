@@ -84,3 +84,16 @@
 .lg-empty.big>span{max-width:440px}
 .lg-eic{width:60px;height:60px;border-radius:18px;display:grid;place-items:center;background:rgba(var(--accent-rgb),.12);color:var(--accent-light)}
 .lg-eacts{display:flex;gap:8px}
+
+/* Modpack art: the pack's small square icon, blurred big behind for colour, and sharp in front like an app icon. */
+.pk-bg{position:absolute;inset:-25%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.5) brightness(.75);transform:scale(1.1);pointer-events:none}
+.pk-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 40%,transparent,rgba(0,0,0,.35))}
+.pk-ic{position:absolute;left:50%;top:42%;width:58%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:18%;background-size:cover;background-position:center;
+  box-shadow:0 18px 40px -8px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.16),inset 0 1px 0 rgba(255,255,255,.25);pointer-events:none;transition:transform .3s cubic-bezier(.23,1,.32,1)}
+.lg-cover:hover .pk-ic{transform:translate(-50%,-52%) scale(1.04)}
+.pk-bg.band{inset:-40% -10%;filter:blur(40px) saturate(1.5) brightness(.6)}
+.pk-ic.band{z-index:1;top:50%;left:32px;width:148px;transform:translateY(-50%);border-radius:22px}
+.gp-band.pack .gp-band-in{left:204px}
+@media (max-height:760px){.pk-ic.band{width:116px;border-radius:18px}.gp-band.pack .gp-band-in{left:170px}}
+.pk-bg.fav{inset:-30%;filter:blur(34px) saturate(1.5) brightness(.55)}
+.ls.rm .pk-ic{transition:none}

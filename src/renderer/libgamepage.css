@@ -55,4 +55,4 @@
 .gp .gp-stats>div>div+button{order:3}
 
 /* A modpack's banner: its small icon, sharp, towards the right, over its generated colours (not stretched). */
-.gp-band.pack{background-size:auto 72%,cover,cover!important;background-position:50% 45%,center,center!important}
+.gp-band.pack{background-size:cover!important}

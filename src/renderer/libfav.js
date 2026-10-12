@@ -69,9 +69,9 @@ export function libFavVals(app) {
 
 function favCard(c) {
   return html`<div class="fv-card" data-gid=${c.id} role="listitem" tabindex="0" onContextMenu=${c.onMenu} aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
-<div class="fv-bg" style=${'background:' + c.hero}></div>
+${c.packIcon ? html`<span class="pk-bg fav" style=${'background-image:url("' + c.packIcon + '")'}></span>` : html`<div class="fv-bg" style=${'background:' + c.hero}></div>`}
 ${c.flag && c.flag.label !== 'Non-Steam' ? html`<div class="fv-flags"><span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span></div>` : null}
-<div class="fv-in"><span class="fv-cv" style=${'background:' + c.bg}>${c.fallback ? html`<em>${c.name}</em>` : null}</span>
+<div class="fv-in"><span class="fv-cv" style=${'background:' + (c.packIcon ? 'url("' + c.packIcon + '") center/cover' : c.bg)}>${c.fallback ? html`<em>${c.name}</em>` : null}</span>
 <div class="fv-m"><div class="fv-k">${icon('heart', 12)}${c.mine ? 'FAVOURITE ' + c.n : 'FAVOURITE'}</div><b>${c.name}</b>
 <div class=${'fv-s' + (c.hintSw ? ' sw' : '')}><i style=${'background:' + c.dot}></i>${c.hint}</div><div class="fv-s">${c.last}${c.hours ? ' · ' + c.hours : ''}</div></div>
 <div class="fv-act"><button class="fv-ib" aria-label="Remove from favourites" title="Remove from favourites" onClick=${c.onFav}>${icon('heart', 15)}</button>

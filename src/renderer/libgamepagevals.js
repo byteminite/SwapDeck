@@ -32,7 +32,7 @@ export function libGamePageVals(app, b) {
   const tabs = [['ov', 'Overview'], ...(ach ? [['ach', 'Achievements']] : []), ['setup', 'Setup']];
   const pct = A && A.pct != null ? A.pct : null, parts = A && /(\d+) of (\d+)/.exec(A.value || '');
   return {
-    name: g.name, isPack: !!(g.pack && g.img), noArt: b.gNoArt, ini: b.gIni, heroBg: g.pack && g.img ? 'url("' + g.img + '") 92% 50%/auto 70% no-repeat,radial-gradient(70% 140% at 85% 50%,rgba(255,255,255,.14),transparent 70%),' + app.gradOf(g) : g.steam && g.hero ? 'url("' + g.hero + '") center ' + (g.heroPos ?? 30) + '%/cover no-repeat,' + app.gradOf(g) : b.gHeroBg, who: whoLine(app, g), fav: !!g.fav,
+    name: g.name, isPack: !!(g.pack && g.img), packIcon: g.pack && g.img ? g.img : null, noArt: b.gNoArt, ini: b.gIni, heroBg: g.pack && g.img ? app.gradOf(g) : g.steam && g.hero ? 'url("' + g.hero + '") center ' + (g.heroPos ?? 30) + '%/cover no-repeat,' + app.gradOf(g) : b.gHeroBg, who: whoLine(app, g), fav: !!g.fav,
     onFav: () => app.toggleFav(g.id), onPlay: () => app.play(g.id), playLabel, playIc, playDisabled,
     onBack: () => { clearInterval(app._gTimer); app.setState({ gd: null, lgTab: 'ov', gdTab: 'ov', gShot: null, gNews: null }); },
     ach: parts ? { got: parts[1], total: parts[2], pct: pct || 0, open: setTab('ach') } : null,
