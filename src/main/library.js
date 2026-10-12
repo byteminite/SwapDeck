@@ -95,7 +95,10 @@ function build(dir) {
     out.push({
       id: p.id, steam: false, pack: { launcher: p.launcher, label: p.label }, name: p.name, exe: p.exe, installed: fs.existsSync(p.folder), folder: p.folder,
       acct: null, opts: '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
-      img: p.icon ? 'sdimg://pack/' + p.id.split(':')[2] : null, iconMode: 'gen',
+      // Change artwork: your own icon replaces the pack's, your own banner replaces the blurred one.
+      img: cfg.artCover ? 'sdimg://cover/' + encodeURIComponent(cfg.artCover) : p.icon ? 'sdimg://pack/' + p.id.split(':')[2] : null, iconMode: 'gen',
+      hero: cfg.artHero ? 'sdimg://cover/' + encodeURIComponent(cfg.artHero) : null,
+      artCover: !!cfg.artCover, artHero: !!cfg.artHero, heroPos: Number.isFinite(cfg.heroPos) ? cfg.heroPos : 30,
       // The launcher's own play time counts everything, including sessions started outside SwapDeck.
       lastPlayed: Math.max(p.lastPlayed, cfg.lastPlayed || 0), hours: Math.round(Math.max(p.secs * 1000, cfg.playMs || 0) / 360000) / 10,
     });

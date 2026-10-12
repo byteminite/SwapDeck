@@ -32,7 +32,7 @@ export function libGamePageVals(app, b) {
   const tabs = [['ov', 'Overview'], ...(ach ? [['ach', 'Achievements']] : []), ['setup', 'Setup']];
   const pct = A && A.pct != null ? A.pct : null, parts = A && /(\d+) of (\d+)/.exec(A.value || '');
   return {
-    name: g.name, isPack: !!(g.pack && g.img), packIcon: g.pack && g.img ? g.img : null, noArt: b.gNoArt, ini: b.gIni, heroBg: g.pack && g.img ? app.gradOf(g) : g.steam && g.hero ? 'url("' + g.hero + '") center ' + (g.heroPos ?? 30) + '%/cover no-repeat,' + app.gradOf(g) : b.gHeroBg, who: whoLine(app, g), fav: !!g.fav,
+    name: g.name, isPack: !!(g.pack && g.img && !g.hero), packIcon: g.pack && g.img && !g.hero ? g.img : null, noArt: b.gNoArt, ini: b.gIni, heroBg: g.pack && g.hero ? 'url("' + g.hero + '") center ' + (g.heroPos ?? 30) + '%/cover no-repeat,' + app.gradOf(g) : g.pack && g.img ? app.gradOf(g) : g.steam && g.hero ? 'url("' + g.hero + '") center ' + (g.heroPos ?? 30) + '%/cover no-repeat,' + app.gradOf(g) : b.gHeroBg, who: whoLine(app, g), fav: !!g.fav,
     onFav: () => app.toggleFav(g.id), onPlay: () => app.play(g.id), playLabel, playIc, playDisabled,
     onBack: () => { clearInterval(app._gTimer); app.setState({ gd: null, lgTab: 'ov', gdTab: 'ov', gShot: null, gNews: null }); },
     ach: parts ? { got: parts[1], total: parts[2], pct: pct || 0, open: setTab('ach') } : null,

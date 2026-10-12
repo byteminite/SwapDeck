@@ -51,7 +51,7 @@ export function libFavVals(app) {
   const cards = list.map((g, i) => {
     const c = card(app, g, me, L), run = c.flag && c.flag.cls === 'run';
     const keyMove = e => { if (!mine || !e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return c.onKey(e); e.preventDefault(); const to = ids[i + (e.key === 'ArrowLeft' ? -1 : 1)]; if (to) moveFav(app, g.id, to); };
-    return { ...c, n: i + 1, mine, run, hero: g.steam && g.hero ? 'url("' + g.hero + '") center 30%/cover no-repeat,' + app.gradOf(g) : c.bg,
+    return { ...c, hasHero: !!g.hero, n: i + 1, mine, run, hero: (g.steam || g.pack) && g.hero ? 'url("' + g.hero + '") center 30%/cover no-repeat,' + app.gradOf(g) : c.bg,
       last: run ? 'Playing now' : rel(g.lastPlayed), hours: g.hours ? Math.round(g.hours).toLocaleString() + ' h played' : '',
       playLabel: !g.installed ? 'Install' : run ? 'Running' : 'Play', onKey: keyMove, drag: dragHandlers(app, g.id, mine) };
   });
@@ -69,7 +69,7 @@ export function libFavVals(app) {
 
 function favCard(c) {
   return html`<div class="fv-card" data-gid=${c.id} role="listitem" tabindex="0" onContextMenu=${c.onMenu} aria-label=${c.name + (c.mine ? ', favourite ' + c.n + '. Alt and arrow keys move it' : '')} onClick=${c.onOpen} onKeyDown=${c.onKey} ...${c.drag}>
-${c.packIcon ? html`<span class="pk-bg fav" style=${'background-image:url("' + c.packIcon + '")'}></span>` : html`<div class="fv-bg" style=${'background:' + c.hero}></div>`}
+${c.packIcon && !c.hasHero ? html`<span class="pk-bg fav" style=${'background-image:url("' + c.packIcon + '")'}></span>` : html`<div class="fv-bg" style=${'background:' + c.hero}></div>`}
 ${c.flag && c.flag.label !== 'Non-Steam' ? html`<div class="fv-flags"><span class=${'lg-flag ' + c.flag.cls}>${c.flag.cls === 'run' ? html`<i></i>` : null}${c.flag.label}</span></div>` : null}
 <div class="fv-in"><span class="fv-cv" style=${'background:' + (c.packIcon ? 'url("' + c.packIcon + '") center/cover' : c.bg)}>${c.fallback ? html`<em>${c.name}</em>` : null}</span>
 <div class="fv-m"><div class="fv-k">${icon('heart', 12)}${c.mine ? 'FAVOURITE ' + c.n : 'FAVOURITE'}</div><b>${c.name}</b>

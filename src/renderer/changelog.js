@@ -19,6 +19,7 @@ export const CHANGELOG = [
         'Play opens the pack in its launcher, the same way the launcher\'s own desktop shortcut does',
         'The game page and Setup work like any other game: monitor, resolution, sound device, companion apps, tags, favourites and notes',
         'SwapDeck finds Minecraft once it starts and puts everything back when you close it. Stop > Close the game too closes Minecraft, not the launcher',
+        'Right-click a pack > Change artwork gives it your own icon and banner. The cover takes its colours from your icon',
         'Turn them off in Settings > General > Show Minecraft modpacks',
       ]],
       ['Good to know', [

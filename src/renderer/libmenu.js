@@ -17,7 +17,7 @@ export function openGameMenu(app, id, e) {
 export function hideGame(app, g) {
   const list = app.state.settings.hiddenGames || [];
   app.setCfg({ hiddenGames: [...list.filter(x => x !== g.id), g.id] });
-  app.toast('info', g.name + ' is hidden', 'Steam still has it. Show it again from Settings, General.', { label: 'Undo', fn: () => app.setCfg({ hiddenGames: (app.state.settings.hiddenGames || []).filter(x => x !== g.id) }) });
+  app.toast('info', g.name + ' is hidden', (g.pack ? g.pack.label : 'Steam') + ' still has it. Show it again from Settings, General.', { label: 'Undo', fn: () => app.setCfg({ hiddenGames: (app.state.settings.hiddenGames || []).filter(x => x !== g.id) }) });
 }
 
 function items(app, g) {
@@ -33,12 +33,12 @@ function items(app, g) {
     { label: 'Tags', ic: 'tags', more: true, run: sub('tags') },
     g.steam ? { label: 'Set account', ic: 'user', more: true, hint: g.acct && app.find(g.acct) ? app.find(g.acct).name : owners.length ? 'Auto' : '', run: sub('acct') } : null,
     { sep: true },
-    g.steam ? { label: 'Change artwork', ic: 'grid', run: close(() => openArt(app, g.id)) } : { label: 'Edit game', ic: 'settings', run: close(() => app.openEdit(g.id)) },
+    g.steam || g.pack ? { label: 'Change artwork', ic: 'grid', run: close(() => openArt(app, g.id)) } : { label: 'Edit game', ic: 'settings', run: close(() => app.openEdit(g.id)) },
     g.installed ? { label: 'Open folder', ic: 'drive', run: close(() => window.api.gameFolder(g.id).then(r => { if (r && !r.ok) app.toast('warning', "Couldn't open the folder", 'It may have moved or been removed.'); })) } : null,
     g.installed ? { label: 'Desktop shortcut', ic: 'external', run: close(() => app.shortcut(g, g.acct && app.find(g.acct), null)) } : null,
     g.steam ? { label: 'Store page', ic: 'external', run: close(() => window.api.openSteamPage('store', g.appid)) } : null,
     { sep: true },
-    g.steam ? { label: 'Hide from Library', ic: 'x', danger: true, run: close(() => hideGame(app, g)) } : { label: 'Remove from SwapDeck', ic: 'x', danger: true, run: close(() => app.setState({ rmId: g.id })) },
+    g.steam || g.pack ? { label: 'Hide from Library', ic: 'x', danger: true, run: close(() => hideGame(app, g)) } : { label: 'Remove from SwapDeck', ic: 'x', danger: true, run: close(() => app.setState({ rmId: g.id })) },
   ].filter(Boolean);
 }
 

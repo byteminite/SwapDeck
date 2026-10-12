@@ -641,8 +641,8 @@ function ipc() {
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
     // Change artwork (Steam games): only files lib:pickImage copied into the covers folder, or null to go back.
     const artFile = v => typeof v === 'string' && /^c\d{10,16}\.(jpg|jpeg|png|webp)$/.test(v) ? v : null;
-    if (g.steam && 'artCover' in patch) allowed.artCover = artFile(patch.artCover);
-    if (g.steam && 'artHero' in patch) allowed.artHero = artFile(patch.artHero);
+    if ((g.steam || g.pack) && 'artCover' in patch) allowed.artCover = artFile(patch.artCover);
+    if ((g.steam || g.pack) && 'artHero' in patch) allowed.artHero = artFile(patch.artHero);
     if ('heroPos' in patch) allowed.heroPos = Math.max(0, Math.min(100, Math.round(Number(patch.heroPos) || 0)));
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
