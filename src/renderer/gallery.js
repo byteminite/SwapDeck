@@ -51,7 +51,7 @@ export function galleryEl(app, tiles, accts, selId) {
     <div style=${`position:absolute;left:20px;bottom:18px;width:300px;opacity:${exp ? 1 : 0};transform:${exp ? 'translateY(0px)' : 'translateY(16px)'};transition:opacity .35s .12s,transform .5s .12s;pointer-events:${exp ? 'auto' : 'none'}`}>
       <div style="display:flex;align-items:center;gap:6px;font:500 10.5px 'Geist Mono',monospace;color:rgba(255,255,255,.72)">${ic.clock}Last used ${a.last}</div>
       <div style="font:700 23px/1.15 'Geist',sans-serif;color:#fff;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em">${a.name}</div>
-      <div style="font:500 11.5px 'Geist Mono',monospace;color:rgba(255,255,255,.7);margin-top:2px">${a.login}</div>
+      <div style="font:500 11.5px 'Geist Mono',monospace;color:rgba(255,255,255,.7);margin-top:2px">${a.loginShown || a.login}</div>
       <div style=${`display:flex;align-items:center;gap:7px;margin-top:8px;font:500 12px 'Geist',sans-serif;color:${t.stFg === 'var(--text-subtle)' ? 'rgba(255,255,255,.62)' : '#fff'}`}><span style=${`width:7px;height:7px;border-radius:99px;background:${t.stDot}`}></span>${t.stText}</div>
       <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;min-height:21px">
         ${t.tags.map(g => html`<span style=${`font:600 9.5px 'Geist Mono',monospace;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:99px;background:rgba(0,0,0,.42);color:${g.fg};border:1px solid ${g.bd};backdrop-filter:blur(6px)`}>${g.label}</span>`)}

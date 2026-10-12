@@ -271,7 +271,7 @@ class App extends Component {
     const current = s.running ? a.sid === s.activeSid : !!(s.autoLoginUser && a.login.toLowerCase() === s.autoLoginUser.toLowerCase());
     // Hide account names (Settings, Security) swaps every name for its initials.
     const shown = this.state.settings.hideNames ? initials(a.name) : a.name;
-    return { ...a, name: shown, realName: a.name, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
+    return { ...a, name: shown, realName: a.name, loginShown: this.state.settings.hideNames ? 'Login hidden' : a.login, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
   }
   get accts() {
     const hid = this.state.settings.hiddenAccts, hn = !!this.state.settings.hideNames, lay = this.state.settings.layout;
@@ -1331,6 +1331,7 @@ class App extends Component {
       onExport: async () => { const r = await api.exportBackup(); if (r.ok) this.toast('success', 'Backup saved', r.file + ' is in the folder you picked.'); else if (r.error) this.toast('error', "Couldn't save the backup", r.error); },
       onImport: async () => { const r = await api.importBackup(); if (r.ok) { await this.reload(); this.toast('success', 'Backup restored', 'Settings from ' + r.file + ' are back.'); } else if (r.error) this.toast('error', "Couldn't restore", r.error); },
       ftBg, ftX, onFt: () => this.setCfg({ followTag: !cfg.followTag }), rdBg, rdX, onRd: () => this.setCfg({ reduceMotion: !cfg.reduceMotion }),
+      hnBg: cfg.hideNames ? on : off, hnX: cfg.hideNames ? 'translateX(18px)' : 'translateX(0px)', onHn: () => this.setCfg({ hideNames: !cfg.hideNames }),
       mpIsOff: !master && !M.form, mpIsForm: !!M.form, mpIsOn: master && !M.form, mpA: M.a, mpB: M.b, mpMismatch: M.mismatch, mpErr: M.err,
       mpOld: M.old, mpOldOn: M.form === 'change' || M.form === 'remove', mpNewOn: M.form === 'set' || M.form === 'change',
       mpSaveLbl: M.form === 'change' ? 'Change password' : M.form === 'remove' ? 'Remove password' : 'Set password',
@@ -1451,12 +1452,12 @@ class App extends Component {
       onGPlay: () => this.play(g.id), onGdClose: () => { clearInterval(this._gTimer); this.setState({ gd: null, acctMenu: false, menu: null, colorFor: null, gShot: null, gNews: null }); },
       gSteam: g.steam, gNonSteam: !g.steam,
       gAcctSet: !!a, gAcctNone: !a, gAcctLabel: a ? a.name : "Don't switch", gAcctIni: a && !a.avatar ? a.ini : '', gAcctBg: a ? avBg(a) : '',
-      gAcctSub: a ? a.login + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
+      gAcctSub: a ? a.loginShown + (a.current ? ' · signed in now' : '') : 'Use whoever is signed in' + (cur ? ' (' + cur.name + ')' : ''),
       gAcctBd: S.acctMenu ? 'rgba(var(--accent-rgb),.55)' : 'rgba(var(--fg-rgb),.1)',
       gAcctHint: (g.acctAuto && a ? 'Picked for you: ' + a.name + ' is the only account that owns it. ' : '') + (a ? (a.current && this.steamState === 'running' ? 'Already signed in, so Play launches straight away.' : 'Play switches to ' + a.name + ' first, then launches.') : 'Launches on whichever account Steam is signed in with.'),
       acctMenu: S.acctMenu, onAcctMenu: () => this.setState(s => ({ acctMenu: !s.acctMenu })),
       acctOpts: [{ isNone: true, isAcct: false, label: "Don't switch", sub: 'Use whoever is signed in', cur: false, ...opt(!g.acct), on: () => this.setAcct(g.id, null) },
-        ...accs.map(x => ({ isNone: false, isAcct: true, ini: x.avatar ? '' : x.ini, grad: avBg(x), label: x.name, sub: x.login + (x.tags.length ? ' · ' + x.tags.join(', ') : ''), cur: x.current, ...opt(g.acct === x.id), on: () => this.setAcct(g.id, x.id) }))],
+        ...accs.map(x => ({ isNone: false, isAcct: true, ini: x.avatar ? '' : x.ini, grad: avBg(x), label: x.name, sub: x.loginShown + (x.tags.length ? ' · ' + x.tags.join(', ') : ''), cur: x.current, ...opt(g.acct === x.id), on: () => this.setAcct(g.id, x.id) }))],
       segDisp: [['Default', !mon, () => this.setDisp(g.id, { mon: null })], ['Choose monitor', !!mon, () => this.setDisp(g.id, { mon: g.display.mon || (other ? other.id : null) })]].map(([l, sel, on]) => ({ label: l, on, bg: sel ? 'rgba(var(--fg-rgb),.1)' : 'transparent', fg: sel ? 'var(--text)' : 'var(--text-subtle)' })),
       diagOp: mon ? 1 : .55,
       gMons: mons.map(m => {
@@ -1593,7 +1594,7 @@ class App extends Component {
     return {
       drawerOn: true, onDrawerClose: () => this.setState({ drawerId: null }), dBehindGd: !!S.gd,
       onDSeeAllGames: () => this.setState({ tab: 'games' }), onGamesBack: () => this.setState({ tab: 'overview' }),
-      dName: d.name, dLogin: d.login, dIni: d.ini, dLast: d.last, dSid: d.sid,
+      dName: d.name, dLogin: d.loginShown, dIni: d.ini, dLast: d.last, dSid: d.sid,
       dBg: 'radial-gradient(120% 120% at 10% 0%,rgba(var(--fg-rgb),.22),transparent 55%),' + d.grad,
       dHasAv: !!d.avatar, dAvBg: d.avatar ? 'url("' + d.avatar + '") center/cover no-repeat,#111' : 'rgba(0,0,0,.28)',
       dCur: d.current, dCurLabel: running ? 'CURRENT' : 'AUTO-LOGIN', dStText: stText(p), dStDot: ST[stKey(p)],
@@ -1615,7 +1616,7 @@ class App extends Component {
         this.row('Member since', (p && p.since) || dash, null, true, ld(0)),
       ],
       pcRows: [
-        this.row('Login name', d.login, null, true),
+        this.row('Login name', d.loginShown, null, true),
         this.row('SteamID64', d.sid, null, true),
         this.row('Auto-login account', d.current ? 'Yes' : 'No', d.current ? OK : NEU),
         this.row('Avatar source', d.avatarSrc === 'local' ? 'Steam local cache' : d.avatarSrc === 'profile' ? 'Public profile' : 'Generated', null, true),

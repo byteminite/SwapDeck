@@ -89,7 +89,7 @@ export function acctPageVals(app, dw) {
       opts: dw.launchOpts.map(o => ({ label: o.label, on: o.act, pick: o.on })) },
     launchNow: dw.dLaunchNow, closeLaunch: () => app.setState({ dLaunchMenu: false }),
     note: dw.dNote, noteCount: dw.dNoteCount, onNote: dw.onDNote,
-    login: d.login, sid: d.sid, copyLogin: () => copy(d.login, 'Login name'), copySid: () => copy(d.sid, 'SteamID64'),
+    login: d.loginShown, sid: d.sid, copyLogin: () => copy(d.login, 'Login name'), copySid: () => copy(d.sid, 'SteamID64'),
     pwSaved: dw.dPwSaved, onForgetPw: dw.onDForgetPw,
     updLabel: dw.dUpd, fetching: dw.dFetching, onRefresh: dw.onDRefresh, onUnlink: dw.onDUnlink,
     onForget: dw.onDForget, ...removeVals(app, d),
