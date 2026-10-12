@@ -73,16 +73,30 @@ export function libRecentVals(app) {
   };
 }
 
+// Jump back in is one row that scrolls sideways; its edges fade only where there are more games to scroll to.
+function jumpEdges(wrap) {
+  const row = wrap && wrap.querySelector('.rp-jump');
+  if (!row) return;
+  wrap.dataset.l = row.scrollLeft > 4 ? '1' : '0';
+  wrap.dataset.r = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '1' : '0';
+}
+// Re-check the edges whenever the row changes size (window resize, the side column dropping below).
+const jumpRef = el => { if (!el || el._ro) return; el._ro = new ResizeObserver(() => requestAnimationFrame(() => jumpEdges(el))); el._ro.observe(el); };
+const jumpBy = dir => e => {
+  const row = e.currentTarget.closest('.rp-jw').querySelector('.rp-jump');
+  row.scrollBy({ left: dir * Math.max(200, row.clientWidth * 0.8), behavior: 'smooth' });
+};
+
 export function recentPage(R) {
   const h = R.hero;
   const top = h ? html`<div class="rp-hero" style=${'background:' + h.bg}><div class="rp-hin"><div><span class=${'rp-lbl' + (h.live ? ' live' : '')}>${h.live ? html`<i></i>` : icon('history', 14)}${h.label}</span><h2>${h.name}</h2>${h.text ? html`<p>${h.text}</p>` : null}</div>
 <div class="rp-btns">${h.live ? html`<button class="gp-chip" onClick=${h.onStop}>${icon('x', 16)}Stop</button><button class="gp-cta" onClick=${h.onShow}>${icon('grid', 17)}Show game</button>` : html`<button class="gp-chip" onClick=${h.onOpen}>${icon('info', 16)}Details</button><button class="gp-cta" onClick=${h.onPlay}>${icon('play', 17)}Continue playing</button>`}</div></div></div>`
     : html`<div class="lg-empty">Nothing played yet. Press Play on a game and it shows up here.</div>`;
-  const jump = R.jump.length ? html`<div class="rp-h">Jump back in</div><div class="lg-grid rp-jump">${R.jump.map(cover)}</div>` : null;
+  const jump = R.jump.length ? html`<div class="rp-jw" ref=${jumpRef}><div class="rp-h">Jump back in<span class="rp-arr"><button class="prev" aria-label="Scroll left" onClick=${jumpBy(-1)}>${icon('chevron', 16)}</button><button class="next" aria-label="Scroll right" onClick=${jumpBy(1)}>${icon('chevron', 16)}</button></span></div><div class="rp-jump" onScroll=${e => jumpEdges(e.currentTarget.parentElement)}>${R.jump.map(cover)}</div></div>` : null;
   const sess = html`<div><div class="rp-h">Recent sessions <small>${R.sessN} this week · ${R.sessT}</small></div>${R.rows.length ? R.rows.map(r => html`${r.head ? html`<div class="rp-day">${r.head}</div>` : null}<button class="rp-s" onClick=${r.open}><span class="rp-cap" style=${'background:' + r.cap}></span><span class="rp-sm"><b>${r.name}</b><span><i style=${'background:' + r.dot}></i>${r.who} · ${r.time}</span></span>${r.tags.length ? html`<span class="rp-tags">${r.tags.map(([ic, l]) => html`<span class="rp-tag" title=${l}>${icon(ic, 12)}<span>${l}</span></span>`)}</span>` : null}<span class="rp-dur">${r.dur}</span></button>`) : html`<div class="rp-none">Sessions you play through SwapDeck show up here.</div>`}</div>`;
   const W = R.week;
   const week = html`<div class="rp-card"><h3>This week<span class="su-seg"><button class=${W.mode === 'h' ? 'on' : ''} onClick=${W.pick('h')}>Hours</button><button class=${W.mode === 's' ? 'on' : ''} onClick=${W.pick('s')}>Sessions</button></span></h3><div class="rp-big">${W.total}<small>${W.sub}</small></div>
 <div class="rp-bars">${W.bars.map(b => html`<div class=${b.today ? 'today' : ''}><em>${b.v}</em><i style=${'height:' + b.h + '%'}></i><span>${b.label}</span></div>`)}</div></div>`;
   const accts = html`<div class="rp-card"><h3>Your accounts this week</h3>${R.accts.map(a => html`<div class="rp-row"><span class="rp-av" style=${'background:' + a.bg}>${a.ini}</span><div class="rp-rm"><b>${a.name}</b><span class=${a.liveOn ? 'now' : ''}>${a.line}</span></div>${a.cur ? html`<span class="rp-mini cur">Signed in</span>` : html`<button class="rp-mini" disabled=${a.swOff} title=${a.swOff ? 'Stop the game first to switch accounts' : null} onClick=${a.sw}>Switch</button>`}</div>`)}</div>`;
-  return html`<div class="rp-page">${top}${jump}<div class="rp">${sess}<div class="rp-side">${week}${accts}${R.ach.length ? html`<div class="rp-card"><h3>Latest achievements</h3>${R.ach.map(x => html`<button class="rp-row rp-ach" onClick=${x.open}><span class="rp-aic" style=${'background:' + x.icon}></span><span class="rp-rm"><b>${x.name}</b><span>${x.sub}</span></span></button>`)}</div>` : null}</div></div></div>`;
+  return html`<div class="rp-page">${top}<div class="rp"><div class="rp-main">${jump}${sess}</div><div class="rp-side">${week}${accts}${R.ach.length ? html`<div class="rp-card"><h3>Latest achievements</h3>${R.ach.map(x => html`<button class="rp-row rp-ach" onClick=${x.open}><span class="rp-aic" style=${'background:' + x.icon}></span><span class="rp-rm"><b>${x.name}</b><span>${x.sub}</span></span></button>`)}</div>` : null}</div></div></div>`;
 }
