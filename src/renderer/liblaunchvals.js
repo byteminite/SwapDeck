@@ -44,6 +44,7 @@ export function launchVals(app) {
     asPill: !g.steam ? [] : switching ? [{ bg: avBg(from), ini: from.avatar ? '' : from.ini }, { bg: avBg(a), ini: a.avatar ? '' : a.ini }] : a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [],
     asArrow: switching, asText: !g.steam ? (g.pack ? 'Minecraft through ' + g.pack.label : 'No Steam account needed') : switching ? 'Switching to ' + a.name : a ? 'Playing as ' + a.name : 'Playing on the signed-in account',
     note: (g.note || '').trim(), noteCopied: !!S.lNoteCopied, onCopy: () => app.copyNote(g.note),
+    cfTip: !!(g.pack && g.pack.launcher === 'curseforge'),
     onStop: () => libStop(app), onHide: hide, onCancel: () => app.stopGame(),
   };
   const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => libStop(app) } : null;

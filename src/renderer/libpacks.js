@@ -37,9 +37,12 @@ function offerInClassic(app, list) {
   if (app.state.settings.layout === 'library') return;
   const fresh = newPacks({ state: { ...app.state, packsFound: list } });
   const key = fresh.map(p => p.id).sort().join(',');
+  // Nothing new left to offer (added or reviewed elsewhere): take the message away.
+  if (!fresh.length && app._packsToastId) { app.dismiss(app._packsToastId); app._packsToastId = null; app._packsToast = null; }
   if (!fresh.length || app._packsToast === key) return;
   app._packsToast = key;
-  app.toast('info', 'Found ' + count(fresh.length), 'Pick the ones you want in your Library.', { label: 'Review', fn: () => openPacks(app), stay: true });
+  if (app._packsToastId) app.dismiss(app._packsToastId);
+  app._packsToastId = app.toast('info', 'Found ' + count(fresh.length), 'Pick the ones you want in your Library.', { label: 'Review', fn: () => openPacks(app), stay: true });
 }
 
 export const openPacks = app => {
@@ -66,6 +69,8 @@ export function packsVals(app) {
       const gone = (S.settings.packsAdded || []).filter(id => !added.includes(id) && found.some(p => p.id === id)).length;
       const kept = (S.settings.packsAdded || []).filter(id => !found.some(p => p.id === id));
       close();
+      // The Classic "Found packs" message is answered now, however the list was opened.
+      if (app._packsToastId) { app.dismiss(app._packsToastId); app._packsToastId = null; }
       await app.setCfg({ packsAdded: [...kept, ...added], packsSeen: [...new Set([...(S.settings.packsSeen || []), ...found.map(p => p.id)])] });
       loadPacks(app, true);
       const n = added.filter(id => !before.has(id)).length;
@@ -82,6 +87,6 @@ export function packsOverlay(P) {
 <div class="tm-b">${P.none ? html`<div class="tm-mut">No modpacks found. Install one in Modrinth, CurseForge or Prism Launcher and it shows up here.</div>`
   : html`<div class="pk-list">${P.rows.map(r => html`<label class=${'pk-row' + (r.on ? ' on' : '')}><input type="checkbox" checked=${r.on} onChange=${r.toggle} />
 <span class="pk-av" style=${r.icon ? 'background-image:url("' + r.icon + '")' : ''}>${r.icon ? null : icon('box', 18)}</span>
-<span class="pk-m"><b>${r.name}</b><span>${r.label}${r.added ? ' · in your Library' : ''}</span></span>${r.isNew ? html`<em>NEW</em>` : null}<span class="pk-chk">${r.on ? icon('check', 13) : null}</span></label>`)}</div>`}</div>
+<span class="pk-m"><b>${r.name}</b><span>${r.label}${r.added ? ' · in your Library' : ''}${r.label === 'CurseForge' ? ' · needs Use CurseForge launcher' : ''}</span></span>${r.isNew ? html`<em>NEW</em>` : null}<span class="pk-chk">${r.on ? icon('check', 13) : null}</span></label>`)}</div>`}</div>
 <div class="tm-f">${P.none ? null : html`<button class="st-btn" onClick=${P.all}>${P.allLabel}</button>`}<span class="tm-sp"></span><button class="st-btn" onClick=${P.close}>Cancel</button><button class="st-btn p" disabled=${P.none} onClick=${P.save}>${P.nOn ? 'Save · ' + P.nOn + ' in Library' : 'Save'}</button></div></div></div>`;
 }

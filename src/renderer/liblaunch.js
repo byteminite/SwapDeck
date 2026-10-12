@@ -24,7 +24,7 @@ ${L.note ? html`<button class="ln-note" onClick=${L.onCopy}>${L.noteCopied ? 'Co
 <div class="ln-bar"><i style=${'width:' + (L.running ? 100 : L.pct) + '%'}></i></div>${steps(L.steps)}`}
 ${L.running ? html`<div class="ln-acts"><button class="ln-btn" onClick=${L.onStop}>${icon('x', 15)}Stop</button><button class="ln-cta" onClick=${L.onHide}>${icon('grid', 16)}Back to library</button></div><div class="ln-hint">${L.hint}</div>`
     : L.failed ? html`<div class="ln-acts"><button class="ln-btn" onClick=${L.onHide}>${icon('grid', 15)}Back to library</button><button class="ln-btn" onClick=${L.onPage}>${icon('info', 15)}Game page</button><button class="ln-cta" onClick=${L.onRetry}>${icon('history', 16)}Try again</button></div>`
-    : html`<div class="ln-acts"><button class="ln-btn" onClick=${L.onCancel}>${icon('x', 15)}Cancel</button><button class="ln-btn" onClick=${L.onHide}>${icon('grid', 15)}Back to library</button></div><div class="ln-hint">Cancel puts back anything already changed.</div>`}
+    : html`<div class="ln-acts"><button class="ln-btn" onClick=${L.onCancel}>${icon('x', 15)}Cancel</button><button class="ln-btn" onClick=${L.onHide}>${icon('grid', 15)}Back to library</button></div>${L.cfTip ? html`<div class="ln-hint ln-tip">CurseForge has to be set to Use CurseForge launcher (Settings > Minecraft), or it won't start the pack.</div>` : null}<div class="ln-hint">Cancel puts back anything already changed.</div>`}
 </div></div></div>`;
 }
 

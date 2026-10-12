@@ -1577,8 +1577,9 @@ class App extends Component {
       lOn: !L.hidden, lName: lg.name, lCoverBg: this.cardBg(lg), lIniTxt: this.coverOf(lg) ? '' : iniOf(lg),
       lLaunching: !L.running, lRunning: L.running, lTitle: L.running ? 'Now playing' : 'Launching',
       // The game's note (crosshair code, server IP…) is shown while it starts, with a one-click copy.
+      lCfTip: !!(lg.pack && lg.pack.launcher === 'curseforge'),
       lNote: (lg.note || '').trim(), lNoteCopied: !!S.lNoteCopied, onLNoteCopy: () => this.copyNote(lg.note),
-      lMeta: [la ? la.name : lg.steam ? 'current account' : 'non-Steam', lmon ? lmon.label + (L.mode === 'only' ? ' only' : '') : 'default display', L.res || null].filter(Boolean).join(' · '),
+      lMeta: [la ? la.name : lg.steam ? 'current account' : lg.pack ? 'Minecraft through ' + lg.pack.label : 'non-Steam', lmon ? lmon.label + (L.mode === 'only' ? ' only' : '') : 'default display', L.res || null].filter(Boolean).join(' · '),
       lPct: Math.round(L.step / Math.max(1, L.steps.length - 1) * 100) + '%', lBarBg: L.running ? '#4ade80' : 'linear-gradient(90deg,var(--accent),var(--accent-2))',
       lSteps: L.steps.map((s, i) => { const done = i < L.step, act = i === L.step, live = act && L.running; return { label: s.label, sub: s.sub || '', hasSub: !!s.sub, done: done && !s.skip, skipped: done && !!s.skip, active: act && !L.running, todo: i > L.step, live, color: live ? 'var(--ok-fg)' : done && s.skip ? 'var(--text-subtle)' : done ? 'var(--text-soft)' : act ? 'var(--accent-strong)' : 'var(--text-subtle)' }; }),
       lStopLbl: changed && L.restore ? 'Stop · Restore display' : 'Stop tracking', onLStop: () => this.stopGame(), onLHide: () => this.setState(s => ({ launch: s.launch && { ...s.launch, hidden: true } })),

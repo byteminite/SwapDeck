@@ -38,6 +38,6 @@ export function libGamePageVals(app, b) {
     ach: parts ? { got: parts[1], total: parts[2], pct: pct || 0, open: setTab('ach') } : null,
     tab: tabs.some(t => t[0] === tab) ? tab : 'ov', tabs: tabs.map(([k, label]) => ({ label, on: tab === k, pick: setTab(k) })),
     ov: tab === 'ov' ? b.gOv : null, achEl: tab === 'ach' && ach ? achPage(libAchVals(app, g)) : null, setupEl: tab === 'setup' ? setupTab(b) : null,
-    noOvText: g.steam ? '' : g.pack ? 'Modpacks have their setup on the Setup tab. Mods and updates stay in ' + g.pack.label + '.' : 'Non-Steam games have their setup on the Setup tab.',
+    noOvText: g.steam ? '' : g.pack ? 'Modpacks have their setup on the Setup tab. Mods and updates stay in ' + g.pack.label + '.' + (g.pack.launcher === 'curseforge' ? ' CurseForge has to be set to Use CurseForge launcher (Settings > Minecraft), or it won\'t start the pack.' : '') : 'Non-Steam games have their setup on the Setup tab.',
   };
 }

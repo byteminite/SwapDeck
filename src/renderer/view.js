@@ -556,7 +556,7 @@ ${s.todo ? html`<span style="width:16px;height:16px;flex:none;box-sizing:border-
 <div style="min-width:0"><div style="font:500 12.5px 'Geist',sans-serif;color:${s.color}">${s.label}</div>${s.hasSub ? html`<div style="font:400 11px 'Geist Mono',monospace;color:var(--text-subtle);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.sub}</div>` : null}</div></div>
 `)}
 </div>
-${b.lRunning ? html`
+${b.lCfTip && b.lLaunching ? html`<div style="margin-top:16px;padding:10px 12px;border-radius:10px;background:rgba(var(--fg-rgb),.05);border:1px solid rgba(var(--fg-rgb),.09);font:400 12px/1.5 'Geist',sans-serif;color:var(--text-soft)">CurseForge has to be set to Use CurseForge launcher (Settings > Minecraft), or it won't start the pack.</div>` : null}${b.lRunning ? html`
 <div style="display:flex;gap:8px;margin-top:22px"><button style="flex:1;padding:10px 14px;border:0;border-radius:11px;background:var(--btn-bg);color:var(--btn-fg);font:600 13px 'Geist',sans-serif;cursor:pointer" onClick=${b.onLStop} class="dch2r">${b.lStopLbl}</button><button style="padding:10px 14px;border-radius:11px;border:1px solid rgba(var(--fg-rgb),.14);background:transparent;color:var(--text-soft);font:500 13px 'Geist',sans-serif;cursor:pointer" onClick=${b.onLHide} class="dch2s">Back to SwapDeck</button></div><div style="font:400 11px 'Geist',sans-serif;color:var(--text-subtle);margin-top:10px">${b.lRunHint}</div>
 ` : null}
 </div></div>
