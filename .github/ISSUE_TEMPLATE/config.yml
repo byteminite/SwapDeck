@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and chat
+    url: https://github.com/byteminite/SwapDeck/discussions
+    about: Ask how something works, or share your setup
+  - name: Report a security problem
+    url: https://github.com/byteminite/SwapDeck/security/advisories/new
+    about: Please report security problems privately, not as an issue

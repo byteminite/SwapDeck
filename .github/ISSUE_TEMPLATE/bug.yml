@@ -1,0 +1,57 @@
+name: Bug report
+description: Something in SwapDeck doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! A screenshot of the whole SwapDeck window helps the most.
+        Please don't paste passwords, Steam Guard codes or tokens anywhere here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: I pressed Play on Assetto Corsa, the monitor switched, but…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be repeated?
+      placeholder: |
+        1. Open the Library
+        2. Right-click a game
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: SwapDeck version
+      description: Settings → About shows it
+      placeholder: "1.6.3"
+    validations:
+      required: true
+  - type: dropdown
+    id: layout
+    attributes:
+      label: Layout
+      options: [Library, Classic, Both]
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run it?
+      options: [Installer, Portable exe, From source]
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, your monitor setup, the game or launcher involved (Steam, Modrinth, CurseForge…)

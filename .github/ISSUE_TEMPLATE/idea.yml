@@ -1,0 +1,21 @@
+name: Feature idea
+description: Something SwapDeck could do
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like SwapDeck to do?
+      placeholder: When I play a horror game, I'd like…
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help you?
+      description: How you play, what you do today instead
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots or examples from other apps

@@ -5,7 +5,7 @@
 # SwapDeck
 
 **Switch Steam accounts in one click, and launch every game with the right account, monitor, resolution and sound.**<br>
-Built for people who keep separate FPS, sim racing and horror accounts, with a Steam-style page for every game.
+Built for people who keep separate FPS, sim racing and horror accounts. Your Minecraft modpacks fit in too.
 
 [![Latest release](https://img.shields.io/github/v/release/byteminite/SwapDeck?style=flat-square&color=22d3ee&label=release)](https://github.com/byteminite/SwapDeck/releases/latest) [![Downloads](https://img.shields.io/github/downloads/byteminite/SwapDeck/total?style=flat-square&color=a78bfa)](https://github.com/byteminite/SwapDeck/releases) ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%2F%2011-0ea5e9?style=flat-square) [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE) [![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-d97757?style=flat-square)](#how-its-made) [![Made in Munder Difflin](https://img.shields.io/badge/made%20in-Munder%20Difflin-f5b942?style=flat-square)](https://munderdiffl.in/)
 
@@ -18,8 +18,8 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <table>
   <tr>
     <td width="25%" valign="top" align="center"><h3>🔁</h3><b>One click to switch</b><br><sub>Every account saved in Steam. No retyping passwords, no Steam Guard codes.</sub></td>
-    <td width="25%" valign="top" align="center"><h3>🎮</h3><b>Play does the setup</b><br><sub>The right account, monitor, resolution, sound and apps, then the game.</sub></td>
-    <td width="25%" valign="top" align="center"><h3>↩️</h3><b>Everything goes back</b><br><sub>Your normal setup returns when the game exits. Stop never closes your game.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>🎮</h3><b>Play does the setup</b><br><sub>The right account, monitor, resolution, sound and apps, then the game. Minecraft modpacks too.</sub></td>
+    <td width="25%" valign="top" align="center"><h3>↩️</h3><b>Everything goes back</b><br><sub>Your normal setup returns when the game exits. Stop never closes your game unless you ask.</sub></td>
     <td width="25%" valign="top" align="center"><h3>🔒</h3><b>Stays on your PC</b><br><sub>No sign-up, no telemetry. Stats and friends are optional and encrypted by Windows.</sub></td>
   </tr>
 </table>
@@ -30,97 +30,82 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/demo-light.webp">
-  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck switching to another account, filtering the Library by the Racing tag, opening Assetto Corsa's page with its DLC and patch notes, then pressing Play: it sets the display and sound, starts SimHub and Content Manager, and shows the game's note">
+  <img src="docs/demo-dark.webp" width="760" alt="SwapDeck's Library layout: a heart on a cover bursts into a favourite, Counter-Strike 2's page opens and its Achievements tab slides in, the Source filter shows Minecraft modpacks, Play starts Fabulously Optimized with its setup steps, then the light and dark switch pours the other colours in">
 </picture>
 
-<sub>The real app: switch account in one click, find a game with tags, read its patch notes, then Play sets up the monitor, sound and apps</sub>
+<sub>The real app: covers, a game page, Minecraft modpacks, Play, and one click from dark to light</sub>
 
 </div>
 
 <table>
 <tr>
 <td width="45%" valign="middle">
-<h3>🗂️ A Library layout, if you like</h3>
+<h3>🗂️ Your games up front</h3>
 <ul>
-<li>Pick <b>Library</b> in Settings → Appearance: a rail on the left and your games up front as <b>covers</b>. <b>Classic</b> stays the default</li>
-<li><b>Home</b> shows your running or last game, <i>Jump back in</i>, recent sessions with the setup they used, this week and your <b>latest achievements</b></li>
-<li><b>Favourites</b> as big cards in your own order, and an <b>Updates</b> tab with what Steam is updating and what it updated lately</li>
-<li><b>Right-click</b> any game: Play as another account, tags, Change artwork, Open folder, Hide from Library and more</li>
-<li><b>Stop asks</b> whether to only stop tracking or close the game too, like Alt+F4</li>
+<li>The <b>Library layout</b>: a rail on the left and every game as a <b>cover</b>, with tabs for installed, not installed and never played</li>
+<li>Filter by <b>tag, account or source</b>, sort by last played, most played or name</li>
+<li>Hover a cover for <b>Play</b>, details, a heart, and who it plays as, like <i>Switches to Crosshair</i></li>
+<li><b>Right-click</b> any game: Play as another account once, tags, Change artwork, Open folder, Desktop shortcut and more</li>
+<li><b>Ctrl + K</b> searches games, tags, accounts and actions</li>
+<li>Prefer the old look? <b>Classic</b> is one click away in Settings → Appearance</li>
 </ul>
 </td>
 <td width="55%"><img src="docs/screenshots/11-library-layout.png" alt="The Library layout"></td>
 </tr>
 <tr>
-<td width="55%"><img src="docs/screenshots/02-account-details.png" alt="Accounts, sorted your way"></td>
+<td width="55%"><img src="docs/screenshots/12-home.png" alt="Home"></td>
 <td width="45%" valign="middle">
-<h3>👥 Accounts, sorted your way</h3>
+<h3>🏠 Home, Favourites and Updates</h3>
 <ul>
-<li>One-click switching from a <b>"Who's playing?"</b> picker or the classic sideways gallery</li>
-<li>A <b>full-window profile</b> for each account: its most played games, recent sessions, wallet and member since at a glance</li>
-<li><b>Tags, notes and favourites</b>: give each tag its own colour, then tick as many tags as you like in the <b>Tags</b> filter</li>
-<li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
-<li><b>Playtime per account</b> for everything you launch through SwapDeck</li>
-<li>Add and forget accounts without digging through Steam</li>
+<li><b>Home</b>: your running or last game, <i>Jump back in</i>, recent sessions with the setup they used, this week's hours and your accounts</li>
+<li><b>Latest achievements</b> across all your accounts, read from Steam's files on your PC</li>
+<li><b>Favourites</b> as big cards in your own order. Adding one gives the heart a little burst</li>
+<li><b>Updates</b>: what Steam is updating, what's waiting and what it updated lately. <i>Play when done</i> starts a game as soon as its update finishes</li>
 </ul>
 </td>
 </tr>
 <tr>
 <td width="45%" valign="middle">
-<h3>📚 One library for everything</h3>
+<h3>🎮 A full page for every game</h3>
 <ul>
-<li>Your installed <b>Steam games</b> with their own Steam artwork</li>
-<li>Any <b>non-Steam game</b>: if it has an <code>.exe</code>, it fits</li>
-<li>Each game remembers <b>which account</b> plays it, so Play switches for you. When only one account owns a game, it's picked for you</li>
-<li><b>Games you own but haven't installed</b> show too, marked <i>Not installed</i>, with the accounts that own them. Hide them from the <b>Tags</b> menu</li>
-<li><b>Tag and star games</b>: favourites come first, whatever the sort</li>
-<li><b>Update badges</b> on the covers: <i>Update queued</i>, <i>Updating 42%</i> or <i>Update failed</i>, straight from Steam</li>
-<li><b>Desktop shortcuts</b> that launch through SwapDeck with all your settings</li>
-</ul>
-</td>
-<td width="55%"><img src="docs/screenshots/04-library.png" alt="One library for everything"></td>
-</tr>
-<tr>
-<td width="55%"><img src="docs/screenshots/08-game-overview.png" alt="A Steam-style page for every game"></td>
-<td width="45%" valign="middle">
-<h3>🎮 A Steam-style page for every game</h3>
-<ul>
-<li><b>Update status</b> from Steam: up to date, downloading with progress, paused or failed</li>
-<li><b>Last played, playtime and achievements</b> at a glance, per account</li>
-<li><b>Screenshots</b>, <b>workshop</b> items and <b>DLC</b>, with one-click links to the store, hub, guides and more</li>
-<li><b>Friends who play</b> it, and which DLC the account owns (for accounts connected for stats)</li>
-<li>On CS2's page: <b>Premier rating, ranks, level and medals</b> per account, and its per-account settings behind the gear</li>
+<li><b>Overview</b>: update status, last played, playtime, screenshots, DLC, workshop and friends who play it</li>
+<li><b>Achievements</b>: how rare each one is, which of your accounts have it, with filters and sorting</li>
+<li><b>Setup</b>: the game's monitor, resolution, sound, companion apps and launch options</li>
+<li>On CS2's page: <b>Premier rating, ranks, level and medals</b> per account, and per-account CS2 configs</li>
 <li>A <b>note</b> for each game: a crosshair code, a server IP…</li>
 </ul>
 </td>
+<td width="55%"><img src="docs/screenshots/14-achievements.png" alt="A game's Achievements tab"></td>
 </tr>
 <tr>
+<td width="55%"><img src="docs/screenshots/16-modpacks.png" alt="Minecraft modpacks in the Library"></td>
 <td width="45%" valign="middle">
-<h3>📰 Patch notes, right in SwapDeck</h3>
+<h3>⛏️ Minecraft modpacks</h3>
 <ul>
-<li>The developer's <b>announcements and patch notes</b>, newest first</li>
-<li><b>Read the whole post</b> in the app, with headings, lists and pictures</li>
-<li>Posts since you last played are tagged <b>New</b></li>
-<li>Steam links open in Steam, trailers on YouTube, and <i>Open in Steam</i> is always there</li>
+<li>SwapDeck <b>finds your packs</b> from <b>Modrinth, CurseForge and Prism Launcher</b>, and you pick which ones join your Library</li>
+<li><b>Play</b> opens the launcher straight into that pack, the same way its own desktop shortcut does</li>
+<li>Each pack gets <b>its own setup</b>: monitor, resolution, sound and companion apps, like any game</li>
+<li>SwapDeck notices when <b>Minecraft closes</b> and puts everything back</li>
+<li>Covers take their colours from the <b>pack's icon</b>, or give it your own icon and banner</li>
 </ul>
 </td>
-<td width="55%"><img src="docs/screenshots/10-news-reader.png" alt="Patch notes, right in SwapDeck"></td>
 </tr>
 <tr>
-<td width="55%"><img src="docs/screenshots/05-game-cs2.png" alt="Per-game setup"></td>
 <td width="45%" valign="middle">
-<h3>🎯 Per-game setup</h3>
+<h3>🎯 Play does the setup</h3>
 <ul>
 <li><b>Display</b>: make a monitor primary, or use only that one (even if it's off in Windows)</li>
 <li><b>Resolution profiles</b> you make yourself, like 1280 × 960 stretched for CS2</li>
 <li><b>Sound device</b> per game, e.g. your headset</li>
-<li><b>Launch options</b>, or import the ones you already set in Steam</li>
-<li>Your <b>note on the launch screen</b> when you press Play, with a <i>Copy</i> button</li>
-<li>Everything is <b>put back</b> when the game exits. It's all behind the ⚙️ gear on the game's page</li>
+<li>Each step shows as it happens, with <i>Ready</i> for the ones already right, and your <b>note</b> with a <i>Copy</i> button</li>
+<li><b>Cancel</b> while it starts, and everything is <b>put back</b> when the game exits</li>
+<li>Stop can also <b>close the game</b> if you pick it, like Alt+F4, never forced</li>
 </ul>
 </td>
+<td width="55%"><img src="docs/screenshots/18-starting.png" alt="Starting a game"></td>
 </tr>
 <tr>
+<td width="55%"><img src="docs/screenshots/06-game-ac.png" alt="Made for sim racing"></td>
 <td width="45%" valign="middle">
 <h3>🏁 Made for sim racing</h3>
 <ul>
@@ -130,10 +115,33 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <li>Put the game on your <b>ultrawide only</b>, then get your normal desk back afterwards</li>
 </ul>
 </td>
-<td width="55%"><img src="docs/screenshots/06-game-ac.png" alt="Made for sim racing"></td>
 </tr>
 <tr>
-<td width="55%"><img src="docs/screenshots/07-settings-displays.png" alt="Your monitors, drawn to scale"></td>
+<td width="45%" valign="middle">
+<h3>👥 Accounts, sorted your way</h3>
+<ul>
+<li>One-click switching from the avatar menu, or the <b>"Who's playing?"</b> picker in Classic</li>
+<li>A <b>full page</b> for each account: its most played games, recent sessions, wallet and member since</li>
+<li><b>Tags, notes and favourites</b>, each tag with its own colour</li>
+<li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
+<li><b>Hide account names</b> (initials only) for streaming</li>
+</ul>
+</td>
+<td width="55%"><img src="docs/screenshots/02-account-details.png" alt="Accounts, sorted your way"></td>
+</tr>
+<tr>
+<td width="55%"><img src="docs/screenshots/10-news-reader.png" alt="Patch notes, right in SwapDeck"></td>
+<td width="45%" valign="middle">
+<h3>📰 Patch notes, right in SwapDeck</h3>
+<ul>
+<li>The developer's <b>announcements and patch notes</b>, newest first</li>
+<li><b>Read the whole post</b> in the app, with headings, lists and pictures</li>
+<li>New patch notes for games you've played show under the <b>bell</b></li>
+<li>Steam links open in Steam, trailers on YouTube, and <i>Open in Steam</i> is always there</li>
+</ul>
+</td>
+</tr>
+<tr>
 <td width="45%" valign="middle">
 <h3>🖥️ Your monitors, drawn to scale</h3>
 <ul>
@@ -143,32 +151,32 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 <li><b>Restore display now</b> if a game ever crashes</li>
 </ul>
 </td>
+<td width="55%"><img src="docs/screenshots/07-settings-displays.png" alt="Your monitors, drawn to scale"></td>
 </tr>
 <tr>
+<td width="55%"><img src="docs/screenshots/03-account-games.png" alt="Stats, if you want them"></td>
 <td width="45%" valign="middle">
 <h3>📊 Stats, if you want them</h3>
 <ul>
-<li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token), or <b>Connect all</b> to go through every account in one go</li>
-<li><b>Every game the account owns</b>, with total hours, the last 2 weeks and VAC bans marked</li>
-<li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals, on CS2's page</li>
-<li>The <b>ⓘ</b> next to a game opens its page, even if it isn't installed on this PC</li>
-<li>Steam level, wallet balance, friends, and <b>friends who play</b> each game with the DLC the account owns</li>
+<li><b>Connect for stats</b> with Steam's own sign-in (QR code, password or token), or <b>Connect all</b> in one go</li>
+<li><b>Every game the account owns</b> shows up, even ones not installed here, with total hours and VAC bans marked</li>
+<li>CS2 <b>Premier rating</b>, Competitive and Wingman ranks, level and medals</li>
+<li>Steam level, wallet balance, friends, and <b>friends who play</b> each game</li>
 <li>Completely optional. Switching works without it</li>
 </ul>
 </td>
-<td width="55%"><img src="docs/screenshots/03-account-games.png" alt="Stats, if you want them"></td>
 </tr>
 <tr>
-<td width="55%"><img src="docs/screenshots/09-accounts-gallery.png" alt="Make it yours"></td>
 <td width="45%" valign="middle">
 <h3>🎨 Make it yours</h3>
 <ul>
-<li><b>Dark, OLED Black or Light</b>, with accent colours or your Windows accent</li>
-<li>The accent can <b>follow the running game's tag</b></li>
-<li>Choose the <b>grid or gallery</b> accounts layout, and whether SwapDeck opens on Accounts or Library</li>
-<li><b>Auto UI scale</b> that fits 1080p, 1440p and 4K screens (a bigger window shows more, not bigger), or pick 80% to 150%</li>
+<li><b>Light and dark</b> with one click on the sun or moon. The new colours pour in from the button, a little differently every time</li>
+<li><b>Dark, OLED Black or Light</b>, with accent colours or your Windows accent, which can <b>follow the running game's tag</b></li>
+<li><b>Animations</b> on pages, covers and tabs. <i>Reduce motion</i> turns them off</li>
+<li><b>Auto UI scale</b> for 1080p, 1440p and 4K screens, or pick 80% to 150%</li>
 </ul>
 </td>
+<td width="55%"><img src="docs/screenshots/19-light-mode.png" alt="Light mode"></td>
 </tr>
 </table>
 
@@ -178,34 +186,19 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 
 <table>
   <tr>
-    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a recent game from the taskbar, with update status for each game. A green dot shows while you play</sub></td>
+    <td width="33%" valign="top">🧭 <b>Tray panel</b><br><sub>Switch accounts or start a game from the taskbar. A green dot shows while you play</sub></td>
     <td width="33%" valign="top">⌨️ <b>Tray shortcut</b><br><sub>Open the tray panel from any app with <code>Ctrl + Alt + S</code>. Off by default, key of your choice</sub></td>
     <td width="33%" valign="top">🎮 <b>Controller support</b><br><sub>D-pad, A / B / X / Y, and LB / RB to change pages or tabs</sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top">💾 <b>Backup & restore</b><br><sub>Tags, notes, games and profiles. Never sign-ins</sub></td>
-    <td width="33%" valign="top">🔐 <b>Master password</b><br><sub>A lock screen on top of Windows' encryption</sub></td>
-    <td width="33%" valign="top">🕹️ <b>Per-account CS2 configs</b><br><sub>On CS2's page: an autoexec each, and copy settings between accounts</sub></td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">🕓 <b>Session history</b><br><sub>Who played what, when, and for how long</sub></td>
-    <td width="33%" valign="top">✨ <b>Updates itself</b><br><sub>Quietly, with a What's new after each update</sub></td>
-    <td width="33%" valign="top">⌨️ <b>Keyboard friendly</b><br><sub>Arrows, Enter and <code>/</code> to search</sub></td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
-    <td width="33%" valign="top">⭐ <b>Favourites</b><br><sub>Star accounts and games, and they come first</sub></td>
-    <td width="33%" valign="top">🏆 <b>Achievements per account</b><br><sub>Latest unlocks and progress from Steam's files on your PC, and how rare each one is. Hidden ones stay hidden</sub></td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">🔎 <b>Search everything</b><br><sub><code>Ctrl + K</code> in the Library layout: games, tags, accounts and actions</sub></td>
-    <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, new patch notes, a running game, accounts to connect and SwapDeck updates under the bell</sub></td>
+    <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, new patch notes, a running game and new modpacks under the bell</sub></td>
+    <td width="33%" valign="top">✨ <b>Updates itself</b><br><sub>Within minutes of a release, with a Windows notification and a What's new</sub></td>
     <td width="33%" valign="top">🏷️ <b>Tags manager</b><br><sub>Rename, recolour and delete tags everywhere at once</sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top">⛏️ <b>Minecraft modpacks</b><br><sub>SwapDeck finds packs from Modrinth, CurseForge and Prism Launcher, you pick which ones join your Library. Play starts the pack with its own monitor and sound</sub></td>
-    <td width="33%" valign="top">🌗 <b>Light and dark</b><br><sub>One click on the sun or moon, and the new colours pour in from the button</sub></td>
-    <td width="33%" valign="top">🎞️ <b>Animations</b><br><sub>Pages, covers and tabs ease in. <i>Reduce motion</i> turns them off</sub></td>
+    <td width="33%" valign="top">💾 <b>Backup & restore</b><br><sub>Tags, notes, games and profiles. Never sign-ins</sub></td>
+    <td width="33%" valign="top">🔐 <b>Master password</b><br><sub>A lock screen on top of Windows' encryption, and <i>Lock now</i></sub></td>
+    <td width="33%" valign="top">🚀 <b>Start with Windows</b><br><sub>Optionally straight to the tray</sub></td>
   </tr>
 </table>
 
@@ -219,23 +212,21 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 > [!NOTE]
 > The app isn't code-signed yet, so Windows may show a SmartScreen warning the first time. Click **More info → Run anyway**.
 
+A short first start finds Steam, lists your accounts and lets you pick the Library or Classic layout. You can skip it.
+
 ## Using it
 
 | Action | How |
 |---|---|
-| Switch account | Click a card (grid) or double-click a panel (gallery), or select it and press `Enter` |
-| Account profile | `ⓘ` on a card, or right-click. *See all games* lists everything the account owns |
-| CS2 settings per account | CS2's page → the ⚙️ gear → CS2 settings |
-| Play a game | Library → hover a game → Play, or double-click |
+| Switch account | Library layout: your avatar at the bottom of the rail. Classic: click a card, or select it and press `Enter` |
+| Play a game | Hover a cover → Play, or open the game and press Play |
+| Game options | Right-click a cover, or `X` on a controller |
+| A game's setup | Its page → Setup (Library layout), or the ⚙️ gear (Classic) |
+| Search | `Ctrl + K` (Library layout), `/` (Classic) |
 | Add Minecraft modpacks | The bell's *Review*, or Settings → General → *Choose packs* |
-| Play a Minecraft modpack | Library → Source → Minecraft, then Play. The pack opens in its launcher |
-| Game page | Click a game in the Library. The ⚙️ gear next to the close button opens its setup |
-| Read patch notes | A game's page → Activity → click a post |
+| Light or dark | The sun / moon in the rail (Library layout) or the top bar (Classic) |
 | Tray panel from anywhere | `Ctrl + Alt + S` (turn it on in Settings → General) |
-| Move around | Arrow keys, or a controller's d-pad / stick |
-| Controller | `A` select · `B` back · `X` details · `LB`/`RB` switch Accounts ↔ Library. In the Library layout: `X` options, `Y` play, `LB`/`RB` pages, `☰` search |
-| Search | `/` (Classic), `Ctrl + K` (Library layout) |
-| Game options (Library layout) | Right-click a cover, or `X` on a controller |
+| Controller | `A` select · `B` back · `X` options · `Y` play · `LB`/`RB` pages · `☰` search |
 | UI scale | `Ctrl +` / `Ctrl −` / `Ctrl 0` (auto), or Settings |
 
 ## Privacy
@@ -246,14 +237,13 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 - Add a **master password** in Settings → Security for a lock screen on top of Windows' encryption.
 - Disconnecting deletes the token. You can also revoke the "SwapDeck" device in your Steam account settings.
 - Backups contain your tags, notes, games and profiles, never sign-ins or passwords.
-- A game's details read Steam's own files on your PC for update status, screenshots and achievements. Its news and
+- A game's page reads Steam's own files on your PC for update status, screenshots and achievements. Its news and
   DLC list come from Steam's public servers (no sign-in), only when you open that game, and are cached for a while.
 - To know which accounts own a game, SwapDeck uses the game list of accounts connected for stats. For other accounts it
   reads Steam's own files on your PC, which list the games they've played here. Nothing is sent anywhere for this.
-- For accounts connected for stats, a game's details also show friends who play it and which DLC the account owns. That
-  uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
-- The Library layout's latest achievements and recently updated games come from Steam's own files on your PC. Nothing is sent anywhere.
-- How rare each achievement is, and the bell's new patch notes, come from Steam's public servers with no sign-in: rarity when you open a game's Achievements tab, patch notes every 6 hours for your 10 most recently played games. Only the games' Steam app IDs are sent.
+- For accounts connected for stats, a game's page also shows friends who play it and which DLC the account owns. That
+  uses the account's saved Steam sign-in, only when you open the game, and talks only to Steam.
+- How rare each achievement is, and the bell's new patch notes, come from Steam's public servers with no sign-in. Only the games' Steam app IDs are sent.
 - Minecraft modpacks are read from Modrinth's, CurseForge's and Prism Launcher's own pack lists on your PC. To notice when Minecraft
   runs, SwapDeck looks at the Java programs running on your PC. Nothing is sent anywhere.
 - SwapDeck checks GitHub for a new version every 30 minutes and when you open it. Each check downloads one small file; nothing about you is sent.
@@ -273,7 +263,25 @@ The only game files it ever writes are CS2 config files, and only when you ask: 
 <details>
 <summary><b>Does it close my game when I press Stop?</b></summary>
 
-Never. Stop puts your display and sound back and stops tracking playtime. The game keeps running.
+Not unless you ask. Stop puts your display and sound back and stops tracking playtime, and the game keeps running.
+If you pick <i>Close the game too</i>, SwapDeck asks the game's windows to close, like Alt+F4. It never forces it.
+
+</details>
+
+<details>
+<summary><b>Library or Classic layout?</b></summary>
+
+Either. <b>Library</b> puts your games up front as covers, with Home, Favourites, Updates and full game pages.
+<b>Classic</b> puts your accounts up front, like SwapDeck always has. Switch any time in Settings → Appearance; nothing is lost.
+
+</details>
+
+<details>
+<summary><b>My CurseForge modpack doesn't start</b></summary>
+
+CurseForge only starts packs from outside the app when it's set to <b>Use CurseForge launcher</b>. In CurseForge, open
+Settings → Minecraft and pick it, then press Play in SwapDeck again. With the Mojang launcher, CurseForge says
+<i>Cannot launch modpack with Mojang launcher</i>. Modrinth and Prism Launcher don't need anything.
 
 </details>
 
@@ -282,6 +290,15 @@ Never. Stop puts your display and sound back and stops tracking playtime. The ga
 
 Steam keeps them, like it always does. SwapDeck only tells Steam which saved account to start with.
 If you connect an account for stats, Steam's sign-in token is stored encrypted by Windows. See [Privacy](#privacy).
+
+</details>
+
+<details>
+<summary><b>How do updates work?</b></summary>
+
+The installed version checks GitHub every 30 minutes and when you open it, downloads a new version in the background, and
+tells you when it's ready (in the app, or with a Windows notification if SwapDeck is in the tray). Restart to finish.
+The portable exe doesn't update itself.
 
 </details>
 
@@ -305,11 +322,18 @@ Open Settings → Displays → <b>Restore display now</b>. If you can't see Swap
 - If Steam asks for a password after a switch, that account's saved login expired. Sign in once with **Remember me** ticked.
 - CS2 stats aren't refreshed while that account is in a game, because it would kick the game session.
 - SwapDeck only knows **every game an account owns** once it's connected for stats. Until then, it goes by what that account has played on this PC.
-- A game's **news, DLC and friends** load when you open its page and are cached for a while, so the first open takes a second.
 - **Monitors** only need to be plugged in and powered. SwapDeck can switch one on that's turned off in Windows.
 - **Resolution profiles** can only use sizes your graphics driver offers. For stretched 4:3, add the resolution as a custom
   resolution in AMD Software or the NVIDIA Control Panel, and set scaling to Full panel / Full-screen. The **Test** button
   in Settings → Displays tells you if Windows accepts it.
+- ATLauncher and MultiMC modpacks aren't found yet. Add them with *Add game* and the launcher's own launch options.
+
+## Bugs and ideas
+
+- Found a bug or have an idea? [Open an issue](https://github.com/byteminite/SwapDeck/issues/new/choose). The forms ask for the few details that help.
+- Questions and chat go in [Discussions](https://github.com/byteminite/SwapDeck/discussions).
+- A security problem? Please report it privately, see [SECURITY.md](SECURITY.md).
+- Every version's changes are in [CHANGELOG.md](CHANGELOG.md), and in the app under *What's new*.
 
 ## Development
 
@@ -320,9 +344,9 @@ npm start       # run from source with your normal settings
 npm run dist    # build installer + portable exe into dist\
 ```
 
-**Releasing an update:** bump `version` in `package.json`, add the release to `src/renderer/changelog.js`, run `npm run dist`,
-then publish a GitHub release (tag `vX.Y.Z`) with `SwapDeck-Setup-X.Y.Z.exe`, its `.blockmap` and `latest.yml`.
-Installed copies pick it up automatically. Drafts are ignored.
+**Releasing an update:** bump `version` in `package.json`, add the release to `src/renderer/changelog.js`, run
+`node tools/changelog-md.js` to refresh CHANGELOG.md, run `npm run dist`, then publish a GitHub release (tag `vX.Y.Z`)
+with `SwapDeck-Setup-X.Y.Z.exe`, its `.blockmap` and `latest.yml`. Installed copies pick it up automatically. Drafts are ignored.
 
 ## How it's made
 
@@ -330,7 +354,7 @@ SwapDeck is vibe coded: it was designed, directed and tested by me ([@byteminite
 written by **Claude**, Anthropic's AI, using [Claude Code](https://claude.com/claude-code) running in
 [Munder Difflin](https://munderdiffl.in/), a free, open source multi-agent harness. That includes the app, the native display
 and sound helpers, the browser demo, this README and its animated demo. Every feature was tried on a real setup (multiple
-accounts, three monitors, sim racing gear) before it shipped, and the full source is here for anyone to read.
+accounts, three monitors, sim racing gear, Minecraft modpacks) before it shipped, and the full source is here for anyone to read.
 
 ## License
 
