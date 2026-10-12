@@ -3,6 +3,19 @@
 
 export const CHANGELOG = [
   {
+    v: '1.6.2', date: '12 Oct 2026',
+    title: 'Modpack message fix',
+    intro: 'A small fix: the Found Minecraft modpacks message no longer comes back every time you open SwapDeck.',
+    highlights: [
+      ['Modpack message fixed', 'SwapDeck only offers packs you haven\'t added yet, also right after it starts.'],
+    ],
+    sections: [
+      ['Fixes', [
+        'Found Minecraft modpacks showed up on every start, even for packs already in your Library. It now only offers new packs',
+      ]],
+    ],
+  },
+  {
     v: '1.6.1', date: '12 Oct 2026',
     title: 'Updates arrive sooner',
     intro: 'SwapDeck now hears about new versions within minutes, and tells you with a Windows notification when one is ready.',
