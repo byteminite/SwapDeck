@@ -13,6 +13,7 @@ import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
 import { openSpot } from './libspot.js';
+import { playWhenDone } from './libupdhist.js';
 
 const api = window.api;
 
@@ -266,7 +267,13 @@ class App extends Component {
     return { ...a, id: a.sid, ini: initials(a.name), grad: GRADS[hash(a.sid) % GRADS.length], current, last: rel(a.lastUsed), ts: a.lastUsed ? -a.lastUsed : Infinity, tags: a.tags || [], note: a.note || '' };
   }
   get accts() {
-    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam) { this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accts = this.state.accounts.map(a => this.decorate(a)); }
+    const hid = this.state.settings.hiddenAccts;
+    if (this._accSrc !== this.state.accounts || this._accSt !== this.state.steam || this._accHid !== hid) {
+      this._accSrc = this.state.accounts; this._accSt = this.state.steam; this._accHid = hid;
+      // Accounts removed from SwapDeck stay saved in Steam; the one Steam is signed in to always shows.
+      const hidden = new Set(hid || []);
+      this._accts = this.state.accounts.map(a => this.decorate(a)).filter(a => !hidden.has(a.sid) || a.current);
+    }
     return this._accts;
   }
   find(id) { return this.accts.find(x => x.id === id); }
@@ -1062,9 +1069,11 @@ class App extends Component {
     this.setState({ menu: key, menuUp: !!r && window.innerHeight - r.bottom < 300 && r.top > window.innerHeight - r.bottom });
   }
   async pollUpdates(force) {
-    if (!force && (document.hidden || (this.state.view !== 'lib' && !isLibLayout(this)))) return;
+    // Play when done keeps checking even with the window hidden in the tray.
+    const waiting = Object.keys(this.state.pwd || {}).length > 0;
+    if (!force && !waiting && (document.hidden || (this.state.view !== 'lib' && !isLibLayout(this)))) return;
     const libUpd = await api.libUpdates().catch(() => null);
-    if (libUpd) this.setState({ libUpd });
+    if (libUpd) { this.setState({ libUpd }); playWhenDone(this, libUpd); }
   }
   setView(v) {
     if (v === this.state.view) return;

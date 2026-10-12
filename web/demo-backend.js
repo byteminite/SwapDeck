@@ -75,7 +75,7 @@
   // ---- settings and profiles ----
   const settings = {
     steamExe: null, launchAfter: false, defaultGame: null, closeAfter: false, steamArgs: '', uiScale: 'auto', base: 'dark', accent: 'cyan', customAccent: '#c084fc',
-    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
+    followTag: false, reduceMotion: false, startView: 'acc', accountStyle: 'grid', layout: 'classic', favOrder: [], spRecent: [], hiddenAccts: [], tray: true, hotkeyOn: false, hotkey: 'Ctrl+Alt+S', tagList: [], tagColors: {}, lastSeenVersion: VERSION,
     normalOn: [MON('DELL S2721DGF').id, MON('ASUS VG249').id], normalMon: MON('DELL S2721DGF').id, scaleBase: 0.9, startup: true,
   };
   try { if (matchMedia('(prefers-color-scheme: light)').matches) settings.base = 'light'; } catch {}
@@ -165,8 +165,8 @@
 
   // ---- history ----
   const sessions = [
-    { sid: A('NightOwl').sid, gid: 'steam:730', start: now - 3 * H, ms: 2.2 * H },
-    { sid: A('ApexDrift').sid, gid: 'steam:244210', start: now - 2 * D, ms: 1.6 * H },
+    { sid: A('NightOwl').sid, gid: 'steam:730', start: now - 3 * H, ms: 2.2 * H, setup: { disp: 'DELL S2721DGF', res: 'CS2 stretched', snd: 'Headset (Arctis Nova 7)', apps: [] } },
+    { sid: A('ApexDrift').sid, gid: 'steam:244210', start: now - 2 * D, ms: 1.6 * H, setup: { disp: 'LG ULTRAWIDE', res: null, snd: null, apps: ['Content Manager'] } },
     { sid: A('Crosshair').sid, gid: 'steam:1144200', start: now - 3 * D, ms: 0.9 * H },
     { sid: A('Lantern').sid, gid: 'steam:739630', start: now - 5 * D, ms: 1.3 * H },
   ];
@@ -246,7 +246,7 @@
     if (g.apps.length) steps.push({ k: 'apps', label: 'Starting companion apps', sub: g.apps.map(x => x.path.split('\\').pop().replace(/\.exe$/i, '')).join(', ') });
     steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: (g.launcher ? 'via ' + g.launcher.split('\\').pop() : g.steam ? 'steam://rungameid/' + g.appid : g.exe.split('\\').pop()) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
-    session = { gid: id, steps, step: 0, running: false, mon: mon ? mon.id : null, res: res ? resTxt : null, changed: !!(mon || res), mode: g.display.mode, restore: g.display.restore, acct: acct ? acct.sid : null, start: 0, logAcct: acct ? acct.sid : g.steam ? active : 'local' };
+    session = { gid: id, steps, step: 0, running: false, mon: mon ? mon.id : null, res: res ? resTxt : null, changed: !!(mon || res), mode: g.display.mode, restore: g.display.restore, acct: acct ? acct.sid : null, start: 0, logAcct: acct ? acct.sid : g.steam ? active : 'local', setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: g.apps.map(x => x.path.split('\\').pop().replace(/\.exe$/i, '')) } };
     const me = session;
     (async () => {
       for (let i = 0; i < steps.length && session === me; i++) {
@@ -266,7 +266,7 @@
     session = null;
     const ms = s.start ? Date.now() - s.start : 0;
     if (ms > 0) {
-      sessions.unshift({ sid: s.logAcct, gid: s.gid, start: s.start, ms });
+      sessions.unshift({ sid: s.logAcct, gid: s.gid, start: s.start, ms, ...(s.setup.disp || s.setup.res || s.setup.snd || s.setup.apps.length ? { setup: s.setup } : {}) });
       const pl = (playLog[s.logAcct] = playLog[s.logAcct] || {}), e = (pl[s.gid] = pl[s.gid] || { ms: 0, n: 0, last: 0 });
       e.ms += ms; e.n++; e.last = Date.now();
     }
@@ -390,7 +390,10 @@
     // Game details: made-up news, achievements, friends and DLC (names and art are Steam's public store info).
     gameStatus: async appid => clone(DETAILS.status[appid] || { state: 'ok' }),
     libUpdates: async () => clone(DETAILS.status),
+    libUpdHistory: async () => [['730', 0.2, 186e6], ['2399420', 1.4, 1.2e9], ['244210', 3.1, 640e6], ['739630', 5.6, 2.1e9], ['1966720', 12, 410e6]].map(([appid, d, bytes]) => ({ appid, at: now - d * D, bytes })),
     gameLocal: async appid => clone(DETAILS.local(appid)),
+    recentAchievements: async appids => Object.entries(DETAILS.ach).filter(([id]) => appids.includes(id))
+      .flatMap(([id, a]) => a.summary.latest.map(x => ({ name: x.name, desc: x.desc, icon: x.icon, at: x.at, sid: a.sid, appid: id }))).sort((x, y) => y.at - x.at).slice(0, 5),
     gameAchievements: async (appid, sid) => { const a = DETAILS.ach[appid]; return a && a.sid === sid ? clone(a.full) : null; },
     gameWeb: async appid => ({ news: DETAILS.news(appid).map(({ body, author, ...n }) => n), dlc: clone(DETAILS.dlc[appid] || { total: 0, items: [] }) }),
     newsPost: async (appid, gid) => clone(DETAILS.news(appid).find(n => n.gid === gid) || null),

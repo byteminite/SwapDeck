@@ -131,3 +131,7 @@
 .ap button:focus-visible,.ap-g:focus-visible,.ap summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:1100px){.ap-cols{grid-template-columns:minmax(0,1fr)}.ap-stats{grid-template-columns:repeat(2,1fr)}.ap-head{flex-wrap:wrap}.ap-acts{width:100%}}
 @media (prefers-reduced-motion:reduce){.am{animation:none}}
+.ap-sep{margin-top:14px;padding-top:14px;border-top:1px solid var(--ls-line)}
+.ap-danger .ap-sm{flex:none}
+.am-show{border:0;background:none;color:var(--accent-light);font:600 11.5px 'Geist',sans-serif;cursor:pointer;padding:0 0 0 4px}
+.am-show:hover{text-decoration:underline}

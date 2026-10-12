@@ -10,7 +10,7 @@ export function acctMenu(M) {
 ${r.cur ? html`<span class="am-cb">CURRENT</span>` : null}${r.linked ? null : html`<button class="am-cn" onClick=${r.onConnect}>Connect</button>`}
 <button class="am-ib" aria-label=${'Details for ' + r.name} title="Details" onClick=${r.onInfo}>${icon('info', 14)}</button></div>`;
   return html`<div class="lg-catch" onClick=${M.close}></div><div class="am" role="dialog" aria-label="Accounts">
-<div class="am-h"><b>Accounts</b><span>${M.count}</span></div>
+<div class="am-h"><b>Accounts</b><span>${M.count}${M.hiddenN ? html` · ${M.hiddenN} hidden <button class="am-show" onClick=${M.onShowHidden}>Show</button>` : null}</span></div>
 <div class="am-list">${M.rows.length ? M.rows.map(row) : html`<div class="am-none">No accounts yet. Add one to switch with a click.</div>`}</div>
 <div class="am-f">${M.unlinkedN ? html`<button class="c" onClick=${M.onConnectAll}>${icon('link', 14)}Connect all (${M.unlinkedN})</button>` : M.rows.length ? html`<span class="am-done">${icon('check', 14)}All connected</span>` : null}
 <button disabled=${M.adding} onClick=${M.onAdd}>${icon('userplus', 14)}${M.adding ? 'Waiting for Steam' : 'Add account'}</button></div></div>`;
@@ -54,7 +54,9 @@ function side(P) {
 <div class="ap-row"><b>Stats</b><span>${P.updLabel}</span><button class="ap-sm" disabled=${P.fetching} onClick=${P.onRefresh}>Refresh</button></div>
 ${P.pwSaved ? html`<div class="ap-row"><b>Saved password</b><span>Used to reconnect</span><button class="ap-sm" onClick=${P.onForgetPw}>Forget</button></div>` : null}
 ${P.linked ? html`<div class="ap-row"><b>Connected for stats</b><span></span><button class="ap-sm" onClick=${P.onUnlink}>Disconnect</button></div>` : null}</details></div>
-<div class="ap-card ap-danger"><div class="ap-cm"><b>Forget this account</b><span>Removes its saved sign-in from Steam on this PC. The Steam account itself isn't touched.</span></div><button class="ap-sm d" onClick=${P.onForget}>Forget</button></div>`;
+<div class="ap-card"><div class="ap-danger">${P.rmAsk ? html`<div class="ap-cm"><b>Remove ${P.name} from SwapDeck?</b><span>It disappears from SwapDeck but stays saved in Steam. Show it again from the account menu.</span></div><button class="ap-sm" onClick=${P.onRemoveNo}>Cancel</button><button class="ap-sm d" onClick=${P.onRemoveYes}>Remove</button>`
+  : html`<div class="ap-cm"><b>Remove from SwapDeck</b><span>Hides it here. Steam keeps its saved sign-in.</span></div><button class="ap-sm" onClick=${P.onRemove}>Remove</button>`}</div>
+<div class="ap-danger ap-sep"><div class="ap-cm"><b>Forget on this PC</b><span>Also removes its saved sign-in from Steam. The Steam account itself isn't touched.</span></div><button class="ap-sm d" onClick=${P.onForget}>Forget</button></div></div>`;
 }
 
 export function acctPage(P) {

@@ -50,7 +50,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     store.setGameCfg(s.gid, { lastPlayed: Date.now(), playMs: (cfg.playMs || 0) + (s.steam ? 0 : ms) });
     // Playtime per account: Steam games count from when Steam reported them running.
     const played = s.steam ? (s.seenAt ? Date.now() - s.seenAt : 0) : ms;
-    if (s.logAcct && played > 0) store.addPlay(s.logAcct, s.gid, played);
+    if (s.logAcct && played > 0) store.addPlay(s.logAcct, s.gid, played, s.setup);
     send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
 
@@ -117,6 +117,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
       saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [],
       logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
+      // What the game was set up with, kept on the session so Recently played can show it.
+      setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: apps.map(a => path.basename(a.path, '.exe')) },
     };
     emit(s);
     try {

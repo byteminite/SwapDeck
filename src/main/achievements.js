@@ -31,9 +31,10 @@ function schemaOf(dir, appid) {
 }
 
 // One account's progress: null if the game has no achievements; known=false if this account has no stats here.
-function achievements(dir, accountId, appid) {
+function achievements(dir, accountId, appid, schemas) {
   if (!dir || !/^\d{1,10}$/.test(String(appid)) || !/^\d{1,12}$/.test(String(accountId))) return null;
-  const list = schemaOf(dir, appid);
+  const list = schemas && String(appid) in schemas ? schemas[appid] : schemaOf(dir, appid);
+  if (schemas) schemas[appid] = list;
   if (!list) return null;
   const user = readBin(path.join(statsDir(dir), `UserGameStats_${accountId}_${appid}.bin`));
   const cache = (user && user.cache) || null;
@@ -52,4 +53,14 @@ function achievements(dir, accountId, appid) {
 // Small enough to send for every account when a game's details open; the full list is fetched on "Show all".
 const summary = a => a && { known: a.known, total: a.total, unlocked: a.unlocked, latest: a.latest };
 
-module.exports = { achievements, summary };
+// The newest unlocks across several accounts and games, for Recently played. pairs: [{ sid, acct }].
+function recent(dir, pairs, appids, n = 5) {
+  const out = [], schemas = {};
+  for (const appid of appids) for (const p of pairs) {
+    const a = achievements(dir, p.acct, appid, schemas);
+    if (a && a.known) for (const x of a.latest) if (x.at) out.push({ name: x.name, desc: x.desc, icon: x.icon, at: x.at, sid: p.sid, appid: String(appid) });
+  }
+  return out.sort((x, y) => y.at - x.at).slice(0, n);
+}
+
+module.exports = { achievements, summary, recent };

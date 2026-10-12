@@ -37,7 +37,8 @@ function stateOf(st) {
   if (flags & (F.updateRequired | F.updateStarted)) {
     return num(vdf.get(st, 'UpdateResult')) ? { state: 'failed', reason: 'update', code: num(vdf.get(st, 'UpdateResult')) } : { state: 'queued', bytes: size };
   }
-  return flags & F.installed ? { state: 'ok', lastUpdated: num(vdf.get(st, 'LastUpdated')) * 1000 } : { state: 'missing' };
+  // Up-to-date manifests keep the size of the last update, which feeds Recently updated.
+  return flags & F.installed ? { state: 'ok', lastUpdated: num(vdf.get(st, 'LastUpdated')) * 1000, lastBytes: dl } : { state: 'missing' };
 }
 
 // Every installed game that isn't simply up to date, for the Library and tray badges. Polled while those are on
@@ -64,6 +65,17 @@ function updates(dir) {
     }
   }
   return out;
+}
+
+// Games Steam finished updating in the last `days` days, newest first: [{ appid, at, bytes }].
+function recentUpdates(dir, days = 30) {
+  updates(dir);
+  const since = Date.now() - days * 86400000, out = [];
+  for (const [file, hit] of seen) {
+    const m = /appmanifest_(\d{1,10})\.acf$/.exec(file), s = hit.status;
+    if (m && s.state === 'ok' && s.lastUpdated > since && s.lastUpdated <= Date.now() + 60000) out.push({ appid: m[1], at: s.lastUpdated, bytes: s.lastBytes || 0 });
+  }
+  return out.sort((a, b) => b.at - a.at);
 }
 
 function updateStatus(dir, appid) {
@@ -105,4 +117,4 @@ function screenshotFile(dir, accountId, rel) {
 }
 const screenshotFolder = (dir, accountId, appid) => path.join(dir, 'userdata', String(accountId), '760', 'remote', String(appid), 'screenshots');
 
-module.exports = { updateStatus, updates, workshop, screenshots, screenshotFile, screenshotFolder };
+module.exports = { updateStatus, updates, recentUpdates, workshop, screenshots, screenshotFile, screenshotFolder };

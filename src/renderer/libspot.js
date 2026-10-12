@@ -41,7 +41,7 @@ export function libSpotVals(app) {
   const acts = actionList(app), tags = app.tagOrder().filter(t => games.some(g => (g.tags || []).includes(t)));
   const r = searchAll({ q, cat, tags, actions: acts, accounts: app.accts.map(a => ({ id: a.id, name: a.name })),
     games: games.map(g => ({ id: g.id, name: g.name, tags: g.tags, owners: accountsOf(g), acct: g.acct, installed: g.installed, lastPlayed: g.lastPlayed })) });
-  const remember = t => app.setState(s => ({ spRecent: [t, ...(s.spRecent || []).filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 4) }));
+  const remember = t => app.setCfg({ spRecent: [t, ...(S.settings.spRecent || []).filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 4) });
   const close = () => app.setState({ lsSpot: false });
   const game = id => { const g = app.gfind(id), c = card(app, g, me, L);
     const st = c.flag && c.flag.label !== 'Non-Steam' ? c.flag.label : played(g.lastPlayed);
@@ -60,7 +60,7 @@ export function libSpotVals(app) {
   const move = d => { if (!items.length) return; app.setState({ spSel: (sel + d + items.length) % items.length }); requestAnimationFrame(() => { const el = document.querySelector('.sp-body .sel'); if (el) el.scrollIntoView({ block: 'nearest' }); }); };
   return {
     q, close, cats: CATS.map(([k, label, ic]) => ({ label, ic, on: cat === k, pick: () => app.setState({ spCat: k, spSel: 0 }) })),
-    recent: q ? [] : (S.spRecent || []).map(t => ({ label: t, pick: () => app.setState({ spQ: t, spSel: 0 }) })),
+    recent: q ? [] : (S.settings.spRecent || []).map(t => ({ label: t, pick: () => app.setState({ spQ: t, spSel: 0 }) })),
     onQ: e => app.setState({ spQ: e.target.value, spSel: 0 }),
     onKey: e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); move(e.key === 'ArrowDown' ? 1 : -1); }

@@ -24,6 +24,8 @@ export function acctMenuVals(app) {
       onConnect: e => { e.stopPropagation(); close(); app.openLink(a.id); },
       onInfo: e => { e.stopPropagation(); app.setState({ lsMenu: false, gd: null, apAll: false }); app.openDetails(a.id); } })),
     unlinkedN: unlinked.length,
+    hiddenN: (S.settings.hiddenAccts || []).filter(sid => S.accounts.some(a => a.sid === sid && !app.find(sid))).length,
+    onShowHidden: () => app.setCfg({ hiddenAccts: [] }),
     onConnectAll: () => { close(); app.connectAll(); },
     onAdd: () => { close(); app.addAcc(); },
   };
@@ -37,6 +39,22 @@ function bandVals(app, d) {
   if (!g) return null;
   const days = Math.floor((Date.now() - s.start) / DAY);
   return { live: false, k: 'LAST PLAYED', name: g.name, sub: (days < 1 ? 'Today' : days === 1 ? 'Yesterday' : days + ' days ago') + ' through SwapDeck', bg: hero(g), label: 'Details', act: () => app.openGame(g.id) };
+}
+
+// Remove from SwapDeck: hides the account here only. Steam keeps its saved login, and Undo or the menu brings it back.
+function removeVals(app, d) {
+  const hidden = app.state.settings.hiddenAccts || [];
+  const setHidden = list => app.setCfg({ hiddenAccts: list });
+  return {
+    rmAsk: app.state.apRmAsk === d.id,
+    onRemove: () => d.current ? app.toast('warning', 'Switch to another account first', d.name + " is signed in to Steam, so it stays in SwapDeck.") : (app.setState({ apRmAsk: d.id }), requestAnimationFrame(() => { const el = document.querySelector('.ap-danger'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); })),
+    onRemoveNo: () => app.setState({ apRmAsk: null }),
+    onRemoveYes: () => {
+      setHidden([...hidden.filter(x => x !== d.sid), d.sid]);
+      app.setState({ apRmAsk: null, drawerId: null });
+      app.toast('info', d.name + ' removed from SwapDeck', "It's still saved in Steam.", { label: 'Undo', fn: () => setHidden((app.state.settings.hiddenAccts || []).filter(x => x !== d.sid)) });
+    },
+  };
 }
 
 export function acctPageVals(app, dw) {
@@ -72,6 +90,6 @@ export function acctPageVals(app, dw) {
     login: d.login, sid: d.sid, copyLogin: () => copy(d.login, 'Login name'), copySid: () => copy(d.sid, 'SteamID64'),
     pwSaved: dw.dPwSaved, onForgetPw: dw.onDForgetPw,
     updLabel: dw.dUpd, fetching: dw.dFetching, onRefresh: dw.onDRefresh, onUnlink: dw.onDUnlink,
-    onForget: dw.onDForget,
+    onForget: dw.onDForget, ...removeVals(app, d),
   };
 }

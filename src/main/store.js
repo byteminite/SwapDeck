@@ -23,6 +23,8 @@ const DEFAULTS = {
     startView: 'acc',        // acc | lib: the screen SwapDeck opens on
     accountStyle: 'grid',    // grid ("Who's playing?") | gallery (the 1.0 sideways panels)
     favOrder: [],            // Library layout: favourite game ids in the owner's own order
+    spRecent: [],            // Library layout: last 4 Ctrl K searches
+    hiddenAccts: [],         // Library layout: accounts removed from SwapDeck (still saved in Steam)
     layout: 'classic',       // classic (Accounts + Library pages) | library (rail, cover grid, full pages)
     tray: false,             // keep running in the tray when the window is closed
     hotkeyOn: false,         // global shortcut that opens the tray panel (only while the tray is on)
@@ -148,12 +150,14 @@ function setDisplaySaved(v) { data.displaySaved = v; save(); }
 const resProfiles = () => data.resProfiles;
 function setResProfiles(v) { data.resProfiles = v; save(); }
 const playLog = () => data.playLog;
-function addPlay(sid, gid, ms) {
+function addPlay(sid, gid, ms, setup) {
   if (!sid || !gid) return;
   const a = data.playLog[sid] = data.playLog[sid] || {};
   const e = a[gid] = a[gid] || { ms: 0, n: 0, last: 0 };
   e.ms += Math.max(0, ms || 0); e.n++; e.last = Date.now();
-  data.sessions.unshift({ sid, gid, start: Date.now() - Math.max(0, ms || 0), ms: Math.max(0, ms || 0) });
+  const entry = { sid, gid, start: Date.now() - Math.max(0, ms || 0), ms: Math.max(0, ms || 0) };
+  if (setup && (setup.disp || setup.res || setup.snd || (setup.apps && setup.apps.length))) entry.setup = setup;
+  data.sessions.unshift(entry);
   data.sessions.length = Math.min(data.sessions.length, 300);
   save();
 }

@@ -413,6 +413,8 @@ function ipc() {
     if ('startView' in patch) allowed.startView = patch.startView === 'lib' ? 'lib' : 'acc';
     if (typeof patch.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(patch.lastSeenVersion)) allowed.lastSeenVersion = patch.lastSeenVersion;
     if (Array.isArray(patch.favOrder)) allowed.favOrder = patch.favOrder.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 1000);
+    if (Array.isArray(patch.spRecent)) allowed.spRecent = patch.spRecent.filter(x => typeof x === 'string' && x.length <= 80).slice(0, 4);
+    if (Array.isArray(patch.hiddenAccts)) allowed.hiddenAccts = patch.hiddenAccts.filter(x => typeof x === 'string' && /^\d{1,20}$/.test(x)).slice(0, 200);
     if ('layout' in patch) allowed.layout = patch.layout === 'library' ? 'library' : 'classic';
     if ('accountStyle' in patch) allowed.accountStyle = patch.accountStyle === 'gallery' ? 'gallery' : 'grid';
     if ('tray' in patch) allowed.tray = !!patch.tray;
@@ -489,6 +491,7 @@ function ipc() {
   // Game details (Overview): what Steam keeps on this PC about a game. appid is checked before any file is read.
   const isAppid = v => /^\d{1,10}$/.test(String(v));
   ipcMain.handle('lib:updates', () => loc.dir ? gameinfo.updates(loc.dir) : {});
+  ipcMain.handle('lib:updHistory', () => loc.dir ? gameinfo.recentUpdates(loc.dir, 30) : []);
   ipcMain.handle('game:status', (_, appid) => isAppid(appid) && loc.dir ? gameinfo.updateStatus(loc.dir, String(appid)) : { state: 'missing' });
   ipcMain.handle('game:local', (_, appid) => {
     if (!isAppid(appid) || !loc.dir) return null;
@@ -532,6 +535,11 @@ function ipc() {
   ipcMain.handle('game:achievements', (_, appid, sid) => {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return null;
     return achievements.achievements(loc.dir, String(steam.accountIdFromSid(String(sid))), String(appid));
+  });
+  ipcMain.handle('ach:recent', (_, appids) => {
+    if (!loc.dir || !Array.isArray(appids)) return [];
+    const ids = appids.map(String).filter(isAppid).slice(0, 20);
+    return achievements.recent(loc.dir, accounts().map(a => ({ sid: a.sid, acct: String(steam.accountIdFromSid(a.sid)) })), ids);
   });
   ipcMain.handle('game:shotFolder', (_, appid, sid) => {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return { ok: false };
@@ -664,7 +672,8 @@ function ipc() {
   });
   // ---- tray panel ----
   ipcMain.handle('tray:data', () => {
-    const accs = accounts(), lib = library.build(loc.dir), s = store.settings(), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
+    const s = store.settings(), act = steamState().activeSid, hidden = new Set(s.hiddenAccts || []);
+    const accs = accounts().filter(a => !hidden.has(a.sid) || a.sid === act), lib = library.build(loc.dir), upd = loc.dir ? gameinfo.updates(loc.dir) : {};
     return {
       steam: steamState(), version: app.getVersion(), session: player.current(), winAccent: winAccent(),
       settings: { base: s.base, accent: s.accent, customAccent: s.customAccent, reduceMotion: s.reduceMotion },
