@@ -5,6 +5,17 @@ import { icon } from './libicons.js';
 import { CHANGELOG } from './changelog.js';
 
 const HL_IC = ['grid', 'house', 'search', 'power', 'refresh'];
+// Each highlight and section gets its own colour so the page is easy to scan.
+const HUES = ['34,211,238', '167,139,250', '251,191,36', '74,222,128', '244,114,182', '96,165,250', '251,146,60'];
+const hue = i => '--hue:' + HUES[i % HUES.length];
+// Section icons by topic; anything unknown gets a star.
+const SEC_IC = [[/friend/i, 'users'], [/stop/i, 'power'], [/search/i, 'search'], [/tag/i, 'tags'], [/resolution|display|fit|screen|scale|size/i, 'monitor'], [/home/i, 'house'], [/setting/i, 'settings'],
+  [/update/i, 'refresh'], [/favourite/i, 'heart'], [/tray|shortcut/i, 'app'], [/news|patch|notif/i, 'bell'], [/librar|all games/i, 'grid'], [/game|cs2/i, 'gamepad'], [/account|profile/i, 'users'],
+  [/^app$/i, 'settings'], [/look/i, 'layers'], [/fix/i, 'check2'], [/good to know/i, 'info']];
+const hlIcon = (title, i) => { const m = SEC_IC.find(([re]) => re.test(title)); return m ? m[1] : HL_IC[i % HL_IC.length]; };
+const secIcon = title => (SEC_IC.find(([re]) => re.test(title)) || [0, 'star'])[1];
+// "Short lead: the rest" items show the lead in bold.
+const item = s => { const i = s.indexOf(': '); return i > 0 && i < 40 ? html`<b>${s.slice(0, i + 1)}</b> ${s.slice(i + 2)}` : s; };
 
 export const openWn = (app, v) => app.setState({ wnFull: v || CHANGELOG[0].v, wn: false });
 
@@ -12,7 +23,7 @@ export function libWnVals(app) {
   const S = app.state;
   if (S.wnFull) {
     const cur = CHANGELOG.find(r => r.v === S.wnFull) || CHANGELOG[0];
-    return { full: true, cur, latest: CHANGELOG[0].v, versions: CHANGELOG.map(r => ({ v: r.v, date: r.date, title: r.title, on: r.v === cur.v, pick: () => app.setState({ wnFull: r.v }) })),
+    return { full: true, cur, latest: CHANGELOG[0].v, versions: CHANGELOG.map(r => ({ v: r.v, date: r.date, title: r.title, on: r.v === cur.v, pick: () => { app.setState({ wnFull: r.v }); const b = document.querySelector('.wn-body'); if (b) b.scrollTop = 0; } })),
       close: () => app.setState({ wnFull: null }), onGithub: () => window.api.openProfile('https://github.com/byteminite/SwapDeck/releases') };
   }
   if (S.wn && !S.locked) {
@@ -30,15 +41,15 @@ ${P.versions.map(v => html`<button class=${'wn-v' + (v.on ? ' on' : '')} aria-cu
 <span class="wn-sp"></span><button class="wn-gh" onClick=${P.onGithub}>${icon('external', 14)}Releases on GitHub</button></nav>
 <div class="wn-body"><button class="wn-x" aria-label="Close" onClick=${P.close}>${icon('x', 16)}</button>
 <div class="wn-hero"><div class="wn-ver">v${c.v}</div><div class="wn-meta"><span>${c.date}</span>${c.v === P.latest ? html`<i>LATEST</i>` : null}</div><h3>${c.title}</h3><p>${c.intro}</p></div>
-${c.highlights && c.highlights.length ? html`<div class="wn-k">HIGHLIGHTS</div><div class="wn-hl">${c.highlights.map(([b, s], i) => html`<div class="wn-c"><span class="wn-ic">${icon(HL_IC[i % HL_IC.length], 18)}</span><b>${b}</b><span>${s}</span></div>`)}</div>` : null}
-<div class="wn-k">EVERYTHING IN v${c.v}</div><div class="wn-secs">${c.sections.map(([t, items]) => html`<div class="wn-s"><h4>${t}</h4><ul>${items.map(it => html`<li>${it}</li>`)}</ul></div>`)}</div></div></div></div>`;
+${c.highlights && c.highlights.length ? html`<div class="wn-k">HIGHLIGHTS</div><div class="wn-hl">${c.highlights.map(([b, s], i) => html`<div class="wn-c" style=${hue(i)}><span class="wn-ic">${icon(hlIcon(b, i), 18)}</span><b>${b}</b><span>${s}</span></div>`)}</div>` : null}
+<div class="wn-k">EVERYTHING IN v${c.v}</div><div class="wn-secs">${c.sections.map(([t, items], i) => html`<div class="wn-s" style=${hue(i)}><h4><span class="wn-ic">${icon(secIcon(t), 15)}</span>${t}<em>${items.length}</em></h4><ul>${items.map(it => html`<li>${item(it)}</li>`)}</ul></div>`)}</div></div></div></div>`;
 }
 
 function popup(P) {
   const c = P.cur;
   return html`<div class="tm-ov"><div class="tm wn-pop" role="dialog" aria-modal="true" aria-label=${"What's new in " + c.v}>
 <div class="tm-h"><div class="wn-k">WHAT'S NEW IN v${c.v}</div><h3>${c.title}</h3><p>${c.intro}</p></div>
-<div class="tm-b">${(c.highlights || []).map(([b, s], i) => html`<div class="wn-pi"><span class="wn-ic">${icon(HL_IC[i % HL_IC.length], 16)}</span><div><b>${b}</b><span>${s}</span></div></div>`)}</div>
+<div class="tm-b">${(c.highlights || []).map(([b, s], i) => html`<div class="wn-pi" style=${hue(i)}><span class="wn-ic">${icon(hlIcon(b, i), 16)}</span><div><b>${b}</b><span>${s}</span></div></div>`)}</div>
 <div class="tm-f"><button class="st-btn" onClick=${P.all}>See everything</button><span class="tm-sp"></span><button class="st-btn p" onClick=${P.gotIt}>Got it</button></div></div></div>`;
 }
 

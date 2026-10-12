@@ -36,7 +36,7 @@ export const CHANGELOG = [
         'Play when done starts a game when its update finishes, while SwapDeck is open (the tray is fine)',
       ]],
       ['Accounts', [
-        'Your avatar at the top right opens the account menu: switch, Connect, Connect all and Add account',
+        'Your avatar at the bottom of the rail opens the account menu: switch, Connect, Connect all and Add account',
         'Each account has a full page with stats, games, sessions, its game after switching, a note and Advanced',
         'Remove from SwapDeck hides an account here and keeps it saved in Steam. Show it again from the account menu or Settings',
         'Switching waits while a game runs, so Steam never restarts under it',
