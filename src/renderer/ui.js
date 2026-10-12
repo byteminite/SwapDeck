@@ -12,6 +12,7 @@ import { tagsCard, screenshotsCard, workshopCard, notesCard, achievementsCard, a
 import { newsReader } from './newsreader.js';
 import { updateBadge } from './updatebadge.js';
 import { libShellVals, layoutVals, isLibLayout } from './libvals.js';
+import { syncTabInk } from './libmotion.js';
 import { openSpot } from './libspot.js';
 import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
@@ -265,6 +266,7 @@ class App extends Component {
   componentDidUpdate() {
     this.applyTheme();
     this.syncLibScroll();
+    syncTabInk(document);
   }
   // Library layout: a game or account page opens at the top; the four list pages keep where you left them.
   syncLibScroll() {

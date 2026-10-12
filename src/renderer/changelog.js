@@ -21,6 +21,7 @@ export const CHANGELOG = [
         'Right-click a game: Play, Play as another account once, tags, its account, Change artwork, Open folder, Desktop shortcut, Store page or Hide from Library',
         'Starting a game shows each step, with steps that were already right marked Ready. Back to library keeps a Now playing bar at the bottom',
         'Cancel stops a game while it starts. If it can\'t start, the screen says what went wrong, with Try again',
+        'Pages, game pages and covers ease in, the tab underline slides, and buttons give a small press. Reduce motion in Settings turns it off',
       ]],
       ['Game pages', [
         'Every game opens as a full page with Overview, Achievements and Setup, with Setup in two columns',

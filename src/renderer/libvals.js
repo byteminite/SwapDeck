@@ -60,7 +60,7 @@ export function libShellVals(app, gv, dw) {
         : !navigator.onLine ? { tone: 'warn', ic: 'alert', text: "You're offline. Switching and playing still work; news and stats come back when you reconnect." } : null,
       wn: libWnVals(app) ? wnOverlay(libWnVals(app)) : null, pad: padHints(!!S.padOn), rm: !!S.settings.reduceMotion,
       setOn: onSet, settings: onSet ? b => settingsPage(app, b) : null,
-      contentRef: app.lsContentRef, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
+      contentRef: app.lsContentRef, viewKey: onSet ? 'set' : onGame ? 'g:' + S.gd : ap ? 'a:' + S.drawerId : 'p:' + page, content: onSet ? null : onGame ? gamePage(libGamePageVals(app, gv)) : ap ? acctPage(ap) : (CONTENT[page] || CONTENT.games)(app),
     },
   };
 }

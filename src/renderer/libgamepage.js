@@ -24,7 +24,7 @@ ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 }
 
 export function gamePage(P) {
-  const tabs = html`<div class="gp-tabs" role="tablist">${P.tabs.map(t => html`<button class=${'gp-tab' + (t.on ? ' on' : '')} role="tab" aria-selected=${t.on} onClick=${t.pick}>${t.label}</button>`)}</div>`;
+  const tabs = html`<div class="gp-tabs" role="tablist">${P.tabs.map(t => html`<button class=${'gp-tab' + (t.on ? ' on' : '')} role="tab" aria-selected=${t.on} onClick=${t.pick}>${t.label}</button>`)}<i class="tab-ink" aria-hidden="true"></i></div>`;
   const body = P.tab === 'ach' && P.achEl ? P.achEl
     : P.tab === 'setup' ? (P.setupEl || html`<div class="gp-soon">Setup for this game is next in the build.</div>`)
       : P.ov ? html`<div class="gp-ov">${gameOverview(P.ov)}</div>` : html`<div class="gp-soon">${P.noOvText}</div>`;
