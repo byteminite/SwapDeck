@@ -36,7 +36,7 @@ export function libAchVals(app, g) {
   rows = rows.slice(0, cap);
   const A = sel.ach, done = A.total ? Math.round(A.unlocked / A.total * 100) : 0;
   return {
-    empty: false, loading: !Array.isArray(mine), rareKnown: !!X.rare && Object.keys(rare).length > 0,
+    empty: false, loading: !Array.isArray(mine), noList: Array.isArray(mine) && !mine.length, rareKnown: !!X.rare && Object.keys(rare).length > 0,
     accts: list.map(x => ({ ...app.accountLook(x.sid), on: x.sid === sel.sid, count: x.ach.unlocked + '/' + x.ach.total, pick: () => app.setState({ achSid: x.sid }) })),
     head: A.unlocked === A.total ? 'All ' + A.total + ' unlocked' : A.unlocked + ' of ' + A.total + ' unlocked', pct: done, name: app.accountLook(sel.sid).name,
     more: total > cap ? { label: 'Show all ' + total, pick: () => app.setState({ achAll: true }) } : null,
@@ -57,6 +57,6 @@ export function achPage(P) {
   const row = r => html`<div class=${'ac-row' + (r.got ? '' : ' locked')}><span class="ac-ic" style=${r.icon ? 'background-image:url("' + r.icon + '")' : ''}>${r.icon ? null : icon('star', 18)}</span>
 <div class="ac-m"><b>${r.name}${r.tier ? html`<em class=${r.tier[1]}>${r.tier[0]}</em>` : null}</b><span>${r.desc}</span>${r.also.length ? html`<span class="ac-also">Also unlocked by ${r.also.map(a => html`<i title=${a.name} style=${'background:' + a.bg}>${a.img ? '' : a.ini}</i>`)}</span>` : null}</div>
 <div class="ac-r"><span class="ac-when">${r.when}</span>${r.pct ? html`<span class="ac-pct" title="Players who have it">${r.pct} of players</span><div class="ac-rb"><i style=${'width:' + Math.max(2, r.bar) + '%'}></i></div>` : null}</div></div>`;
-  return html`<div class="ac">${head}${P.loading ? html`<div class="ac-none">Loading achievements...</div>` : P.rows.length ? html`<div class="ac-list">${P.rows.map(row)}</div>${P.more ? html`<button class="ac-more" onClick=${P.more.pick}>${P.more.label}</button>` : null}` : html`<div class="ac-none">Nothing here with this filter.</div>`}
+  return html`<div class="ac">${head}${P.loading ? html`<div class="ac-none">Loading achievements...</div>` : P.rows.length ? html`<div class="ac-list">${P.rows.map(row)}</div>${P.more ? html`<button class="ac-more" onClick=${P.more.pick}>${P.more.label}</button>` : null}` : html`<div class="ac-none">${P.noList ? "Steam hasn't saved this game's achievement list on this PC." : 'Nothing here with this filter.'}</div>`}
 ${!P.loading && !P.rareKnown ? html`<div class="ac-fine">How rare each one is comes from Steam when you're online.</div>` : null}</div>`;
 }

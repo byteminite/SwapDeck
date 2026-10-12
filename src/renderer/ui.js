@@ -258,9 +258,24 @@ class App extends Component {
     document.body.style.background = t.background;
   }
   rootRef = el => { this._root = el; if (el) this.applyTheme(); };
-  lsContentRef = el => { this._lsContent = el; };
+  lsContentRef = el => {
+    if (el && el !== this._lsContent) el.addEventListener('scroll', () => { if (this._lsView && this._lsView.startsWith('p:')) this._lsKeep[this._lsView] = el.scrollTop; }, { passive: true });
+    this._lsContent = el;
+  };
   componentDidUpdate() {
     this.applyTheme();
+    this.syncLibScroll();
+  }
+  // Library layout: a game or account page opens at the top; the four list pages keep where you left them.
+  syncLibScroll() {
+    const S = this.state, el = this._lsContent;
+    if (!el || !isLibLayout(this)) { this._lsView = null; return; }
+    const key = S.setOpen ? 'set' : S.gd ? 'g:' + S.gd : S.drawerId ? 'a:' + S.drawerId : 'p:' + (S.libPage || S.settings.libStart || 'games');
+    if (key === this._lsView) return;
+    this._lsKeep = this._lsKeep || {};
+    this._lsView = key;
+    // Settings scrolls itself to the section it was opened on.
+    if (key !== 'set') el.scrollTop = key.startsWith('p:') ? this._lsKeep[key] || 0 : 0;
   }
   colorRef = el => { this._color = el; };
 

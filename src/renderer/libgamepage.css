@@ -47,3 +47,9 @@
 @container (min-width:620px){.cs-cgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .cs-cgrid>div{min-width:0}
 .cs-cgrid span,.cs-cgrid div{overflow-wrap:anywhere}
+
+/* Game page stats strip on a narrow window: the Updates cell's "Open in Steam" drops under the status instead of cutting it off. */
+.gp .gp-stats>div{flex-wrap:wrap;row-gap:2px}
+.gp .gp-stats>div>div{flex:1 1 76px!important}
+.gp .gp-stats>div>button{margin-left:37px}
+.gp .gp-stats>div>div+button{order:3}

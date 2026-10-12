@@ -32,7 +32,7 @@ const card = (title, body, aside) => html`<section style="border:1px solid rgba(
 // p: { stats: [statCell props], links: [{ label, on }], left: [vnodes], right: [vnodes], lightbox?, reader? (vnode) }
 export function gameOverview(p) {
   return html`<div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 22px 26px">
-<div style="display:flex;align-items:stretch;border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);overflow:hidden">${p.stats.map(statCell)}</div>
+<div class="gp-stats" style="display:flex;align-items:stretch;border:1px solid rgba(var(--fg-rgb),.08);border-radius:14px;background:rgba(var(--fg-rgb),.02);overflow:hidden">${p.stats.map(statCell)}</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">${p.links.map(l => html`<button style="padding:7px 11px;border-radius:9px;border:1px solid rgba(var(--fg-rgb),.1);background:transparent;color:var(--text-muted);font:500 12px 'Geist',sans-serif;cursor:pointer" onClick=${l.on} class="dcha" title=${'Opens in Steam'}>${l.label}</button>`)}</div>
 <div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;margin-top:18px;align-items:start">
 <div style="display:flex;flex-direction:column;gap:16px;min-width:0">${p.left}</div>

@@ -112,3 +112,6 @@
 .stp button:focus-visible,.stp input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:1000px){.stp{grid-template-columns:minmax(0,1fr)}.st-nav{position:static;flex-direction:row;flex-wrap:wrap;align-items:center}.st-nav h2,.st-navsub,.st-find{width:100%}.st-row{flex-wrap:wrap}.st-lays{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.st-tg,.st-tg::after{transition:none}}
+
+/* Narrow window: stacked rows must not wrap, or the monitor map (sized by aspect ratio) collapses to no height. */
+.st-row.col{flex-wrap:nowrap!important}

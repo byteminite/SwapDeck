@@ -421,7 +421,7 @@
       .flatMap(([id, a]) => a.summary.latest.map(x => ({ name: x.name, desc: x.desc, icon: x.icon, at: x.at, sid: a.sid, appid: id }))).sort((x, y) => y.at - x.at).slice(0, 5),
     newsLatest: async appids => appids.map(String).filter(id => DETAILS.newsFor[id]).map(id => { const n = DETAILS.news(id)[0]; return { appid: id, gid: n.gid, title: n.title, at: n.at, patch: n.patch }; }),
     achRarity: async appid => appid === '730' ? { a1: 63.2 } : {},
-    gameAchievements: async (appid, sid) => { const a = DETAILS.ach[appid]; return a && a.sid === sid ? clone(a.full) : null; },
+    gameAchievements: async (appid, sid) => { const a = DETAILS.ach[appid]; return a && a.sid === sid ? { items: clone(a.full || a.summary.latest) } : null; },
     gameWeb: async appid => ({ news: DETAILS.news(appid).map(({ body, author, ...n }) => n), dlc: clone(DETAILS.dlc[appid] || { total: 0, items: [] }) }),
     newsPost: async (appid, gid) => clone(DETAILS.news(appid).find(n => n.gid === gid) || null),
     gameConnected: async (appid, sid) => DETAILS.connected(appid, sid),
