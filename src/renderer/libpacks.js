@@ -5,7 +5,8 @@ import { icon } from './libicons.js';
 
 // What the launchers have right now, refreshed at most every 15 seconds (the scan itself is cached in main too).
 export function loadPacks(app, force) {
-  if (app.state.settings.showPacks === false || !window.api.packsFound) return;
+  // Not before the saved settings have loaded: until then every pack looks new, and Classic would offer them all again.
+  if (!app.state.version || app.state.settings.showPacks === false || !window.api.packsFound) return;
   if (!force && app._packsAt && Date.now() - app._packsAt < 15000) return;
   app._packsAt = Date.now();
   window.api.packsFound().then(list => {
