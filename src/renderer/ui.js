@@ -1110,7 +1110,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', lgTab: 'ov', acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
+    this.setState({ gd: id, gdTab: 'ov', lgTab: 'ov', achSid: null, achAll: false, acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));

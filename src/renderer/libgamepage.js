@@ -2,7 +2,7 @@
 // same cards as Classic's game details, so both layouts show the same data.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
-import { gameOverview, achievementsCard } from './gamepage.js';
+import { gameOverview } from './gamepage.js';
 
 function header(P) {
   return html`<div class="gp-head">
@@ -25,7 +25,7 @@ ${P.noArt ? html`<div class="gp-ini">${P.ini}</div>` : null}
 
 export function gamePage(P) {
   const tabs = html`<div class="gp-tabs" role="tablist">${P.tabs.map(t => html`<button class=${'gp-tab' + (t.on ? ' on' : '')} role="tab" aria-selected=${t.on} onClick=${t.pick}>${t.label}</button>`)}</div>`;
-  const body = P.tab === 'ach' && P.achCard ? html`<div class="gp-achpage">${achievementsCard(P.achCard)}</div>`
+  const body = P.tab === 'ach' && P.achEl ? P.achEl
     : P.tab === 'setup' ? (P.setupEl || html`<div class="gp-soon">Setup for this game is next in the build.</div>`)
       : P.ov ? html`<div class="gp-ov">${gameOverview(P.ov)}</div>` : html`<div class="gp-soon">${P.noOvText}</div>`;
   return html`<div class="gp">${header(P)}${banner(P)}${tabs}${body}</div>`;

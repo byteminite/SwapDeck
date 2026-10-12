@@ -1,0 +1,39 @@
+/* Library layout: a game's Achievements tab. */
+.ac{display:flex;flex-direction:column;gap:14px}
+.ac-head{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:18px;background:var(--ls-surface)}
+.ac-accts{display:flex;gap:8px;flex-wrap:wrap}
+.ac-acct{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 4px;border-radius:99px;border:1px solid var(--ls-line-strong);background:transparent;color:var(--text);font:600 13px 'Geist',sans-serif;cursor:pointer}
+.ac-acct em{font:600 11.5px 'Geist',sans-serif;font-style:normal;color:var(--text-muted)}
+.ac-acct.on{border-color:var(--accent);background:rgba(var(--accent-rgb),.1)}
+.ac-av{width:28px;height:28px;border-radius:99px;display:grid;place-items:center;font:700 10px 'Geist',sans-serif;color:#fff;background-size:cover!important}
+.ac-prog{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.ac-prog b{font:700 16px 'Geist',sans-serif}
+.ac-prog span{font:700 13px 'Geist',sans-serif;color:var(--accent-light)}
+.ac-bar{grid-column:1/-1;height:6px;border-radius:9px;background:var(--ls-surface-3);overflow:hidden}
+.ac-bar i{display:block;height:100%;border-radius:9px;background:var(--accent)}
+.ac-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ac-sp{flex:1}
+.ac-lbl{font:600 12px 'Geist',sans-serif;color:var(--text-muted)}
+.ac-list{display:flex;flex-direction:column;gap:6px}
+.ac-row{display:flex;align-items:center;gap:14px;padding:10px 14px 10px 10px;border-radius:14px;background:var(--ls-surface)}
+.ac-row.locked .ac-ic{filter:grayscale(1);opacity:.55}
+.ac-row.locked .ac-m b{color:var(--text-muted)}
+.ac-ic{width:48px;height:48px;border-radius:10px;flex:none;display:grid;place-items:center;background:var(--ls-surface-2) center/cover no-repeat;color:var(--text-muted)}
+.ac-m{flex:1;min-width:0}
+.ac-m b{display:flex;align-items:center;gap:8px;font:650 14px 'Geist',sans-serif}
+.ac-m b em{font:700 9.5px 'Geist',sans-serif;font-style:normal;letter-spacing:.06em;padding:2px 7px;border-radius:99px}
+.ac-m b em.rare{background:rgba(196,181,253,.16);color:#c4b5fd}
+.ac-m b em.ultra{background:rgba(255,210,122,.16);color:var(--ls-warn)}
+.ac-m>span{display:block;margin-top:2px;font:500 12.5px/1.45 'Geist',sans-serif;color:var(--text-muted)}
+.ac-also{display:flex!important;align-items:center;gap:4px;margin-top:6px!important;font-size:11.5px!important}
+.ac-also i{width:18px;height:18px;border-radius:99px;display:grid;place-items:center;font:700 7px 'Geist',sans-serif;font-style:normal;color:#fff;background-size:cover!important}
+.ac-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;min-width:120px}
+.ac-when{font:600 12px 'Geist',sans-serif}
+.ac-row.locked .ac-when{color:var(--text-muted)}
+.ac-pct{font:500 11.5px 'Geist',sans-serif;color:var(--text-muted)}
+.ac-rb{width:110px;height:4px;border-radius:9px;background:var(--ls-surface-3);overflow:hidden}
+.ac-rb i{display:block;height:100%;background:var(--accent);border-radius:9px}
+.ac-none{display:flex;align-items:center;gap:12px;padding:22px;border-radius:16px;border:1px dashed var(--ls-line-strong);font:500 13px 'Geist',sans-serif;color:var(--text-muted)}
+.ac-fine{font:500 12px 'Geist',sans-serif;color:var(--text-subtle)}
+.ac button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ac-more{height:38px;border-radius:12px;border:1px dashed var(--ls-line-strong);background:none;color:var(--text);font:600 13px 'Geist',sans-serif;cursor:pointer}

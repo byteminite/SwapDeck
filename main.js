@@ -582,6 +582,7 @@ function ipc() {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return null;
     return achievements.achievements(loc.dir, String(steam.accountIdFromSid(String(sid))), String(appid));
   });
+  ipcMain.handle('ach:rarity', (_, appid) => isAppid(appid) ? steamweb.rarity(String(appid)).catch(() => null) : null);
   ipcMain.handle('ach:recent', (_, appids) => {
     if (!loc.dir || !Array.isArray(appids)) return [];
     const ids = appids.map(String).filter(isAppid).slice(0, 20);

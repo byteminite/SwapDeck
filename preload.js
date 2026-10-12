@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('api', {
   openSteamNews: (appid, gid) => invoke('steam:news', appid, gid),
   gameAchievements: (appid, sid) => invoke('game:achievements', appid, sid),
   recentAchievements: appids => invoke('ach:recent', appids),
+  achRarity: appid => invoke('ach:rarity', appid),
   openShotFolder: (appid, sid) => invoke('game:shotFolder', appid, sid),
   libPickExe: () => invoke('lib:pickExe'),
   libPickImage: () => invoke('lib:pickImage'),

@@ -7,7 +7,7 @@ const steam = require('./steam');
 const vdf = require('./vdf');
 const { get } = require('./profile');
 
-const HOUR = 3600e3, TTL = { posts: HOUR, dlc: 24 * HOUR };
+const HOUR = 3600e3, TTL = { posts: HOUR, dlc: 24 * HOUR, rarity: 24 * HOUR };
 const MAX_POST = 200000;
 const cache = new Map(); // `${kind}:${appid}` -> { at, value } where value is a promise, so parallel callers share one request
 const MAX_CACHED = 60; // full news posts can be a few MB per game, so old entries are dropped
@@ -85,4 +85,16 @@ async function dlc(dir, appid) {
   return { total: list.total, items: list.items.map(it => ({ ...it, installed: installed.has(it.appid) })) };
 }
 
-module.exports = { news, newsPost, dlc };
+// How many players have each achievement, from Steam's public stats (no key, no sign-in): { apiName: percent }.
+async function rarity(appid) {
+  if (!isAppid(appid)) return {};
+  return cached('rarity', appid, async () => {
+    const j = await json(`https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=${appid}&format=json`);
+    const list = j.achievementpercentages && Array.isArray(j.achievementpercentages.achievements) ? j.achievementpercentages.achievements : [];
+    const out = {};
+    for (const a of list) if (a && typeof a.name === 'string' && a.name.length <= 200) { const p = Number(a.percent); if (Number.isFinite(p)) out[a.name] = Math.max(0, Math.min(100, p)); }
+    return out;
+  });
+}
+
+module.exports = { news, newsPost, dlc, rarity };
