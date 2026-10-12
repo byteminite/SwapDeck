@@ -42,12 +42,11 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 <td width="45%" valign="middle">
 <h3>🗂️ Your games up front</h3>
 <ul>
-<li>The <b>Library layout</b>: a rail on the left and every game as a <b>cover</b>, with tabs for installed, not installed and never played</li>
+<li>A rail on the left and every game as a <b>cover</b>, with tabs for installed, not installed and never played</li>
 <li>Filter by <b>tag, account or source</b>, sort by last played, most played or name</li>
 <li>Hover a cover for <b>Play</b>, details, a heart, and who it plays as, like <i>Switches to Crosshair</i></li>
 <li><b>Right-click</b> any game: Play as another account once, tags, Change artwork, Open folder, Desktop shortcut and more</li>
 <li><b>Ctrl + K</b> searches games, tags, accounts and actions</li>
-<li>Prefer the old look? <b>Classic</b> is one click away in Settings → Appearance</li>
 </ul>
 </td>
 <td width="55%"><img src="docs/screenshots/11-library-layout.png" alt="The Library layout"></td>
@@ -105,7 +104,7 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 <td width="55%"><img src="docs/screenshots/18-starting.png" alt="Starting a game"></td>
 </tr>
 <tr>
-<td width="55%"><img src="docs/screenshots/06-game-ac.png" alt="Made for sim racing"></td>
+<td width="55%"><img src="docs/screenshots/06-game-setup.png" alt="Made for sim racing"></td>
 <td width="45%" valign="middle">
 <h3>🏁 Made for sim racing</h3>
 <ul>
@@ -120,14 +119,14 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 <td width="45%" valign="middle">
 <h3>👥 Accounts, sorted your way</h3>
 <ul>
-<li>One-click switching from the avatar menu, or the <b>"Who's playing?"</b> picker in Classic</li>
+<li>One-click switching from your <b>avatar</b> at the bottom of the rail</li>
 <li>A <b>full page</b> for each account: its most played games, recent sessions, wallet and member since</li>
 <li><b>Tags, notes and favourites</b>, each tag with its own colour</li>
 <li><b>Status at a glance</b>: online / in-game, VAC and trade bans, limited accounts</li>
 <li><b>Hide account names</b> (initials only) for streaming</li>
 </ul>
 </td>
-<td width="55%"><img src="docs/screenshots/02-account-details.png" alt="Accounts, sorted your way"></td>
+<td width="55%"><img src="docs/screenshots/02-account.png" alt="Accounts, sorted your way"></td>
 </tr>
 <tr>
 <td width="55%"><img src="docs/screenshots/10-news-reader.png" alt="Patch notes, right in SwapDeck"></td>
@@ -212,19 +211,19 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 > [!NOTE]
 > The app isn't code-signed yet, so Windows may show a SmartScreen warning the first time. Click **More info → Run anyway**.
 
-A short first start finds Steam, lists your accounts and lets you pick the Library or Classic layout. You can skip it.
+A short first start finds Steam, lists your accounts and lets you pick an accent. You can skip it.
 
 ## Using it
 
 | Action | How |
 |---|---|
-| Switch account | Library layout: your avatar at the bottom of the rail. Classic: click a card, or select it and press `Enter` |
+| Switch account | Your avatar at the bottom of the rail |
 | Play a game | Hover a cover → Play, or open the game and press Play |
 | Game options | Right-click a cover, or `X` on a controller |
-| A game's setup | Its page → Setup (Library layout), or the ⚙️ gear (Classic) |
-| Search | `Ctrl + K` (Library layout), `/` (Classic) |
+| A game's setup | Its page → Setup |
+| Search | `Ctrl + K` |
 | Add Minecraft modpacks | The bell's *Review*, or Settings → General → *Choose packs* |
-| Light or dark | The sun / moon in the rail (Library layout) or the top bar (Classic) |
+| Light or dark | The sun / moon in the rail |
 | Tray panel from anywhere | `Ctrl + Alt + S` (turn it on in Settings → General) |
 | Controller | `A` select · `B` back · `X` options · `Y` play · `LB`/`RB` pages · `☰` search |
 | UI scale | `Ctrl +` / `Ctrl −` / `Ctrl 0` (auto), or Settings |
@@ -269,10 +268,9 @@ If you pick <i>Close the game too</i>, SwapDeck asks the game's windows to close
 </details>
 
 <details>
-<summary><b>Library or Classic layout?</b></summary>
+<summary><b>Can I get the old look back?</b></summary>
 
-Either. <b>Library</b> puts your games up front as covers, with Home, Favourites, Updates and full game pages.
-<b>Classic</b> puts your accounts up front, like SwapDeck always has. Switch any time in Settings → Appearance; nothing is lost.
+Yes. Settings → Appearance → <b>Classic</b> puts your accounts up front, like SwapDeck before 1.5. Switch back any time; nothing is lost.
 
 </details>
 
