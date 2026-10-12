@@ -3,6 +3,21 @@
 
 export const CHANGELOG = [
   {
+    v: '1.6.3', date: '12 Oct 2026',
+    title: 'Owned games show up right away',
+    intro: 'Games your accounts own show up as soon as you connect them, and the Library tells you when they\'re hidden.',
+    highlights: [
+      ['Right away', 'Connect an account and the games it owns show up in the Library straight away, no restart needed.'],
+      ['Hidden games', 'When owned games that aren\'t installed are hidden, the Library says so, with a button to show them.'],
+    ],
+    sections: [
+      ['Fixes', [
+        'Games an account owns only showed up after restarting SwapDeck or switching layout. They now show up as soon as the account\'s game list arrives',
+        'With Show games that aren\'t installed turned off, the Library now says how many owned games are hidden, with Show them',
+      ]],
+    ],
+  },
+  {
     v: '1.6.2', date: '12 Oct 2026',
     title: 'Modpack message fix',
     intro: 'A small fix: the Found Minecraft modpacks message no longer comes back every time you open SwapDeck.',
