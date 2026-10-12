@@ -199,7 +199,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
   </tr>
   <tr>
     <td width="33%" valign="top">🔎 <b>Search everything</b><br><sub><code>Ctrl + K</code> in the Library layout: games, tags, accounts and actions</sub></td>
-    <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, a running game, accounts to connect and SwapDeck updates under the bell</sub></td>
+    <td width="33%" valign="top">🔔 <b>Notifications</b><br><sub>Updates, new patch notes, a running game, accounts to connect and SwapDeck updates under the bell</sub></td>
     <td width="33%" valign="top">🏷️ <b>Tags manager</b><br><sub>Rename, recolour and delete tags everywhere at once</sub></td>
   </tr>
 </table>
@@ -246,6 +246,7 @@ Built for people who keep separate FPS, sim racing and horror accounts, with a S
 - For accounts connected for stats, a game's details also show friends who play it and which DLC the account owns. That
   uses the account's saved Steam sign-in (the same one Refresh stats uses), only when you open the game, and talks only to Steam.
 - The Library layout's latest achievements and recently updated games come from Steam's own files on your PC. Nothing is sent anywhere.
+- How rare each achievement is, and the bell's new patch notes, come from Steam's public servers with no sign-in: rarity when you open a game's Achievements tab, patch notes every 6 hours for your 10 most recently played games. Only the games' Steam app IDs are sent.
 - *Close the game too* (when you press Stop) asks the game's windows on your PC to close, like Alt+F4. It never forces a game closed.
 
 ## FAQ
