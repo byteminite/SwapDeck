@@ -582,6 +582,16 @@ function ipc() {
     if (!isAppid(appid) || !/^\d{17}$/.test(String(sid)) || !loc.dir) return null;
     return achievements.achievements(loc.dir, String(steam.accountIdFromSid(String(sid))), String(appid));
   });
+  // Bell > new patch notes: the newest announcement of up to 10 games (public, cached an hour, no sign-in).
+  ipcMain.handle('news:latest', async (_, appids) => {
+    if (!Array.isArray(appids)) return [];
+    const ids = [...new Set(appids.map(String).filter(isAppid))].slice(0, 10), out = [];
+    for (const id of ids) {
+      const list = await steamweb.news(id).catch(() => null);
+      if (list && list[0]) out.push({ appid: id, gid: list[0].gid, title: list[0].title, at: list[0].at, patch: !!list[0].patch });
+    }
+    return out;
+  });
   ipcMain.handle('ach:rarity', (_, appid) => isAppid(appid) ? steamweb.rarity(String(appid)).catch(() => null) : null);
   ipcMain.handle('ach:recent', (_, appids) => {
     if (!loc.dir || !Array.isArray(appids)) return [];

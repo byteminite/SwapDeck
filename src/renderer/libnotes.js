@@ -17,8 +17,26 @@ function watchNet(app) {
   window.addEventListener('offline', app._netHook);
 }
 
+// New patch notes: the newest post of your 10 most recently played Steam games, checked every 6 hours
+// (Steam's public news, no sign-in). Only posts newer than when you last played the game count.
+function loadNews(app) {
+  if (!navigator.onLine || (app._newsAt && Date.now() - app._newsAt < 6 * 3600e3)) return;
+  const games = app.state.lib.filter(g => g.steam && g.installed && g.lastPlayed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 10);
+  if (!games.length) return;
+  app._newsAt = Date.now();
+  window.api.newsLatest(games.map(g => String(g.appid))).then(list => app.setState({ newsLatest: Array.isArray(list) ? list : [] })).catch(() => { app._newsAt = 0; });
+}
+
+function newsNotes(app) {
+  return (app.state.newsLatest || []).map(n => ({ n, g: app.state.lib.find(g => g.steam && String(g.appid) === n.appid) }))
+    .filter(x => x.g && x.n.at > (x.g.lastPlayed || 0)).slice(0, 5)
+    .map(({ n, g }) => ({ id: 'news-' + n.gid, kind: 'update', ic: 'info', tone: 'acc', art: app.cardBg(g), title: (n.patch ? 'New patch notes for ' : 'News from ') + g.name, body: n.title,
+      act: 'Read', go: () => { app.openGame(g.id); app.openNews(g, n); } }));
+}
+
 export function notesList(app) {
   watchNet(app);
+  loadNews(app);
   const S = app.state, out = [], add = n => out.push(n), go = k => () => app.setState({ libPage: k, gd: null, drawerId: null, setOpen: false });
   const steam = app.steamState, L = S.launch;
   if (!navigator.onLine) add({ id: 'st-offline', kind: 'system', ic: 'alert', tone: 'warn', title: "You're offline", body: 'Switching and playing still work. News and stats come back when you reconnect.' });
@@ -41,6 +59,7 @@ export function notesList(app) {
   const u = S.update || {};
   if (u.state === 'ready') add({ id: 'app-' + u.version, kind: 'update', ic: 'check2', tone: 'good', title: 'SwapDeck ' + u.version + ' is ready', body: "Restart to finish the update. See what's new after.", act: 'Restart now', go: () => app.installUpdate() });
   else if (u.state === 'downloading') add({ id: 'appdl-' + u.version, kind: 'update', ic: 'download', tone: 'acc', title: 'Downloading SwapDeck ' + u.version, body: (u.percent || 0) + '%. It installs when you restart.', prog: u.percent || 0, go: () => app.openSettings('updates') });
+  out.push(...newsNotes(app));
   const read = S.settings.notesRead || [];
   return out.map(n => ({ ...n, unread: !read.includes(n.id) }));
 }
