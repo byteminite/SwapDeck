@@ -445,6 +445,7 @@ class App extends Component {
     if (e.key === 'Escape') {
       if (S.tm) return this.setState({ tm: S.tm.mode === 'new' ? { ...S.tm, mode: 'manage' } : null });
       if (S.wnFull) return this.setState({ wnFull: null });
+      if (S.lnErr) return this.setState({ lnErr: null });
       if (S.stopAsk) return this.setState({ stopAsk: null });
       if (S.stopping && S.stopping.phase === 'done') return this.setState({ stopping: null });
       if (S.lsNotes) return this.setState({ lsNotes: false });
@@ -1122,23 +1123,26 @@ class App extends Component {
     if (!asSid && isLibLayout(this) && g.steam && !g.acct) { const own = accountsOf(g), me = this.accts.find(a => a.current); if (own.length && !(me && own.includes(me.id))) asSid = own.find(id => this.find(id)); }
     if (S.launch) { this.toast('warning', 'A game is already running', 'Stop tracking it first, or quit it.'); return; }
     if (g.steam && this.steamState === 'not-found') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings to launch Steam games.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return; }
-    this.setState({ gd: null, acctMenu: false, hovG: null });
+    this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null });
     const r = await api.play(gid, asSid);
     if (r.install) { this.toast('info', 'Opening Steam to install', g.name + " isn't installed. Steam's install dialog is opening."); return; }
     if (!r.ok && !r.cancelled) {
       if (this.busyToast(r)) return;
-      if (r.code !== 'RUNNING') this.toast('error', "Couldn't launch " + g.name, r.error || 'Something went wrong.');
+      if (r.code !== 'RUNNING' && isLibLayout(this)) this.setState({ lnErr: { gid, error: r.error || 'Something went wrong.', steps: [], step: 0, acct: null } });
+      else if (r.code !== 'RUNNING') this.toast('error', "Couldn't launch " + g.name, r.error || 'Something went wrong.');
       else this.toast('warning', 'A game is already running', r.error);
     }
   }
   stopGame() { api.stopGame(); }
   onLaunchEnd(e) {
-    const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon();
-    this.setState({ launch: null, stopAsk: null });
+    const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon(), prev = this.state.launch;
+    // Library layout: a failed start stays on the start screen with what went wrong, instead of a toast.
+    const lnErr = e.reason === 'error' && isLibLayout(this) ? { gid: e.gid, error: e.error || 'Something went wrong.', steps: prev ? prev.steps : [], step: prev ? prev.step : 0, acct: prev ? prev.acct : null } : null;
+    this.setState({ launch: null, stopAsk: null, ...(lnErr ? { lnErr } : {}) });
     this.reloadLib();
     api.playLog().then(playLog => playLog && this.setState({ playLog }));
     api.playSessions().then(sessions => sessions && this.setState({ sessions }));
-    if (e.reason === 'error') this.toast('error', "Couldn't launch " + name, e.error || 'Something went wrong.');
+    if (e.reason === 'error' && !lnErr) this.toast('error', "Couldn't launch " + name, e.error || 'Something went wrong.');
     if (e.restoreErr) this.toast('error', "Couldn't restore the display", e.restoreErr, { label: 'Try again', fn: () => this.restoreNow() });
     else if (this.state.stopping) { /* the Library layout's Stop screen already shows what was put back */ }
     else if (e.restored) this.toast('success', 'Display restored', 'Your monitors are back the way they were' + (nm ? ', ' + nm.label + ' primary.' : '.'));

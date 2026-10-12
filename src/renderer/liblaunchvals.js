@@ -10,14 +10,26 @@ function stepRow(s, i, L) {
   const k = s.k || (/Switching|account/.test(s.label) ? 'acct' : /display/i.test(s.label) ? 'disp' : /sound/i.test(s.label) ? 'audio' : /apps/i.test(s.label) ? 'apps' : /Launching/.test(s.label) ? 'launch' : 'run');
   const sub = (s.sub || '').replace(/ · skipped$/, '');
   const missing = s.skip && /isn't connected/.test(s.sub || '');
-  const st = i < L.step || (L.running && i === L.step) ? (s.skip ? 'skip' : 'done') : i === L.step ? 'active' : 'wait';
+  const st = i < L.step || (L.running && i === L.step) ? (s.skip ? 'skip' : 'done') : i === L.step ? (L.failed ? 'fail' : 'active') : 'wait';
   const row = { ic: STEP_IC[k] || 'check', label: s.label, sub: st === 'wait' && s.skip ? '' : sub, st };
   if (st === 'skip') Object.assign(row, missing ? { tag: 'NOT CONNECTED', tagCls: 'warn' } : { tag: 'READY', tagCls: 'ok' });
   return row;
 }
 
+// A start that failed: the same screen, with the step that broke and what to do next.
+function errorScreen(app, E) {
+  const g = app.gfind(E.gid); if (!g) return null;
+  const shown = E.steps.filter(s => s.k !== 'run' && s.label !== 'Game running'), a = E.acct && app.find(E.acct);
+  const clear = () => app.setState({ lnErr: null });
+  return { failed: true, name: g.name, bg: g.steam && g.hero ? 'url("' + g.hero + '") center/cover no-repeat,' + app.gradOf(g) : app.cardBg(g), cover: app.cardBg(g),
+    error: E.error, steps: shown.map((s, i) => stepRow(s, i, { step: E.step, running: false, failed: true })), pct: 0, running: false,
+    asPill: a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [], asArrow: false, asText: a ? 'As ' + a.name : g.steam ? 'Steam game' : 'No Steam account needed', note: '',
+    onRetry: () => { clear(); app.play(g.id); }, onPage: () => { clear(); app.openGame(g.id); }, onHide: clear };
+}
+
 export function launchVals(app) {
   const S = app.state, L = S.launch, g = L && app.gfind(L.gid);
+  if ((!L || !g) && S.lnErr) return { lnScreen: errorScreen(app, S.lnErr), lnBar: null };
   if (!L || !g) return { lnScreen: null, lnBar: null };
   const shown = L.steps.filter(s => s.k !== 'run' && s.label !== 'Game running');
   const a = L.acct && app.find(L.acct), from = app.accts.find(x => x.current);
@@ -32,7 +44,7 @@ export function launchVals(app) {
     asPill: !g.steam ? [] : switching ? [{ bg: avBg(from), ini: from.avatar ? '' : from.ini }, { bg: avBg(a), ini: a.avatar ? '' : a.ini }] : a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [],
     asArrow: switching, asText: !g.steam ? 'No Steam account needed' : switching ? 'Switching to ' + a.name : a ? 'Playing as ' + a.name : 'Playing on the signed-in account',
     note: (g.note || '').trim(), noteCopied: !!S.lNoteCopied, onCopy: () => app.copyNote(g.note),
-    onStop: () => libStop(app), onHide: hide,
+    onStop: () => libStop(app), onHide: hide, onCancel: () => app.stopGame(),
   };
   const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => libStop(app) } : null;
   return { lnScreen: screen, lnBar: bar };

@@ -111,3 +111,12 @@
 .so-st{flex:none;display:flex}
 .so .ln-acts{justify-content:center}
 .so .ln-acts button{flex:0 1 auto;padding:0 20px}
+
+/* Start screen: a start that failed. */
+.ln-k.bad{color:#ff9a8b}
+.ln-err{display:flex;gap:10px;align-items:flex-start;margin:4px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(255,154,139,.1);border:1px solid rgba(255,154,139,.3);font:500 13px/1.45 'Geist',sans-serif;color:#ffd0c8}
+.ln-err svg{flex:none;margin-top:1px;color:#ff9a8b}
+.ln-stp.fail .ln-ic,.ln-stp.fail .ln-st{background:rgba(255,154,139,.12);color:#ff9a8b}
+.ln-stp.fail .ln-st{background:none}
+.ln-stp.fail b{color:#fff}
+.ln-err span{min-width:0;overflow-wrap:anywhere}
