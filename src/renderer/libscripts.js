@@ -90,7 +90,10 @@ ${failLine ? html`<div class="sx-err">${failLine}</div>` : null}${s.own && s.cla
 export function scriptsCard(b) {
   const list = b.gScripts || [];
   const empty = list.length ? null : html`<div class="sx-empty">No scripts yet. Add one if you run something before this game, like a script that swaps your wheel or controller profile. Play will then ask which one to run.</div>`;
-  return html`<div class="su-box"><div class="su-l"><span>Scripts</span></div>${empty}${list.map(row)}
+  // Beta: new in 1.7.0 and not fully tested yet, so the card says so and links to the bug report page.
+  const report = () => window.api.openProfile('https://github.com/byteminite/SwapDeck/issues/new');
+  return html`<div class="su-box"><div class="su-l"><span>Scripts</span><em class="sx-beta" title="New and not fully tested yet">BETA</em><button class="su-link" onClick=${report}>Report a bug</button></div>
+${list.length ? null : html`<div class="su-hint sx-betanote">Scripts are new and not fully tested yet. If something doesn't work, please report it on GitHub.</div>`}${empty}${list.map(row)}
 <button class="su-add" onClick=${b.onGAddScript}>${icon('plus', 14)}Add script</button>
 <div class="su-hint">${list.length ? 'Runs after your apps start. SwapDeck waits until it finishes, then starts the game. Works with .ps1, .bat, .cmd and .exe.' : 'Works with .ps1, .bat, .cmd and .exe. Nothing needs to change in your script.'}</div></div>`;
 }

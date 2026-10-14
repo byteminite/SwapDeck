@@ -57,3 +57,7 @@ button.su-ovr:hover{background:rgba(var(--accent-rgb),.22)}
 .sc-err svg{flex:none;margin-top:1px}
 .sc-err span{min-width:0;overflow-wrap:anywhere}
 .sc-err code{display:block;margin-top:6px;font:500 11.5px/1.45 'Geist Mono',monospace;white-space:pre-wrap}
+/* Scripts are a beta in 1.7.0. */
+.sx-beta{flex:none;padding:2px 7px;border-radius:99px;background:rgba(255,210,122,.16);color:var(--warn-fg);font:700 9.5px 'Geist',sans-serif;font-style:normal;letter-spacing:.08em}
+.su-l > .sx-beta + .su-link{margin-left:auto}
+.sx-betanote{margin:0 0 10px}

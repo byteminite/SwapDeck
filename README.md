@@ -112,7 +112,7 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 <li>Tick <b>"Close when the game exits"</b> for the ones that should go with it</li>
 <li>Start a <b>custom launcher</b> such as Content Manager, and keep the Steam art and tracking</li>
 <li>Put the game on your <b>ultrawide only</b>, then get your normal desk back afterwards</li>
-<li><b>Scripts</b> run before the game and Play waits for them, like a controls script per car class. Play asks <i>Which script?</i>, and a script can have its own monitor, sound and apps</li>
+<li><b>Scripts</b> (beta) run before the game and Play waits for them, like a controls script per car class. Play asks <i>Which script?</i>, and a script can have its own monitor, sound and apps</li>
 </ul>
 </td>
 </tr>
@@ -287,6 +287,8 @@ Settings → Minecraft and pick it, then press Play in SwapDeck again. With the 
 
 <details>
 <summary><b>How do scripts work?</b></summary>
+
+Scripts are a **beta** in 1.7.0: new and not fully tested yet. If something doesn't work, please [open an issue](https://github.com/byteminite/SwapDeck/issues/new).
 
 Open a game's **Setup** and add a script under **Scripts**: a `.ps1`, `.bat`, `.cmd` or `.exe`, with a name and arguments
 (the same script can be added twice, like `-Class GT3` and `-Class HY`). When you press Play, SwapDeck asks which script to run,

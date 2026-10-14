@@ -4,9 +4,9 @@ Every SwapDeck version, newest first. The same notes show in the app under *What
 
 ## 1.7.0 · 14 Oct 2026
 
-**Scripts before a game starts**
+**Scripts before a game starts (beta)**
 
-Run a script before a game starts, like one that swaps your wheel profile per car class, and pick which one each time you press Play.
+Run a script before a game starts, like one that swaps your wheel profile per car class. Scripts are a beta: please report anything that goes wrong on GitHub.
 
 ### Scripts
 
@@ -38,6 +38,7 @@ Run a script before a game starts, like one that swaps your wheel profile per ca
 
 ### Good to know
 
+- Scripts are a beta. They're new and not fully tested yet, so if something doesn't work, use Report a bug on the Scripts card (or Settings > About > Report) and tell us what happened
 - Scripts run hidden, in their own folder. PowerShell scripts run with -ExecutionPolicy Bypass for that one run only
 - SwapDeck never closes your script. Cancel and Stop put your display and sound back and leave the script running
 - If a script only took long and then finishes fine, the game starts by itself

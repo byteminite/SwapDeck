@@ -4,8 +4,8 @@
 export const CHANGELOG = [
   {
     v: '1.7.0', date: '14 Oct 2026',
-    title: 'Scripts before a game starts',
-    intro: 'Run a script before a game starts, like one that swaps your wheel profile per car class, and pick which one each time you press Play.',
+    title: 'Scripts before a game starts (beta)',
+    intro: 'Run a script before a game starts, like one that swaps your wheel profile per car class. Scripts are a beta: please report anything that goes wrong on GitHub.',
     highlights: [
       ['Scripts', 'Add a .ps1, .bat, .cmd or .exe to a game\'s Setup. SwapDeck runs it, waits until it finishes, then starts the game.'],
       ['Which script?', 'Press Play on a game with scripts and pick one. The last one you used is already picked, and No script is always there.'],
@@ -39,6 +39,7 @@ export const CHANGELOG = [
         'The starting screen for non-Steam games and modpacks no longer ticks a step off before it\'s done',
       ]],
       ['Good to know', [
+        'Scripts are a beta. They\'re new and not fully tested yet, so if something doesn\'t work, use Report a bug on the Scripts card (or Settings > About > Report) and tell us what happened',
         'Scripts run hidden, in their own folder. PowerShell scripts run with -ExecutionPolicy Bypass for that one run only',
         'SwapDeck never closes your script. Cancel and Stop put your display and sound back and leave the script running',
         'If a script only took long and then finishes fine, the game starts by itself',
