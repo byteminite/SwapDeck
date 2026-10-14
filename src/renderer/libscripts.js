@@ -2,6 +2,7 @@
 // waits until it finishes and then starts the game. Values in scriptVals, markup in scriptsCard.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
+import { ownSummary } from './libscriptsetup.js';
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 const fileName = p => String(p || '').split('\\').pop();
@@ -23,6 +24,9 @@ function oneScript(app, g, sc, i) {
   const setTest = v => app.setState(s => ({ scriptTests: { ...(s.scriptTests || {}), [sc.id]: v } }));
   return {
     id: sc.id, name: sc.name, path: sc.path, args: sc.args || '', secs: sc.timeoutS || 30, test,
+    own: !!sc.own, summary: sc.own ? ownSummary(app, sc) : "Uses the game's setup",
+    onOwn: () => { const own = !sc.own; app.gset(g.id, { scripts: upd({ own }) }); if (own) app.setState({ scEdit: { gid: g.id, sid: sc.id } }); },
+    onEdit: () => app.setState({ scEdit: { gid: g.id, sid: sc.id } }),
     // Name and time limit save when you leave the box: main fills in a blank name and clamps the limit to 5-300 s.
     onName: e => app.gset(g.id, { scripts: upd({ name: e.target.value }) }),
     onArgs: e => later({ args: e.target.value }),
@@ -59,14 +63,15 @@ export function scriptVals(app, g) {
 function row(s) {
   const t = s.test;
   const failLine = t && !t.running && !t.ok ? (t.timedOut ? 'Still running after ' + s.secs + ' seconds. It may be waiting for input.' : t.line || t.error || '') : '';
-  return html`<div class="sx">
+  return html`<div class=${'sx' + (s.own ? ' own' : '')}>
 <div class="sx-top"><span class="sx-ic">${icon('script', 15)}</span>
 <span class="su-sv"><input class="sx-name" value=${s.name} onChange=${s.onName} aria-label="Script name" maxlength="40" /><span title=${s.path}>${s.path}</span></span>
 <button class="su-btn" onClick=${s.onChange}>Change</button>
 <button class="su-x" aria-label=${'Remove ' + s.name} title="Remove" onClick=${s.onRemove}>${icon('x', 13)}</button></div>
 <div class="su-approw"><input class="su-in mono sm" placeholder="Arguments (optional)" value=${s.args} onInput=${s.onArgs} aria-label=${'Arguments for ' + s.name} />
 <input class="su-in mono sm sx-secs" value=${s.secs} onChange=${s.onSecs} inputmode="numeric" aria-label=${'Time limit in seconds for ' + s.name} /><span class="sx-unit">s limit</span></div>
-<div class="sx-foot"><span class="sx-sum">Uses the game's setup</span>
+<div class="sx-foot"><button class=${'sx-cb' + (s.own ? ' on' : '')} role="checkbox" aria-checked=${s.own} onClick=${s.onOwn}><span>${s.own ? icon('check', 11) : null}</span>Custom options</button>
+<span class=${'sx-sum' + (s.own ? ' on' : '')} title=${s.summary}>${s.summary}</span>${s.own ? html`<button class="su-btn sx-edit" onClick=${s.onEdit}>Edit setup</button>` : null}
 ${t ? testChip(t) : null}${t && t.running ? null : html`<button class="su-btn sx-test" onClick=${s.onTest}>${icon('terminal', 13)}Test</button>`}</div>
 ${failLine ? html`<div class="sx-err">${failLine}</div>` : null}</div>`;
 }

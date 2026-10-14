@@ -22,6 +22,7 @@ import { libPad } from './libpad.js';
 import { accountsOf } from './libgrid.js';
 import { scriptVals } from './libscripts.js';
 import { firstPick } from './libchoose.js';
+import { isScriptGameId, scriptGame, mutScriptGame } from './libscriptsetup.js';
 
 const api = window.api;
 
@@ -484,6 +485,7 @@ class App extends Component {
       if (S.wnFull) return this.setState({ wnFull: null });
       if (S.lnErr) return this.setState({ lnErr: null });
       if (S.scAsk) return this.setState({ scAsk: null });
+      if (S.scEdit && !S.menu && !S.acctMenu) return this.setState({ scEdit: null });
       if (S.stopAsk) return this.setState({ stopAsk: null });
       if (S.stopping && S.stopping.phase === 'done') return this.setState({ stopping: null });
       if (S.lsNotes) return this.setState({ lsNotes: false });
@@ -731,11 +733,15 @@ class App extends Component {
   }
 
   // ---------- library ----------
-  gfind(id) { return this.state.lib.find(g => g.id === id); }
-  gmut(id, p) { this.setState(s => ({ lib: s.lib.map(g => g.id === id ? { ...g, ...(typeof p === 'function' ? p(g) : p) } : g) })); }
+  // "<game id>#sc:<script id>" is a script's own setup (Custom options): read and written as a stand-in game.
+  gfind(id) { return isScriptGameId(id) ? scriptGame(this.state.lib, id) : this.state.lib.find(g => g.id === id); }
+  gmut(id, p) {
+    if (isScriptGameId(id)) return this.setState(s => ({ lib: mutScriptGame(s.lib, id, p) }));
+    this.setState(s => ({ lib: s.lib.map(g => g.id === id ? { ...g, ...(typeof p === 'function' ? p(g) : p) } : g) }));
+  }
   async gset(id, patch) {
     const g = await api.libSet(id, patch);
-    if (g) this.setState(s => ({ lib: s.lib.map(x => x.id === id ? g : x) }));
+    if (g) this.setState(s => ({ lib: s.lib.map(x => x.id === g.id ? g : x) }));
   }
   setAcct(id, acct) {
     this.gmut(id, { acct, acctAuto: false });
@@ -1151,7 +1157,7 @@ class App extends Component {
     if (v === 'lib') { this.reloadLib(); this.reloadMonitors(); this.pollUpdates(true); }
   }
   openGame(id) {
-    this.setState({ gd: id, gdTab: 'ov', lgTab: 'ov', achSid: null, achAll: false, acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
+    this.setState({ gd: id, scEdit: null, gdTab: 'ov', lgTab: 'ov', achSid: null, achAll: false, acctMenu: false, gdKeep: [], gTagDraft: '', tagPop: null, colorFor: null, gInfo: null, gShotAcct: null, gShotMenu: false, gShot: null, gNews: null, gAchMenu: false, gAchAll: null, gFrMenu: false, gCsMenu: false, gCs2Sid: null, cs2: null });
     this.loadGameInfo(id);
     this.reloadMonitors();
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
@@ -1456,8 +1462,8 @@ class App extends Component {
     };
   }
 
-  gameVals() {
-    const S = this.state, g = S.gd ? this.gfind(S.gd) : null, L = S.launch;
+  gameVals(id) {
+    const S = this.state, gid = id || S.gd, g = gid ? this.gfind(gid) : null, L = S.launch;
     if (!g) return { gdOn: false };
     const a = g.steam && g.acct ? this.find(g.acct) : null, mon = this.monOf(g), res = this.resOf(g), cur = this.accts.find(x => x.current), nm = this.normMon();
     const logoOk = g.steam && !!g.logo && !S.logoFail[g.id], noArt = !this.coverOf(g);

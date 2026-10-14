@@ -68,7 +68,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
   async function start(id, asSid, scriptChoice) {
     const loc = getLoc();
     const lib = library.build(loc.dir);
-    const g = lib.find(x => x.id === id);
+    let g = lib.find(x => x.id === id);
     if (!g) return { ok: false, error: 'That game is no longer in your library.' };
     if (g.steam && !g.installed) { await shell.openExternal('steam://install/' + g.appid); return { ok: true, install: true }; }
     if (g.steam && !loc.exe) return { ok: false, code: 'NOT_FOUND', error: 'Steam not found' };
@@ -76,6 +76,10 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (!g.steam && !g.installed) return { ok: false, error: 'The game\'s .exe is missing: ' + g.exe };
     const pack = g.pack ? modpacks.scan().find(p => p.id === g.id) : null;
     if (g.pack && !pack) return { ok: false, error: g.pack.label + " doesn't list this modpack any more." };
+    // A script picked at Play (or the last one used). With Custom options ticked, its own setup replaces the game's.
+    const script = beforelaunch.pickScript(g, scriptChoice);
+    if (scriptChoice && (g.scripts || []).length) store.setGameCfg(id, { lastScript: script ? script.id : 'none' });
+    g = beforelaunch.withSetup(g, script);
 
     const st = await steam.status();
     // Right-click > Play as: one launch on another account, without changing the game's own setting.
@@ -117,9 +121,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (apps.length) steps.push(toStart.length
       ? { k: 'apps', label: 'Starting companion apps', sub: toStart.map(a => path.basename(a.path, '.exe')).join(', ') }
       : { k: 'apps', label: 'Companion apps', sub: 'Already running · skipped', skip: true });
-    // A script picked at Play (or the last one used) runs after the apps, and the game waits for it.
-    const script = beforelaunch.pickScript(g, scriptChoice);
-    if (scriptChoice && (g.scripts || []).length) store.setGameCfg(id, { lastScript: script ? script.id : 'none' });
+    // The script runs after the apps, and the game waits for it.
     if (script) steps.push({ k: 'script', label: 'Running ' + script.name, sub: path.basename(script.path) + (script.args ? ' ' + script.args : '') });
     const viaLauncher = g.steam && !!g.launcher;
     steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: pack ? 'via ' + pack.label : viaLauncher ? 'via ' + path.basename(g.launcher) + (g.opts ? ' ' + g.opts : '') : g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });

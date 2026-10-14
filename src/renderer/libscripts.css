@@ -28,3 +28,23 @@
 .sa .sc-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:500 11.5px 'Geist Mono',monospace}
 .sa .sc-keys{font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle)}
 .sc-go svg{fill:currentColor}
+/* Custom options: the tick on a script, and the script's own setup screen. */
+.sx.own{border-color:rgba(var(--accent-rgb),.35)}
+.sx-cb{display:flex;align-items:center;gap:7px;flex:none;padding:0;border:0;background:none;font:500 12px 'Geist',sans-serif;color:var(--text-soft);cursor:pointer;white-space:nowrap}
+.sx-cb span{width:16px;height:16px;box-sizing:border-box;border-radius:5px;border:1.5px solid rgba(var(--fg-rgb),.3);display:grid;place-items:center;color:var(--accent-contrast)}
+.sx-cb.on span{background:var(--accent);border-color:var(--accent)}
+.sx-sum{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-sum.on{color:var(--accent-strong)}
+.sx-ic.on{background:rgba(var(--accent-rgb),.14);color:var(--accent-strong)}
+.sx-cb:focus-visible,.sx-edit:focus-visible,.su-ovr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ss-crumb{display:flex;align-items:center;gap:8px;margin-bottom:12px;font:500 12.5px 'Geist',sans-serif;color:var(--text-subtle)}
+.ss-crumb .su-link{display:inline-flex;align-items:center;gap:4px}
+.ss-crumb b{color:var(--text);font-weight:600}
+.ss-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--ls-radius);background:rgba(var(--accent-rgb),.08);border:1px solid rgba(var(--accent-rgb),.3)}
+.ss-banner .su-sv b{font-size:14px}
+.ss-hint{margin:10px 0 14px}
+.su-box.own{box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.35)}
+.su-ovr{flex:none;font:700 9.5px 'Geist',sans-serif;letter-spacing:.08em;color:var(--text-subtle);white-space:nowrap}
+button.su-ovr{padding:3px 8px;border:0;border-radius:99px;background:rgba(var(--accent-rgb),.14);color:var(--accent-strong);cursor:pointer}
+button.su-ovr:hover{background:rgba(var(--accent-rgb),.22)}
+.su-l > .su-ovr{flex:none;margin-left:auto}

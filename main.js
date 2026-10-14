@@ -636,19 +636,11 @@ function ipc() {
     }
     return lib.find(x => x.id === id);
   });
-  ipcMain.handle('lib:set', (_, id, patch) => {
-    const g = findGame(String(id)); if (!g) return null;
+  // The parts of a game's setup that a script can also have its own copy of (Setup > Scripts > Custom options).
+  const setupPatch = (g, patch) => {
     const allowed = {};
-    if ('acct' in patch) { allowed.acct = patch.acct || null; allowed.acctSet = true; }
-    if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
-    if ('fav' in patch) allowed.fav = !!patch.fav;
-    if ('note' in patch) allowed.note = String(patch.note || '').slice(0, 1000);
+    if ('acct' in patch) allowed.acct = typeof patch.acct === 'string' && /^\d{17}$/.test(patch.acct) ? patch.acct : null;
     if ('opts' in patch) allowed.opts = String(patch.opts || '').slice(0, 400);
-    // Change artwork (Steam games): only files lib:pickImage copied into the covers folder, or null to go back.
-    const artFile = v => typeof v === 'string' && /^c\d{10,16}\.(jpg|jpeg|png|webp)$/.test(v) ? v : null;
-    if ((g.steam || g.pack) && 'artCover' in patch) allowed.artCover = artFile(patch.artCover);
-    if ((g.steam || g.pack) && 'artHero' in patch) allowed.artHero = artFile(patch.artHero);
-    if ('heroPos' in patch) allowed.heroPos = Math.max(0, Math.min(100, Math.round(Number(patch.heroPos) || 0)));
     if (patch.display) allowed.display = {
       ...('mon' in patch.display ? { mon: patch.display.mon || null } : {}),
       ...('mode' in patch.display ? { mode: patch.display.mode === 'only' ? 'only' : 'primary' } : {}),
@@ -661,7 +653,33 @@ function ipc() {
       .filter(a => a && typeof a.path === 'string' && /.exe$/i.test(a.path))
       .slice(0, 8)
       .map(a => ({ path: a.path, args: String(a.args || '').slice(0, 300), close: a.close !== false }));
-    if (Array.isArray(patch.scripts)) allowed.scripts = beforelaunch.cleanScripts(patch.scripts);
+    return allowed;
+  };
+  const cleanScriptsOf = (g, list) => beforelaunch.cleanScripts(list, custom => setupPatch(g, custom));
+  // A card changed on a script's own setup screen ("<game id>#sc:<script id>"): it's saved on that script, not the game.
+  const setScriptSetup = (gid, sid, patch) => {
+    const g = findGame(gid), sc = g && (g.scripts || []).find(s => s.id === sid);
+    if (!sc) return null;
+    const add = setupPatch(g, patch), custom = sc.custom || {};
+    if (add.display) add.display = { ...(custom.display || g.display), ...add.display };
+    library.setCfg(g, { scripts: cleanScriptsOf(g, g.scripts.map(s => s === sc ? { ...s, custom: { ...custom, ...add } } : s)) });
+    return findGame(g.id);
+  };
+  ipcMain.handle('lib:set', (_, id, patch) => {
+    const own = /^(.+)#sc:([a-z0-9]{1,16})$/.exec(String(id));
+    if (own) return setScriptSetup(own[1], own[2], patch || {});
+    const g = findGame(String(id)); if (!g) return null;
+    const allowed = setupPatch(g, patch);
+    if ('acct' in patch) allowed.acctSet = true;
+    if ('tags' in patch) { allowed.tags = cleanTags(patch.tags); rememberTags(allowed.tags); }
+    if ('fav' in patch) allowed.fav = !!patch.fav;
+    if ('note' in patch) allowed.note = String(patch.note || '').slice(0, 1000);
+    // Change artwork (Steam games): only files lib:pickImage copied into the covers folder, or null to go back.
+    const artFile = v => typeof v === 'string' && /^c\d{10,16}\.(jpg|jpeg|png|webp)$/.test(v) ? v : null;
+    if ((g.steam || g.pack) && 'artCover' in patch) allowed.artCover = artFile(patch.artCover);
+    if ((g.steam || g.pack) && 'artHero' in patch) allowed.artHero = artFile(patch.artHero);
+    if ('heroPos' in patch) allowed.heroPos = Math.max(0, Math.min(100, Math.round(Number(patch.heroPos) || 0)));
+    if (Array.isArray(patch.scripts)) allowed.scripts = cleanScriptsOf(g, patch.scripts);
     library.setCfg(g, allowed);
     return findGame(g.id);
   });

@@ -70,8 +70,9 @@ function runWithLimit(script) {
   return { first, done: r.done };
 }
 
-// Settings from the renderer: only picked script files, sensible lengths and limits.
-function cleanScripts(list) {
+// Settings from the renderer: only picked script files, sensible lengths and limits. `cleanSetup` checks a script's
+// own setup (Custom options) the same way main checks the game's.
+function cleanScripts(list, cleanSetup) {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
   return list
@@ -87,7 +88,8 @@ function cleanScripts(list) {
         name: String(s.name || '').trim().slice(0, 40) || path.basename(s.path, path.extname(s.path)),
         args: String(s.args || '').slice(0, 300),
         timeoutS: Number.isFinite(t) ? Math.max(5, Math.min(300, t)) : DEFAULT_TIMEOUT_S,
-        custom: !!s.custom,
+        own: !!s.own,
+        custom: s.custom && typeof s.custom === 'object' && cleanSetup ? cleanSetup(s.custom) : {},
       };
     });
 }
@@ -100,4 +102,15 @@ function pickScript(game, choice) {
   return list.find(s => s.id === want) || null;
 }
 
-module.exports = { run, runWithLimit, cleanScripts, pickScript, commandFor, SCRIPT_EXT, DEFAULT_TIMEOUT_S };
+// What a game plays with: its own setup, with the script's Custom options on top when they're ticked.
+const SETUP_KEYS = ['acct', 'display', 'audio', 'apps', 'opts', 'launcher'];
+function withSetup(game, script) {
+  const c = script && script.own && script.custom;
+  if (!c) return game;
+  const out = { ...game };
+  for (const k of SETUP_KEYS) if (k in c) out[k] = k === 'display' ? { ...game.display, ...c.display } : c[k];
+  if ('acct' in c) out.acctAuto = false;
+  return out;
+}
+
+module.exports = { withSetup, SETUP_KEYS, run, runWithLimit, cleanScripts, pickScript, commandFor, SCRIPT_EXT, DEFAULT_TIMEOUT_S };
