@@ -33,7 +33,8 @@ function onKey(P, e) {
 }
 
 // Keeps keyboard focus on the picked row, so arrows, Enter and a controller's A all act on it.
-const focusPicked = el => { if (el) requestAnimationFrame(() => { const b = el.querySelector('.sa-o.on'); if (b && document.activeElement !== b) b.focus(); }); };
+// A timer, not requestAnimationFrame: frames pause while the window is hidden (a shortcut can open this then).
+const focusPicked = el => { if (el) setTimeout(() => { const b = el.querySelector('.sa-o.on'); if (b && document.activeElement !== b) b.focus(); }, 0); };
 
 // Classic layout: "Which script?" and, while a script failed or runs long, Launch anyway or Cancel.
 export function classicScriptOverlays(app) {
