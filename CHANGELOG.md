@@ -2,6 +2,49 @@
 
 Every SwapDeck version, newest first. The same notes show in the app under *What's new*.
 
+## 1.7.0 · 14 Oct 2026
+
+**Scripts before a game starts**
+
+Run a script before a game starts, like one that swaps your wheel profile per car class, and pick which one each time you press Play.
+
+### Scripts
+
+- Setup > Scripts: add a script, give it a name (GT3, Hypercar…), arguments and a time limit (30 seconds unless you change it)
+- The same script can be added more than once with different arguments, like -Class GT3 and -Class HY
+- Test runs a script right away and shows whether it worked, with the last line it printed if it didn't
+- At Play, the script runs after your account, display, sound and apps are set, and the game waits for it
+- Nothing needs to change in your script: SwapDeck counts it as done when it closes, and an exit code of 0 means it worked
+
+### Custom options
+
+- Tick Custom options on a script to give it its own account, display, sound, apps, launch options or launcher
+- Each card says SAME AS GAME or CHANGED, and USE GAME'S puts a card back to the game's setting
+- The script's card on Setup sums up what it changes, like Speakers · SimHub
+- Untick it and the script uses the game's setup again. Its own setup is kept for later
+
+### Playing
+
+- Which script? opens from every Play button, the tray and the controller (A plays the highlighted script)
+- In the tray, a game with scripts opens its scripts underneath it. Click one to play
+- Try again after a failed start uses the same script
+- Home and the Now playing bar show which script you played with, like Le Mans Ultimate · GT3
+- Create desktop shortcut on a game with scripts asks: one script, or ask every time
+
+### App
+
+- Settings > About credits Munder Difflin and PandaOS, where SwapDeck is made with Claude Code
+- The starting screen for non-Steam games and modpacks no longer ticks a step off before it's done
+
+### Good to know
+
+- Scripts run hidden, in their own folder. PowerShell scripts run with -ExecutionPolicy Bypass for that one run only
+- SwapDeck never closes your script. Cancel and Stop put your display and sound back and leave the script running
+- If a script only took long and then finishes fine, the game starts by itself
+- The Classic layout shows your scripts and asks which one at Play. A script's own setup is edited in the Library layout
+
+[Download 1.7.0](https://github.com/byteminite/SwapDeck/releases/tag/v1.7.0)
+
 ## 1.6.3 · 12 Oct 2026
 
 **Owned games show up right away**

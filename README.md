@@ -112,6 +112,7 @@ Built for people who keep separate FPS, sim racing and horror accounts. Your Min
 <li>Tick <b>"Close when the game exits"</b> for the ones that should go with it</li>
 <li>Start a <b>custom launcher</b> such as Content Manager, and keep the Steam art and tracking</li>
 <li>Put the game on your <b>ultrawide only</b>, then get your normal desk back afterwards</li>
+<li><b>Scripts</b> run before the game and Play waits for them, like a controls script per car class. Play asks <i>Which script?</i>, and a script can have its own monitor, sound and apps</li>
 </ul>
 </td>
 </tr>
@@ -247,6 +248,7 @@ A short first start finds Steam, lists your accounts and lets you pick an accent
   runs, SwapDeck looks at the Java programs running on your PC. Nothing is sent anywhere.
 - SwapDeck checks GitHub for a new version every 30 minutes and when you open it. Each check downloads one small file; nothing about you is sent.
 - *Close the game too* (when you press Stop) asks the game's windows on your PC to close, like Alt+F4. It never forces a game closed.
+- Scripts you add to a game run on your PC only, hidden, in their own folder, when you play with them or press *Test*. SwapDeck never closes them.
 
 ## FAQ
 
@@ -280,6 +282,18 @@ Yes. Settings → Appearance → <b>Classic</b> puts your accounts up front, lik
 CurseForge only starts packs from outside the app when it's set to <b>Use CurseForge launcher</b>. In CurseForge, open
 Settings → Minecraft and pick it, then press Play in SwapDeck again. With the Mojang launcher, CurseForge says
 <i>Cannot launch modpack with Mojang launcher</i>. Modrinth and Prism Launcher don't need anything.
+
+</details>
+
+<details>
+<summary><b>How do scripts work?</b></summary>
+
+Open a game's **Setup** and add a script under **Scripts**: a `.ps1`, `.bat`, `.cmd` or `.exe`, with a name and arguments
+(the same script can be added twice, like `-Class GT3` and `-Class HY`). When you press Play, SwapDeck asks which script to run,
+sets your account, display, sound and apps, runs the script and waits for it to close, then starts the game.
+Your script doesn't need anything added: an exit code of 0 means it worked. If it fails or passes its time limit,
+SwapDeck shows what it printed and asks *Launch anyway* or *Cancel*. Tick **Custom options** to give a script its own
+monitor, sound, apps or launch options. PowerShell scripts run with `-ExecutionPolicy Bypass` for that one run only.
 
 </details>
 
