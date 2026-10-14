@@ -30,7 +30,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
   const emit = s => send('launch', {
     gid: s.gid, steps: s.steps, step: s.step, running: s.running,
-    mon: s.monId, res: s.resTxt, changed: s.changed, mode: s.mode, restore: s.restore, acct: s.acct, script: s.script, ask: s.ask,
+    mon: s.monId, res: s.resTxt, changed: s.changed, mode: s.mode, restore: s.restore, acct: s.acct, script: s.script, scriptId: s.scriptId, ask: s.ask,
   });
 
   async function end(reason, error) {
@@ -130,7 +130,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     const s = session = {
       gid: id, appid: g.appid, steam: g.steam, pack: !!pack, steps, step: 0, running: false,
       monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
-      saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [], script: script ? script.name : null, ask: null, decide: null,
+      saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [], script: script ? script.name : null, scriptId: script ? script.id : (g.scripts || []).length ? 'none' : null, ask: null, decide: null,
       logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
       // What the game was set up with, kept on the session so Recently played can show it.
       closeTarget: pack ? null : targetOf(g),
@@ -360,7 +360,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }
   }
 
-  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct, script: session.script, ask: session.ask };
+  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct, script: session.script, scriptId: session.scriptId, ask: session.ask };
 
   return { play, stop, stopClose, restoreNow, test, testRes, current, decide };
 }

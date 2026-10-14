@@ -60,7 +60,10 @@ function apps(b) {
 }
 
 function extras(b) {
-  return html`<div class="su-extra"><button class="su-btn" onClick=${b.onShortcut}>Create desktop shortcut</button>
+  const scut = b.gScutOpts
+    ? html`<div class="su-dw"><button class="su-btn" aria-haspopup="menu" aria-expanded=${!!b.gScutMenu} onClick=${b.onScutMenu}>Create desktop shortcut</button>${b.gScutMenu ? html`<div class="su-menu up sx-scut" role="menu">${b.gScutOpts.map(o => html`<button class="su-opt" role="menuitem" onClick=${o.on}><span class="su-sv"><b>${o.label}</b></span></button>`)}</div>` : null}</div>`
+    : html`<button class="su-btn" onClick=${b.onShortcut}>Create desktop shortcut</button>`;
+  return html`<div class="su-extra">${scut}
 ${b.gNonSteam ? html`<button class="su-btn" onClick=${b.onGEdit}>Edit game</button><button class="su-btn d" onClick=${b.onGRemove}>Remove</button>` : null}</div>`;
 }
 

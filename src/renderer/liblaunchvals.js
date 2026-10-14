@@ -24,7 +24,7 @@ function errorScreen(app, E) {
   return { failed: true, name: g.name, bg: g.steam && g.hero ? 'url("' + g.hero + '") center/cover no-repeat,' + app.gradOf(g) : app.cardBg(g), cover: app.cardBg(g),
     error: E.error, steps: shown.map((s, i) => stepRow(s, i, { step: E.step, running: false, failed: true })), pct: 0, running: false,
     asPill: a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [], asArrow: false, asText: a ? 'As ' + a.name : g.steam ? 'Steam game' : g.pack ? 'Starts in ' + g.pack.label : 'No Steam account needed', note: '',
-    onRetry: () => { clear(); app.play(g.id); }, onPage: () => { clear(); app.openGame(g.id); }, onHide: clear };
+    onRetry: () => { clear(); app.play(g.id, undefined, E.script || undefined); }, onPage: () => { clear(); app.openGame(g.id); }, onHide: clear };
 }
 
 // A script that failed or passed its time limit (F-007): the game waits for Launch anyway or Cancel.
@@ -61,7 +61,7 @@ export function launchVals(app) {
     cfTip: !!(g.pack && g.pack.launcher === 'curseforge'),
     onStop: () => libStop(app), onHide: hide, onCancel: () => app.stopGame(),
   };
-  const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => libStop(app) } : null;
+  const bar = L.hidden ? { name: g.name, cover: app.cardBg(g), running: !!L.running, sub: (a ? 'As ' + a.name + ' · ' : '') + (L.script ? L.script + ' · ' : '') + (L.running ? 'running' : 'starting'), onShow: show, onStop: () => libStop(app) } : null;
   return { lnScreen: screen, lnBar: bar };
 }
 

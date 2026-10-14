@@ -413,6 +413,8 @@ function winAccent() {
 
 // --play=<gameId> from a desktop shortcut
 const playArg = argv => { const a = (argv || []).find(x => /^--play=/.test(x)); return a ? a.slice(7) : null; };
+// --script=<script id> or --script=ask (F-007). A game with scripts and no --script (older shortcuts) asks too.
+const scriptArg = argv => { const a = (argv || []).find(x => /^--script=[a-z0-9]{1,16}$/.test(x)); return a ? a.slice(9) : null; };
 
 // ---------- IPC ----------
 
@@ -734,11 +736,13 @@ function ipc() {
     return { ok: true };
   });
   ipcMain.handle('game:stop', (_, mode) => mode === 'close' ? player.stopClose() : player.stop());
-  ipcMain.handle('game:shortcut', (_, id) => {
+  ipcMain.handle('game:shortcut', (_, id, scriptId) => {
     const g = findGame(String(id)); if (!g) return { ok: false, error: 'Game not found.' };
+    // A game with scripts: one shortcut per script, or one that asks which script every time.
+    const sc = (g.scripts || []).find(s => s.id === scriptId), ask = !sc && (g.scripts || []).length > 0;
     const exe = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
-    const args = (app.isPackaged ? '' : '"' + app.getAppPath() + '" ') + '--play=' + g.id;
-    const file = path.join(app.getPath('desktop'), g.name.replace(/[\\/:*?"<>|]/g, '').trim() + '.lnk');
+    const args = (app.isPackaged ? '' : '"' + app.getAppPath() + '" ') + '--play=' + g.id + (sc ? ' --script=' + sc.id : ask ? ' --script=ask' : '');
+    const file = path.join(app.getPath('desktop'), (g.name + (sc ? ' (' + sc.name + ')' : '')).replace(/[\\/:*?"<>|]/g, '').trim() + '.lnk');
     const ok = shell.writeShortcutLink(file, { target: exe, args, description: 'Play ' + g.name + ' through SwapDeck', icon: g.steam ? exe : g.exe, iconIndex: 0 });
     return ok ? { ok: true, file: path.basename(file) } : { ok: false, error: "Windows didn't create the shortcut." };
   });
@@ -1090,13 +1094,21 @@ function createWindow() {
   });
 }
 
+// A desktop shortcut: play with its script, or let the window ask "Which script?" (the window is shown first).
+function playFromShortcut(argv) {
+  const id = playArg(argv), sc = scriptArg(argv);
+  if (!id) return;
+  const g = library.build(loc.dir).find(x => x.id === id);
+  if (g && (g.scripts || []).length && (!sc || sc === 'ask')) { showWin(); send('play-ask', { id }); return; }
+  player.play(id, null, sc || undefined);
+}
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', (_, argv) => {
     showWin();
-    const id = playArg(argv);
-    if (id) player.play(id);
+    playFromShortcut(argv);
   });
   // Windows shows notifications only for an app with its installed id (the same appId as the installer's shortcut).
   if (process.platform === 'win32') app.setAppUserModelId('app.swapdeck.switcher');
@@ -1119,8 +1131,7 @@ if (!app.requestSingleInstanceLock()) {
     updateTray();
     hotkey.init(toggleTrayPanel);
     applyHotkey();
-    const startId = playArg(process.argv);
-    if (startId) win.webContents.once('did-finish-load', () => setTimeout(() => player.play(startId), 1500));
+    if (playArg(process.argv)) win.webContents.once('did-finish-load', () => setTimeout(() => playFromShortcut(process.argv), 1500));
     updater.init(s => send('update', s), { onNotifyClick: showWin, isVisible: () => !!win && win.isVisible() && !win.isMinimized() && win.isFocused() });
     setInterval(poll, 2500);
     setTimeout(refreshPublicAll, 2500);

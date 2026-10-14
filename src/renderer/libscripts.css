@@ -48,3 +48,12 @@
 button.su-ovr{padding:3px 8px;border:0;border-radius:99px;background:rgba(var(--accent-rgb),.14);color:var(--accent-strong);cursor:pointer}
 button.su-ovr:hover{background:rgba(var(--accent-rgb),.22)}
 .su-l > .su-ovr{flex:none;margin-left:auto}
+.sx-scut{width:max-content;min-width:240px;right:auto}
+/* Classic layout: the Library layout's tokens for the Scripts card and the script questions. */
+.sc-cl{--ls-surface:rgba(var(--fg-rgb),.05);--ls-surface-2:rgba(var(--fg-rgb),.08);--ls-surface-3:rgba(var(--fg-rgb),.12);--ls-line:rgba(var(--fg-rgb),.1);--ls-line-strong:rgba(var(--fg-rgb),.16);--ls-good:#7ee8a6;--ls-warn:#ffd27a;--ls-radius:12px;--ls-ease:cubic-bezier(.23,1,.32,1);font-family:'Geist',system-ui,sans-serif;color:var(--text)}
+.sc-clset .su-box{padding:0;background:none}
+.sc-clset .su-box > .su-l{font:600 11px 'Geist Mono',monospace;letter-spacing:.1em;color:var(--text-subtle);margin-bottom:9px;text-transform:uppercase}
+.sc-err{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:rgba(255,154,139,.1);border:1px solid rgba(255,154,139,.3);font:500 13px/1.45 'Geist',sans-serif;color:var(--bad-fg)}
+.sc-err svg{flex:none;margin-top:1px}
+.sc-err span{min-width:0;overflow-wrap:anywhere}
+.sc-err code{display:block;margin-top:6px;font:500 11.5px/1.45 'Geist Mono',monospace;white-space:pre-wrap}

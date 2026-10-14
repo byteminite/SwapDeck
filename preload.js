@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
-const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update', 'launch', 'launch-end', 'display-changed', 'notice', 'tray-show'];
+const EVENTS = ['steam', 'accounts', 'account', 'switch', 'stats', 'link', 'zoom', 'update', 'launch', 'launch-end', 'display-changed', 'notice', 'tray-show', 'play-ask'];
 
 contextBridge.exposeInMainWorld('api', {
   state: () => invoke('state'),
@@ -65,7 +65,7 @@ contextBridge.exposeInMainWorld('api', {
   libPickScript: () => invoke('lib:pickScript'),
   gameFolder: id => invoke('game:folder', id),
   stopGame: mode => invoke('game:stop', mode === 'close' ? 'close' : 'track'),
-  shortcut: id => invoke('game:shortcut', id),
+  shortcut: (id, script) => invoke('game:shortcut', id, script),
   displays: () => invoke('display:list'),
   displayModes: id => invoke('display:modes', id),
   saveResProfile: p => invoke('res:save', p),

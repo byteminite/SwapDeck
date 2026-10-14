@@ -57,7 +57,7 @@ export function libRecentVals(app) {
   const jump = [...ids, ...rest].map(id => app.gfind(id)).filter(g => g && g.installed).slice(0, 12).map(g => card(app, g, me, L));
   let day = '';
   const rows = sess.slice(0, 14).map(s => { const g = app.gfind(s.gid), a = app.find(s.sid), d = dayLabel(s.start, today), head = d !== day ? d : null; day = d;
-    return { head, name: g.name, cap: app.cardBg(g), who: a ? a.name : 'Unknown account', dot: a ? avBg(a) : 'rgba(var(--fg-rgb),.14)', time: clock(s.start) + (s.ms ? ' to ' + clock(s.start + s.ms) : ''), dur: s.ms ? fmt(s.ms) : 'a moment', tags: setupTags(s.setup), open: () => app.openGame(g.id) }; });
+    return { head, name: g.name + (s.setup && s.setup.script ? ' · ' + s.setup.script : ''), cap: app.cardBg(g), who: a ? a.name : 'Unknown account', dot: a ? avBg(a) : 'rgba(var(--fg-rgb),.14)', time: clock(s.start) + (s.ms ? ' to ' + clock(s.start + s.ms) : ''), dur: s.ms ? fmt(s.ms) : 'a moment', tags: setupTags(s.setup), open: () => app.openGame(g.id) }; });
   const mode = S.lrWk || 'h', days = [6, 5, 4, 3, 2, 1, 0].map(n => today - n * DAY);
   const vals = days.map(d => week.filter(s => s.start >= d && s.start < d + DAY).reduce((t, s) => t + (mode === 'h' ? s.ms / 3600000 : 1), 0));
   const max = Math.max(1e-9, ...vals), total = vals.reduce((t, v) => t + v, 0);

@@ -21,7 +21,7 @@ import { firstOverlay, firstDue, startFirst } from './libfirst.js';
 import { libPad } from './libpad.js';
 import { accountsOf } from './libgrid.js';
 import { scriptVals } from './libscripts.js';
-import { firstPick } from './libchoose.js';
+import { firstPick, classicScriptOverlays } from './libchoose.js';
 import { isScriptGameId, scriptGame, mutScriptGame } from './libscriptsetup.js';
 
 const api = window.api;
@@ -190,6 +190,8 @@ class App extends Component {
           this._zoomToast = this._tid;
         }
       }),
+      // A desktop shortcut for a game with scripts: ask which one here.
+      api.on('play-ask', d => d && this.gfind(d.id) && this.play(d.id)),
       api.on('launch', L => this.setState(s => ({ launch: { ...L, hidden: !L.ask && s.launch && s.launch.gid === L.gid ? s.launch.hidden : false } }))),
       api.on('launch-end', e => this.onLaunchEnd(e)),
       api.on('notice', n => this.toast(n.type || 'info', n.title, n.msg)),
@@ -485,6 +487,7 @@ class App extends Component {
       if (S.wnFull) return this.setState({ wnFull: null });
       if (S.lnErr) return this.setState({ lnErr: null });
       if (S.scAsk) return this.setState({ scAsk: null });
+      if (S.scutMenu) return this.setState({ scutMenu: null });
       if (S.scEdit && !S.menu && !S.acctMenu) return this.setState({ scEdit: null });
       if (S.stopAsk) return this.setState({ stopAsk: null });
       if (S.stopping && S.stopping.phase === 'done') return this.setState({ stopping: null });
@@ -1169,14 +1172,14 @@ class App extends Component {
     if (!asSid && isLibLayout(this) && g.steam && !g.acct) { const own = accountsOf(g), me = this.accts.find(a => a.current); if (own.length && !(me && own.includes(me.id))) asSid = own.find(id => this.find(id)); }
     if (S.launch) { this.toast('warning', 'A game is already running', 'Stop tracking it first, or quit it.'); return; }
     if (g.steam && this.steamState === 'not-found') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings to launch Steam games.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return; }
-    // A game with scripts asks which one runs first (Library layout). Classic uses the last one picked.
-    if (script === undefined && (g.scripts || []).length && isLibLayout(this)) return this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null, scAsk: { gid, asSid, pick: firstPick(g) } });
+    // A game with scripts asks which one runs first.
+    if (script === undefined && (g.scripts || []).length) return this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null, scAsk: { gid, asSid, pick: firstPick(g) } });
     this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null });
     const r = await api.play(gid, asSid, script);
     if (r.install) { this.toast('info', 'Opening Steam to install', g.name + " isn't installed. Steam's install dialog is opening."); return; }
     if (!r.ok && !r.cancelled) {
       if (this.busyToast(r)) return;
-      if (r.code !== 'RUNNING' && isLibLayout(this)) this.setState({ lnErr: { gid, error: r.error || 'Something went wrong.', steps: [], step: 0, acct: null } });
+      if (r.code !== 'RUNNING' && isLibLayout(this)) this.setState({ lnErr: { gid, error: r.error || 'Something went wrong.', steps: [], step: 0, acct: null, script: script || null } });
       else if (r.code !== 'RUNNING') this.toast('error', "Couldn't launch " + g.name, r.error || 'Something went wrong.');
       else this.toast('warning', 'A game is already running', r.error);
     }
@@ -1186,7 +1189,7 @@ class App extends Component {
   onLaunchEnd(e) {
     const g = this.gfind(e.gid), name = g ? g.name : 'Game', nm = this.normMon(), prev = this.state.launch;
     // Library layout: a failed start stays on the start screen with what went wrong, instead of a toast.
-    const lnErr = e.reason === 'error' && isLibLayout(this) ? { gid: e.gid, error: e.error || 'Something went wrong.', steps: prev ? prev.steps : [], step: prev ? prev.step : 0, acct: prev ? prev.acct : null } : null;
+    const lnErr = e.reason === 'error' && isLibLayout(this) ? { gid: e.gid, error: e.error || 'Something went wrong.', steps: prev ? prev.steps : [], step: prev ? prev.step : 0, acct: prev ? prev.acct : null, script: prev ? prev.scriptId : null } : null;
     this.setState({ launch: null, stopAsk: null, ...(lnErr ? { lnErr } : {}) });
     this.reloadLib();
     api.playLog().then(playLog => playLog && this.setState({ playLog }));
@@ -1294,8 +1297,8 @@ class App extends Component {
     await this.reloadLib();
     this.toast('info', 'Removed ' + (g ? g.name : 'game'), 'Files on disk were not touched.', saved ? { label: 'Undo', fn: async () => { await api.libRestoreCustom(saved); this.reloadLib(); } } : null);
   }
-  async shortcut(g, a, mon) {
-    const r = await api.shortcut(g.id);
+  async shortcut(g, a, mon, scriptId) {
+    const r = await api.shortcut(g.id, scriptId);
     if (r.ok) this.toast('success', 'Desktop shortcut created', r.file + ' opens through SwapDeck' + (a ? ' as ' + a.name : '') + (mon ? ' on ' + mon.label : '') + '.');
     else this.toast('error', "Couldn't create the shortcut", r.error);
   }
@@ -1812,7 +1815,7 @@ class App extends Component {
     );
     return {
       ...b, ...this.tileVals(), ...dw, ...this.linkVals(), ...(isLibLayout(this) ? {} : this.libraryVals()), ...gv, ...lv, ...this.addGameVals(),
-      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this), packsView: packsOverlay(packsVals(this)),
+      ...this.settingsVals(), ...this.themeVals(), ...dv, ...libShellVals(this, gv, dw), ...layoutVals(this), obView: firstOverlay(this), packsView: html`${packsOverlay(packsVals(this))}${classicScriptOverlays(this)}`,
       tbText: lv.tbText || b.tbText, tbDot: lv.tbDot || b.tbDot,
       isLib, isAcc: !isLib, showClose: b.showClose && !S.launch,
       showToolbar: b.showToolbar && !isLib, showGallery: b.showGallery && !isLib && !this.gallery, showPanels: b.showGallery && !isLib && this.gallery,

@@ -35,6 +35,23 @@ function onKey(P, e) {
 // Keeps keyboard focus on the picked row, so arrows, Enter and a controller's A all act on it.
 const focusPicked = el => { if (el) requestAnimationFrame(() => { const b = el.querySelector('.sa-o.on'); if (b && document.activeElement !== b) b.focus(); }); };
 
+// Classic layout: "Which script?" and, while a script failed or runs long, Launch anyway or Cancel.
+export function classicScriptOverlays(app) {
+  const S = app.state;
+  if ((S.settings || {}).layout === 'library') return null;
+  if (S.scAsk) { const P = chooseVals(app); return P ? html`<div class="sc-cl">${chooseOverlay(P)}</div>` : null; }
+  const L = S.launch, A = L && L.ask, g = L && app.gfind(L.gid);
+  if (!A || !g) return null;
+  const decide = c => window.api.scriptDecide(c), time = A.kind === 'time';
+  const msg = time ? A.name + ' is still running after ' + A.secs + ' seconds. It may be waiting for input. If it finishes fine, the game starts by itself.'
+    : A.code != null ? A.name + ' stopped with an error (code ' + A.code + "). The game hasn't started." : A.name + " couldn't run. The game hasn't started.";
+  return html`<div class="sc-cl"><div class="tm-ov"><div class="sa" role="alertdialog" aria-modal="true" aria-label=${time ? 'The script is taking long' : "The script didn't finish"}>
+<div class="sa-h"><span class="sa-cap" style=${'background:' + app.cardBg(g)}></span><div><h3>${time ? 'The script is taking long' : "The script didn't finish"}</h3><span>${g.name}</span></div></div>
+<div class="sc-err">${icon('alert', 16)}<span>${msg}${!time && A.line ? html`<code>${A.line}</code>` : null}</span></div>
+<div class="su-hint">Cancel puts your display and sound back. Your script is left running either way.</div>
+<div class="sa-f"><span class="tm-sp"></span><button class="st-btn" onClick=${() => decide('cancel')}>Cancel</button><button class="st-btn p sc-go" onClick=${() => decide('anyway')}>${icon('play', 13)}Launch anyway</button></div></div></div></div>`;
+}
+
 export function chooseOverlay(P) {
   const opt = r => html`<button class=${'sa-o' + (P.pick === r.id ? ' on' : '')} role="radio" aria-checked=${P.pick === r.id} tabindex=${P.pick === r.id ? 0 : -1} onClick=${() => P.onPick(r.id)} onFocus=${() => P.pick !== r.id && P.onPick(r.id)} onDblClick=${() => P.go(r.id)}>
 <span class=${'sa-ic' + (r.none ? ' sc-none' : '')}>${icon(r.none ? 'x' : 'script', 18)}</span><div class="sa-m"><b>${r.name}${r.last ? html`<em>LAST USED</em>` : null}</b><span class=${r.none ? '' : 'sc-sub'}>${r.sub}</span></div><span class="sa-rd"></span></button>`;

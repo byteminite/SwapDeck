@@ -91,12 +91,13 @@
     id: 'steam:' + appid, steam: true, appid, name, installed: true, folder: STEAMDIR + folder,
     acct: acct ? A(acct).sid : null, owners: (o.owners || (acct ? [acct] : [])).map(n => A(n).sid), opts: o.opts || '', display: { mon: null, mode: 'primary', restore: true, res: null, ...(o.display || {}) },
     audio: o.audio || null, apps: o.apps || [], launcher: o.launcher || null, tags: o.tags || [], fav: !!o.fav, note: o.note || '',
+    scripts: o.scripts || [], lastScript: o.lastScript || null,
     cover: CDN + appid + '/library_600x900.jpg', hero: CDN + appid + '/library_hero.jpg', logo: CDN + appid + '/logo.png',
     lastPlayed: ago == null ? 0 : now - ago, hours,
   });
   const pack = (launcher, label, name, hours, ago, img) => ({ id: 'mc:' + launcher + ':' + name.length.toString(16).padStart(16, '0'), steam: false, pack: { launcher, label }, name,
     exe: ['C:', 'Users', 'you', 'AppData', 'Local', label, label + '.exe'].join(String.fromCharCode(92)), installed: true, folder: ['C:', 'Users', 'you', label, name].join(String.fromCharCode(92)), acct: null, opts: '',
-    display: {}, audio: null, apps: [], tags: [], fav: false, note: '', img, iconMode: 'gen', lastPlayed: now - ago, hours });
+    display: {}, audio: null, apps: [], tags: [], fav: false, note: '', scripts: [], lastScript: null, img, iconMode: 'gen', lastPlayed: now - ago, hours });
   const lib = [
     game('730', 'Counter-Strike 2', 'Counter-Strike Global Offensive', 'NightOwl', 412.5, 50 * 60e3, { opts: '-novid -high +fps_max 0', display: { res: 'r1700000000001' }, tags: ['fps'], fav: true }),
     game('244210', 'Assetto Corsa', 'assettocorsa', 'ApexDrift', 186.2, 2 * D, {
@@ -104,7 +105,11 @@
       apps: [{ path: 'C:\\Program Files (x86)\\SimHub\\SimHubWPF.exe', args: '', close: true }],
       launcher: 'C:\\Games\\Content Manager\\Content Manager.exe', tags: ['racing', 'sim'], fav: true,
       note: 'League night: Spa, GT3, 45 min race\nSetup: spa_gt3_wet in Content Manager' }),
-    game('2399420', 'Le Mans Ultimate', 'Le Mans Ultimate', 'ApexDrift', 41.7, 4 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset', tags: ['racing', 'sim'] }),
+    game('2399420', 'Le Mans Ultimate', 'Le Mans Ultimate', 'ApexDrift', 41.7, 4 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, audio: '{demo}.headset', tags: ['racing', 'sim'],
+      // Scripts before launch: one controls script, a run per car class. Hypercar also starts SimHub and uses the speakers.
+      scripts: [['gt3', 'GT3', '-Class GT3'], ['hy', 'Hypercar', '-Class HY'], ['lmp2', 'LMP2', '-Class LMP2']].map(([id, name, args]) => ({ id, name, args, path: ['C:', 'Sim', 'lmu-controls.ps1'].join(String.fromCharCode(92)), timeoutS: 30,
+        own: id === 'hy', custom: id === 'hy' ? { audio: '{demo}.speakers', apps: [{ path: ['C:', 'Program Files (x86)', 'SimHub', 'SimHubWPF.exe'].join(String.fromCharCode(92)), args: '', close: true }] } : {} })),
+      lastScript: 'gt3' }),
     game('805550', 'Assetto Corsa Competizione', 'Assetto Corsa Competizione', 'ApexDrift', 63.4, 9 * D, { display: { mon: MON('LG ULTRAWIDE').id, mode: 'only' }, tags: ['racing', 'sim'] }),
     game('1144200', 'Ready or Not', 'Ready Or Not', 'Crosshair', 17.3, 3 * D, { tags: ['fps', 'co-op'] }),
     game('739630', 'Phasmophobia', 'Phasmophobia', 'Lantern', 52.8, 5 * D, { audio: '{demo}.headset', tags: ['horror', 'co-op'] }),
@@ -226,7 +231,7 @@
 
   const steamState = () => ({ found: true, exe: 'C:\\Program Files (x86)\\Steam\\steam.exe', checked: [], running: true, activeSid: active, autoLoginUser: (accounts.find(a => a.sid === active) || {}).login || '', busy: null });
   let busy = null, session = null, zoom = { pref: 'auto', factor: 1.25 };
-  const curSession = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.mon, res: session.res, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct };
+  const curSession = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.mon, res: session.res, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct, script: session.script, scriptId: session.scriptId };
   const sendLaunch = () => emit('launch', curSession());
 
   async function switchTo(sid, quiet) {
@@ -242,9 +247,14 @@
     return { ok: true };
   }
 
-  async function play(id, asSid) {
-    const g = findGame(id); if (!g) return { ok: false, error: 'Game not found.' };
+  // As main's beforelaunch.withSetup: a script with Custom options plays with its own setup on top of the game's.
+  const withSetup = (g, sc) => { const c = sc && sc.own && sc.custom; if (!c) return g; const out = { ...g }; for (const k of ['acct', 'display', 'audio', 'apps', 'opts', 'launcher']) if (k in c) out[k] = k === 'display' ? { ...g.display, ...c.display } : c[k]; return out; };
+  async function play(id, asSid, choice) {
+    const base = findGame(id); if (!base) return { ok: false, error: 'Game not found.' };
     if (session) return { ok: false, code: 'RUNNING', error: 'A game is already running. Stop tracking it first.' };
+    const list = base.scripts || [], want = choice || base.lastScript, sc = choice === 'none' ? null : list.find(s => s.id === want) || null;
+    if (choice && list.length) base.lastScript = sc ? sc.id : 'none';
+    const g = withSetup(base, sc);
     const pickA = g.steam ? asSid || g.acct : null, acct = pickA && accounts.find(a => a.sid === pickA);
     const mon = g.display.mon && monitors.find(m => m.id === g.display.mon);
     const res = g.display.res && resProfiles.find(p => p.id === g.display.res);
@@ -258,9 +268,10 @@
       : { k: 'disp', label: 'Setting display', sub: 'Default display · skipped', skip: true });
     if (dev) steps.push({ k: 'audio', label: 'Setting sound', sub: dev.name });
     if (g.apps.length) steps.push({ k: 'apps', label: 'Starting companion apps', sub: g.apps.map(x => x.path.split('\\').pop().replace(/\.exe$/i, '')).join(', ') });
+    if (sc) steps.push({ k: 'script', label: 'Running ' + sc.name, sub: sc.path.split(String.fromCharCode(92)).pop() + (sc.args ? ' ' + sc.args : '') });
     steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: (g.launcher ? 'via ' + g.launcher.split('\\').pop() : g.steam ? 'steam://rungameid/' + g.appid : g.exe.split('\\').pop()) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
-    session = { gid: id, steps, step: 0, running: false, mon: mon ? mon.id : null, res: res ? resTxt : null, changed: !!(mon || res), mode: g.display.mode, restore: g.display.restore, acct: acct ? acct.sid : null, start: 0, logAcct: acct ? acct.sid : g.steam ? active : 'local', setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: g.apps.map(x => x.path.split('\\').pop().replace(/\.exe$/i, '')) } };
+    session = { gid: id, steps, step: 0, running: false, mon: mon ? mon.id : null, res: res ? resTxt : null, changed: !!(mon || res), mode: g.display.mode, restore: g.display.restore, acct: acct ? acct.sid : null, script: sc ? sc.name : null, scriptId: sc ? sc.id : list.length ? 'none' : null, start: 0, logAcct: acct ? acct.sid : g.steam ? active : 'local', setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: g.apps.map(x => x.path.split('\\').pop().replace(/\.exe$/i, '')), script: sc ? sc.name : null } };
     const me = session;
     (async () => {
       for (let i = 0; i < steps.length && session === me; i++) {
@@ -268,7 +279,8 @@
         const k = steps[i].k;
         if (k === 'acct' && needSw) { await switchTo(acct.sid, true); continue; }
         if (k === 'disp' && !steps[i].skip) { await wait(900); emit('display-changed', { mode: mon ? g.display.mode : null, label: (mon || monitors.find(m => m.primary)).label, res: res ? resTxt : null }); continue; }
-        if (k === 'run') { me.start = Date.now(); g.lastPlayed = Date.now(); break; }
+        if (k === 'run') { me.start = Date.now(); base.lastPlayed = Date.now(); break; }
+        if (k === 'script') { await wait(1600); continue; }
         await wait(steps[i].skip ? 300 : 950);
       }
     })();
@@ -280,7 +292,7 @@
     session = null;
     const ms = s.start ? Date.now() - s.start : 0;
     if (ms > 0) {
-      sessions.unshift({ sid: s.logAcct, gid: s.gid, start: s.start, ms, ...(s.setup.disp || s.setup.res || s.setup.snd || s.setup.apps.length ? { setup: s.setup } : {}) });
+      sessions.unshift({ sid: s.logAcct, gid: s.gid, start: s.start, ms, ...(s.setup.disp || s.setup.res || s.setup.snd || s.setup.apps.length || s.setup.script ? { setup: s.setup } : {}) });
       const pl = (playLog[s.logAcct] = playLog[s.logAcct] || {}), e = (pl[s.gid] = pl[s.gid] || { ms: 0, n: 0, last: 0 });
       e.ms += ms; e.n++; e.last = Date.now();
     }
@@ -372,7 +384,16 @@
       return clone(g);
     },
     libSet: async (id, patch) => {
+      const own = /^(.+)#sc:([a-z0-9]{1,16})$/.exec(String(id));
+      if (own) {
+        const g = findGame(own[1]), sc = g && (g.scripts || []).find(s => s.id === own[2]); if (!sc) return null;
+        const c = sc.custom = { ...(sc.custom || {}) };
+        for (const k of ['acct', 'opts', 'launcher', 'audio', 'apps']) if (k in patch) c[k] = patch[k] == null ? null : patch[k];
+        if (patch.display) c.display = { ...(c.display || g.display), ...patch.display };
+        return clone(g);
+      }
       const g = findGame(id); if (!g) return null;
+      if (Array.isArray(patch.scripts)) g.scripts = patch.scripts.slice(0, 12).map(s => ({ ...s, id: s.id || Math.random().toString(36).slice(2, 10), name: String(s.name || '').trim() || 'Script', timeoutS: Math.max(5, Math.min(300, Math.round(+s.timeoutS) || 30)), own: !!s.own, custom: s.custom || {} }));
       if ('acct' in patch) g.acct = patch.acct || null;
       if ('opts' in patch) g.opts = String(patch.opts || '');
       if (patch.display) Object.assign(g.display, patch.display);
@@ -399,7 +420,10 @@
       return id;
     },
     libRemoveCustom: async () => null, libRestoreCustom: async () => null,
-    play: (id, asSid) => play(String(id), asSid || null),
+    play: (id, asSid, script) => play(String(id), asSid || null, script),
+    libPickScript: async () => no('Choosing files'),
+    testScript: async () => { await wait(1400); return { ok: true, ms: 1400 }; },
+    scriptDecide: async () => ({ ok: true }),
     gameFolder: async () => no('Folders'),
     stopGame: async mode => { if (mode === 'close') await wait(1800); stopGame(); return { ok: true }; },
     shortcut: async () => ({ ok: false, error: DEMO }),
@@ -425,7 +449,7 @@
       steam: steamState(), version: VERSION, session: curSession(), winAccent: '#0078d4',
       settings: { base: settings.base, accent: settings.accent, customAccent: settings.customAccent, reduceMotion: settings.reduceMotion },
       accounts: accounts.map(a => ({ sid: a.sid, name: a.name, login: a.login, avatar: a.avatar, lastUsed: a.lastUsed, pinned: a.pinned })),
-      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15).map(g => ({ id: g.id, name: g.name, cover: g.cover, acct: g.acct, lastPlayed: g.lastPlayed })),
+      games: lib.filter(g => g.installed).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 15).map(g => ({ id: g.id, name: g.name, cover: g.cover, acct: g.acct, lastPlayed: g.lastPlayed, scripts: (g.scripts || []).map(s => ({ id: s.id, name: s.name })), lastScript: g.lastScript || null })),
     }),
     // Game details: made-up news, achievements, friends and DLC (names and art are Steam's public store info).
     gameStatus: async appid => clone(DETAILS.status[appid] || { state: 'ok' }),
