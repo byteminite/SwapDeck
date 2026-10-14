@@ -2,7 +2,7 @@
 // (src/main/play.js steps) and the account switch progress.
 import { libStop } from './libstop.js';
 
-const STEP_IC = { acct: 'user', disp: 'monitor', audio: 'headphones', apps: 'app', launch: 'rocket', run: 'gamepad' };
+const STEP_IC = { acct: 'user', disp: 'monitor', audio: 'headphones', apps: 'app', script: 'script', launch: 'rocket', run: 'gamepad' };
 const avBg = a => a.avatar ? 'url("' + a.avatar + '") center/cover no-repeat,#111' : a.grad;
 
 // A skipped step is usually good news (already signed in, already the main display): show it as READY.
@@ -27,6 +27,20 @@ function errorScreen(app, E) {
     onRetry: () => { clear(); app.play(g.id); }, onPage: () => { clear(); app.openGame(g.id); }, onHide: clear };
 }
 
+// A script that failed or passed its time limit (F-007): the game waits for Launch anyway or Cancel.
+function askVals(ask) {
+  if (!ask) return null;
+  const decide = choice => window.api.scriptDecide(choice);
+  const time = ask.kind === 'time';
+  return {
+    title: time ? 'The script is taking long' : "The script didn't finish",
+    error: time ? ask.name + ' is still running after ' + ask.secs + " seconds. It may be waiting for input. If it finishes fine, the game starts by itself."
+      : ask.code != null ? ask.name + ' stopped with an error (code ' + ask.code + "). The game hasn't started." : ask.name + " couldn't run. The game hasn't started.",
+    line: time ? '' : ask.line || '',
+    onAnyway: () => decide('anyway'), onCancel: () => decide('cancel'),
+  };
+}
+
 export function launchVals(app) {
   const S = app.state, L = S.launch, g = L && app.gfind(L.gid);
   if ((!L || !g) && S.lnErr) return { lnScreen: errorScreen(app, S.lnErr), lnBar: null };
@@ -40,7 +54,7 @@ export function launchVals(app) {
   const hint = L.changed ? (L.restore ? 'Back to library keeps the game running. Quitting the game puts your display back. Stop never closes the game.' : 'Restore is off, so the display stays as it is after you quit.') : 'Back to library keeps the game running. Stop never closes the game.';
   const screen = L.hidden ? null : {
     name: g.name, bg: g.steam && g.hero ? 'url("' + g.hero + '") center/cover no-repeat,' + app.gradOf(g) : app.cardBg(g), cover: app.cardBg(g),
-    running: !!L.running, pct, steps: shown.map((s, i) => stepRow(s, i, L)), hint,
+    running: !!L.running, pct, steps: shown.map((s, i) => stepRow(s, i, { ...L, failed: !!L.ask && L.ask.kind === 'fail' })), hint, ask: askVals(L.ask),
     asPill: !g.steam ? [] : switching ? [{ bg: avBg(from), ini: from.avatar ? '' : from.ini }, { bg: avBg(a), ini: a.avatar ? '' : a.ini }] : a ? [{ bg: avBg(a), ini: a.avatar ? '' : a.ini }] : [],
     asArrow: switching, asText: !g.steam ? (g.pack ? 'Minecraft through ' + g.pack.label : 'No Steam account needed') : switching ? 'Switching to ' + a.name : a ? 'Playing as ' + a.name : 'Playing on the signed-in account',
     note: (g.note || '').trim(), noteCopied: !!S.lNoteCopied, onCopy: () => app.copyNote(g.note),

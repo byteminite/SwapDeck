@@ -20,6 +20,8 @@ import { playWhenDone } from './libupdhist.js';
 import { firstOverlay, firstDue, startFirst } from './libfirst.js';
 import { libPad } from './libpad.js';
 import { accountsOf } from './libgrid.js';
+import { scriptVals } from './libscripts.js';
+import { firstPick } from './libchoose.js';
 
 const api = window.api;
 
@@ -187,7 +189,7 @@ class App extends Component {
           this._zoomToast = this._tid;
         }
       }),
-      api.on('launch', L => this.setState(s => ({ launch: { ...L, hidden: s.launch && s.launch.gid === L.gid ? s.launch.hidden : false } }))),
+      api.on('launch', L => this.setState(s => ({ launch: { ...L, hidden: !L.ask && s.launch && s.launch.gid === L.gid ? s.launch.hidden : false } }))),
       api.on('launch-end', e => this.onLaunchEnd(e)),
       api.on('notice', n => this.toast(n.type || 'info', n.title, n.msg)),
       api.on('display-changed', d => this.toast('info', 'Switched display' + (d.mode ? ' to ' + d.label : ''), [d.mode === 'only' ? 'Other monitors are off while you play.' : d.mode ? d.label + ' is primary while you play.' : null, d.res ? d.res + ' on ' + d.label + '.' : null].filter(Boolean).join(' '))),
@@ -481,6 +483,7 @@ class App extends Component {
       if (S.packsPick) return this.setState({ packsPick: null });
       if (S.wnFull) return this.setState({ wnFull: null });
       if (S.lnErr) return this.setState({ lnErr: null });
+      if (S.scAsk) return this.setState({ scAsk: null });
       if (S.stopAsk) return this.setState({ stopAsk: null });
       if (S.stopping && S.stopping.phase === 'done') return this.setState({ stopping: null });
       if (S.lsNotes) return this.setState({ lsNotes: false });
@@ -1154,14 +1157,16 @@ class App extends Component {
     api.audioDevices().then(audioDevs => audioDevs && this.setState({ audioDevs }));
   }
 
-  async play(gid, asSid) {
+  async play(gid, asSid, script) {
     const g = this.gfind(gid), S = this.state; if (!g) return;
     // Library layout: a game with no account picked plays on an owner, as its card says ("Switches to X").
     if (!asSid && isLibLayout(this) && g.steam && !g.acct) { const own = accountsOf(g), me = this.accts.find(a => a.current); if (own.length && !(me && own.includes(me.id))) asSid = own.find(id => this.find(id)); }
     if (S.launch) { this.toast('warning', 'A game is already running', 'Stop tracking it first, or quit it.'); return; }
     if (g.steam && this.steamState === 'not-found') { this.toast('error', 'Steam not found', 'Set the Steam location in Settings to launch Steam games.', { label: 'Open settings', fn: () => this.openSettings('steam') }); return; }
+    // A game with scripts asks which one runs first (Library layout). Classic uses the last one picked.
+    if (script === undefined && (g.scripts || []).length && isLibLayout(this)) return this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null, scAsk: { gid, asSid, pick: firstPick(g) } });
     this.setState({ gd: null, acctMenu: false, hovG: null, lnErr: null });
-    const r = await api.play(gid, asSid);
+    const r = await api.play(gid, asSid, script);
     if (r.install) { this.toast('info', 'Opening Steam to install', g.name + " isn't installed. Steam's install dialog is opening."); return; }
     if (!r.ok && !r.cancelled) {
       if (this.busyToast(r)) return;
@@ -1553,6 +1558,7 @@ class App extends Component {
         const apps = [...cur, { path: p, args: '', close: true }];
         this.gmut(g.id, { apps }); this.gset(g.id, { apps });
       },
+      ...scriptVals(this, g),
       gAppsHint: (g.apps || []).length ? 'Started before the game (unless already running). Ticked ones close when the game exits.' : 'E.g. SimHub, Crew Chief or your wheel software: started with the game, closed afterwards.',
       onGImportOpts: async () => {
         const list = await api.steamLaunchOpts(g.id);

@@ -1,0 +1,30 @@
+/* Library layout: the Scripts card on a game's Setup tab (scripts that run before the game). */
+.sx{padding:10px 10px 10px 12px;border-radius:11px;border:1px solid var(--ls-line);margin-bottom:8px}
+.sx-top{display:flex;align-items:center;gap:10px}
+.sx-ic{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;background:var(--ls-surface-2);color:var(--text-muted)}
+.sx-name{width:100%;padding:0;border:0;border-bottom:1px dashed transparent;background:transparent;color:var(--text);font:600 13.5px 'Geist',sans-serif;outline:none}
+.sx-name:hover{border-bottom-color:var(--ls-line-strong)}
+.sx-name:focus{border-bottom-color:var(--accent)}
+.sx .su-approw .su-in{flex:1}
+.sx .su-approw .sx-secs{flex:none;width:58px;text-align:right}
+.sx-unit{flex:none;font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle)}
+.sx-foot{display:flex;align-items:center;gap:10px;margin-top:9px;padding-top:9px;border-top:1px solid var(--ls-line)}
+.sx-sum{flex:1;min-width:0;font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle)}
+.sx-test{display:inline-flex;align-items:center;gap:6px}
+.sx-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;font:700 10px 'Geist',sans-serif;letter-spacing:.06em;white-space:nowrap}
+.sx-chip.ok{background:rgba(126,232,166,.14);color:var(--ls-good)}
+.sx-chip.bad{background:rgba(255,154,139,.14);color:var(--bad-fg)}
+.sx-chip.run{background:rgba(var(--accent-rgb),.14);color:var(--accent-strong)}
+.sx-spin{width:10px;height:10px;box-sizing:border-box;border-radius:99px;border:1.5px solid rgba(var(--fg-rgb),.2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+.sx-err{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(255,154,139,.08);font:500 11.5px/1.45 'Geist Mono',monospace;color:var(--bad-fg);overflow-wrap:anywhere}
+.sx-empty{margin-bottom:10px;padding:12px 14px;border-radius:11px;border:1px dashed var(--ls-line-strong);font:500 12.5px/1.5 'Geist',sans-serif;color:var(--text-muted)}
+.sx-name:focus-visible,.sx-test:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.sx-spin{animation:none}}
+/* Start screen: what a failed script printed last. */
+.ln-line{display:block;margin-top:6px;font:500 11.5px/1.45 'Geist Mono',monospace;color:#fbe3de;white-space:pre-wrap}
+/* "Which script?" at Play: the Stop question's look, with a row per script. */
+.sc-list{max-height:min(52vh,420px);overflow-y:auto;margin:0 -4px;padding:0 4px}
+.sa .sa-ic.sc-none{background:var(--ls-surface-2);color:var(--text-muted)}
+.sa .sc-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:500 11.5px 'Geist Mono',monospace}
+.sa .sc-keys{font:500 11.5px 'Geist',sans-serif;color:var(--text-subtle)}
+.sc-go svg{fill:currentColor}

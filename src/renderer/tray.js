@@ -62,7 +62,11 @@ class Tray extends Component {
     this.setState({ switching: null });
     this.load();
   }
-  async play(g) { api.trayHide(); await api.play(g.id); }
+  // A game with scripts opens its scripts under it first; picking one plays straight away.
+  async play(g, script) {
+    if (script === undefined && (g.scripts || []).length) return this.setState(s => ({ scOpen: s.scOpen === g.id ? null : g.id }));
+    this.setState({ scOpen: null }); api.trayHide(); await api.play(g.id, null, script);
+  }
   // Stop follows "When I press Stop" (Settings): ask inline, only stop tracking, or close the game too.
   stopPress(sess) {
     const pref = (this.state.d.settings || {}).stopPref || 'ask';
@@ -140,7 +144,7 @@ class Tray extends Component {
         <span style=${`width:28px;height:38px;flex:none;border-radius:6px;background:${g.cover ? `url("${g.cover}") center/cover,rgba(var(--fg-rgb),.08)` : 'rgba(var(--fg-rgb),.1)'}`}></span>
         <div style="flex:1;min-width:0"><div style="font:600 12.5px 'Geist',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div><div style=${`font:500 10.5px 'Geist Mono',monospace;color:${upd ? upd.color : 'var(--text-subtle)'}`}>${sess && sess.gid === g.id ? 'running' : upd ? upd.label : rel(g.lastPlayed)}</div></div>
         ${dis ? null : html`<span class="tp-play" style="width:28px;height:28px;flex:none;border-radius:99px;background:var(--accent);color:var(--accent-contrast);display:grid;place-items:center;opacity:0;transition:opacity .15s"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"/></svg></span>`}
-      </div>`;
+      </div>${!dis && this.state.scOpen === g.id ? scriptRows(g, id => this.play(g, id)) : null}`;
     })}
     </div>
   </div>` : null}
@@ -151,6 +155,16 @@ class Tray extends Component {
   </div>
 </div>`;
   }
+}
+
+// Scripts under a game (F-007): the last one used first, then the rest, then No script.
+function scriptRows(g, play) {
+  const last = g.lastScript, list = [...g.scripts].sort((a, b) => (b.id === last) - (a.id === last));
+  const row = (id, name, tag) => html`<button class="tp-sc" style=${`display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-radius:8px;background:${id === last ? 'rgba(var(--accent-rgb),.1)' : 'transparent'};color:var(--text);font:500 12px 'Geist',sans-serif;text-align:left;cursor:pointer`} onClick=${e => { e.stopPropagation(); play(id); }}>
+    <span style="width:20px;height:20px;flex:none;border-radius:99px;background:var(--accent);color:var(--accent-contrast);display:grid;place-items:center"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><polygon points="7 4 20 12 7 20 7 4"/></svg></span>
+    <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>${tag ? html`<span style="font:600 9.5px 'Geist',sans-serif;letter-spacing:.06em;color:var(--text-subtle)">${tag}</span>` : null}</button>`;
+  return html`<div role="menu" aria-label=${'Scripts for ' + g.name} style="margin:0 0 6px 47px;display:flex;flex-direction:column;gap:1px">
+    ${list.map(sc => row(sc.id, sc.name, sc.id === last ? 'LAST USED' : ''))}${row('none', 'No script', last === 'none' ? 'LAST USED' : '')}</div>`;
 }
 
 render(html`<${Tray} />`, document.getElementById('root'));

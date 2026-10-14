@@ -13,6 +13,7 @@ const audio = require('./audio');
 const { closeGame, targetOf } = require('./closegame');
 const library = require('./library');
 const modpacks = require('./modpacks');
+const beforelaunch = require('./beforelaunch');
 
 const ex = (cmd, args) => new Promise(r => execFile(cmd, args, { windowsHide: true }, (e, out) => r(e ? '' : String(out))));
 const isRunning = async name => (await ex('tasklist', ['/FI', 'IMAGENAME eq ' + name, '/NH', '/FO', 'CSV'])).toLowerCase().includes('"' + name.toLowerCase() + '"');
@@ -29,7 +30,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
 
   const emit = s => send('launch', {
     gid: s.gid, steps: s.steps, step: s.step, running: s.running,
-    mon: s.monId, res: s.resTxt, changed: s.changed, mode: s.mode, restore: s.restore, acct: s.acct,
+    mon: s.monId, res: s.resTxt, changed: s.changed, mode: s.mode, restore: s.restore, acct: s.acct, script: s.script, ask: s.ask,
   });
 
   async function end(reason, error) {
@@ -37,6 +38,7 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (!s) return;
     session = null;
     clearInterval(s.timer);
+    if (s.decide) s.decide('cancel');
     let restored = false, restoreErr = null;
     if (s.saved && s.restore) {
       try { const r = await display.restore(s.saved); if (r && r.fallback) await applyNormal().catch(() => {}); store.setDisplaySaved(null); restored = true; }
@@ -56,14 +58,14 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     send('launch-end', { gid: s.gid, reason, error: error || null, restored, restoreErr, hadMon: !!s.saved, restoreOn: s.restore, monId: s.monId, res: s.resTxt });
   }
 
-  async function play(id, asSid) {
+  async function play(id, asSid, scriptChoice) {
     if (session || starting) return { ok: false, code: 'RUNNING', error: 'A game is already running through SwapDeck.' };
     if (testing) return { ok: false, error: 'A display test is running. Try again in a few seconds.' };
     starting = true;
-    try { return await start(id, asSid); } finally { starting = false; }
+    try { return await start(id, asSid, scriptChoice); } finally { starting = false; }
   }
 
-  async function start(id, asSid) {
+  async function start(id, asSid, scriptChoice) {
     const loc = getLoc();
     const lib = library.build(loc.dir);
     const g = lib.find(x => x.id === id);
@@ -115,6 +117,10 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     if (apps.length) steps.push(toStart.length
       ? { k: 'apps', label: 'Starting companion apps', sub: toStart.map(a => path.basename(a.path, '.exe')).join(', ') }
       : { k: 'apps', label: 'Companion apps', sub: 'Already running · skipped', skip: true });
+    // A script picked at Play (or the last one used) runs after the apps, and the game waits for it.
+    const script = beforelaunch.pickScript(g, scriptChoice);
+    if (scriptChoice && (g.scripts || []).length) store.setGameCfg(id, { lastScript: script ? script.id : 'none' });
+    if (script) steps.push({ k: 'script', label: 'Running ' + script.name, sub: path.basename(script.path) + (script.args ? ' ' + script.args : '') });
     const viaLauncher = g.steam && !!g.launcher;
     steps.push({ k: 'launch', label: 'Launching ' + g.name, sub: pack ? 'via ' + pack.label : viaLauncher ? 'via ' + path.basename(g.launcher) + (g.opts ? ' ' + g.opts : '') : g.steam ? 'steam://rungameid/' + g.appid + (g.opts ? ' ' + g.opts : '') : path.basename(g.exe) + (g.opts ? ' ' + g.opts : '') });
     steps.push({ k: 'run', label: 'Game running' });
@@ -122,11 +128,11 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     const s = session = {
       gid: id, appid: g.appid, steam: g.steam, pack: !!pack, steps, step: 0, running: false,
       monId: needD ? mon.id : null, resTxt: needR ? resTxt : null, changed: needD || needR, mode: g.display.mode, restore: g.display.restore, acct: acc ? acc.sid : null,
-      saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [],
+      saved: null, runningAt: 0, timer: null, seenAt: 0, prevAudio: null, closeOnEnd: [], script: script ? script.name : null, ask: null, decide: null,
       logAcct: acc ? acc.sid : g.steam ? st.activeSid || null : 'local',
       // What the game was set up with, kept on the session so Recently played can show it.
       closeTarget: pack ? null : targetOf(g),
-      setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: apps.map(a => path.basename(a.path, '.exe')) },
+      setup: { disp: mon ? mon.label : null, res: res ? res.name : null, snd: dev ? dev.name : null, apps: apps.map(a => path.basename(a.path, '.exe')), script: script ? script.name : null },
     };
     emit(s);
     try {
@@ -136,7 +142,8 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
         if (!r.signedIn) throw new Error(r.warn || 'Steam didn\'t sign in.');
       }
       if (session !== s) return { ok: false, cancelled: true };
-      s.step++; emit(s);
+      // Only Steam games have an account step; counting it for the others put the start screen one step ahead.
+      if (g.steam) { s.step++; emit(s); }
 
       if (needD || needR) {
         const saved = await display.apply(needD ? mon.id : null, g.display.mode, needR ? res : null);
@@ -173,6 +180,12 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
         s.step++; emit(s);
       }
       if (session !== s) return { ok: false, cancelled: true };
+      if (script) {
+        const go = await runScript(s, script);
+        if (session !== s) return { ok: false, cancelled: true };
+        if (!go) { await end('stopped'); return { ok: false, cancelled: true }; }
+        s.step++; emit(s);
+      }
       if (beforeLaunch && g.steam) beforeLaunch(g, s.logAcct);
 
       if (pack) {
@@ -229,6 +242,33 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
       await end('error', e.message);
       return { ok: false, error: e.message };
     }
+  }
+
+  // Runs the script and waits. If it fails or passes its time limit, the start screen asks: Launch anyway or Cancel.
+  // A script that was only slow and then finishes fine carries on by itself. The script is never killed.
+  async function runScript(s, script) {
+    const r = beforelaunch.runWithLimit(script);
+    const first = await r.first;
+    if (first.ok) return true;
+    if (session !== s) return false;
+    const failAsk = res => ({ kind: 'fail', name: script.name, code: res.code ?? null, line: res.line || res.error || '' });
+    s.ask = first.timedOut ? { kind: 'time', name: script.name, secs: script.timeoutS || beforelaunch.DEFAULT_TIMEOUT_S } : failAsk(first);
+    emit(s);
+    const choice = await new Promise(resolve => {
+      s.decide = resolve;
+      if (first.timedOut) r.done.then(res => {
+        if (s.decide !== resolve) return;
+        if (res.ok) resolve('anyway');
+        else { s.ask = failAsk(res); emit(s); }
+      });
+    });
+    s.decide = null; s.ask = null;
+    return choice === 'anyway';
+  }
+  // The start screen's answer to a script that failed or took too long.
+  function decide(choice) {
+    if (session && session.decide) session.decide(choice === 'anyway' ? 'anyway' : 'cancel');
+    return { ok: true };
   }
 
   // A modpack: the launcher starts Minecraft as java(w).exe, often after a few minutes of loading or updating.
@@ -318,9 +358,9 @@ function createPlayer({ getLoc, accounts, switchTo, send, applyNormal, beforeLau
     } catch (e) { return { ok: false, error: e.message }; } finally { testing = false; }
   }
 
-  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct };
+  const current = () => session && { gid: session.gid, steps: session.steps, step: session.step, running: session.running, mon: session.monId, res: session.resTxt, changed: session.changed, mode: session.mode, restore: session.restore, acct: session.acct, script: session.script, ask: session.ask };
 
-  return { play, stop, stopClose, restoreNow, test, testRes, current };
+  return { play, stop, stopClose, restoreNow, test, testRes, current, decide };
 }
 
 module.exports = { createPlayer };

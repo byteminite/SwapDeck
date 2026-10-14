@@ -45,6 +45,8 @@ export function libPad(app, k) {
   }
   const S = app.state, act = document.activeElement;
   if (['up', 'down', 'left', 'right'].includes(k)) return move(k);
+  // "Which script?": A on a script plays with it (a mouse picks with one click and plays with a double click).
+  if (k === 'a' && act && act.closest('.sc-list')) { act.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); return; }
   if (k === 'a') { if (act && act !== document.body) act.click(); else move('down'); return; }
   if (k === 'x' && act) { const r = act.getBoundingClientRect(); act.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 })); return; }
   if (k === 'y') { const gid = gidOf(act) || (S.gd && S.gd); if (gid) app.play(gid); return; }

@@ -16,6 +16,7 @@ const library = require('./src/main/library');
 const display = require('./src/main/display');
 const audio = require('./src/main/audio');
 const { createPlayer } = require('./src/main/play');
+const beforelaunch = require('./src/main/beforelaunch');
 const hotkey = require('./src/main/hotkey');
 const { cleanTags, validRgb } = require('./src/main/tags');
 const { steamPage, newsPage } = require('./src/main/steamlinks');
@@ -660,6 +661,7 @@ function ipc() {
       .filter(a => a && typeof a.path === 'string' && /.exe$/i.test(a.path))
       .slice(0, 8)
       .map(a => ({ path: a.path, args: String(a.args || '').slice(0, 300), close: a.close !== false }));
+    if (Array.isArray(patch.scripts)) allowed.scripts = beforelaunch.cleanScripts(patch.scripts);
     library.setCfg(g, allowed);
     return findGame(g.id);
   });
@@ -698,7 +700,14 @@ function ipc() {
     if (saved.cfg) store.setGameCfg(saved.rec.id, saved.cfg);
     return true;
   });
-  ipcMain.handle('game:play', (_, id, asSid) => player.play(String(id), /^\d{17}$/.test(String(asSid)) ? String(asSid) : null));
+  ipcMain.handle('game:play', (_, id, asSid, script) => player.play(String(id), /^\d{17}$/.test(String(asSid)) ? String(asSid) : null, typeof script === 'string' && /^[a-z0-9]{1,16}$/.test(script) ? script : null));
+  ipcMain.handle('game:scriptDecide', (_, choice) => player.decide(choice === 'anyway' ? 'anyway' : 'cancel'));
+  // Setup > Scripts > Test: run one script now, the same way Play does, and say how it went.
+  ipcMain.handle('lib:testScript', async (_, id, scriptId) => {
+    const g = findGame(String(id)), sc = g && (g.scripts || []).find(x => x.id === scriptId);
+    if (!sc) return { ok: false, error: "That script is no longer in this game's setup." };
+    return beforelaunch.runWithLimit(sc).first;
+  });
   // Right-click > Open folder: the game's install folder (Steam) or the folder its .exe is in.
   ipcMain.handle('game:folder', (_, id) => {
     const g = findGame(String(id)), dir = g && (g.steam || g.pack ? g.folder : g.exe && path.dirname(g.exe));
@@ -759,13 +768,18 @@ function ipc() {
       accounts: accs.map(a => ({ sid: a.sid, name: s.hideNames ? a.name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase() : a.name, login: a.login, avatar: a.avatar || null, lastUsed: a.lastUsed || 0, pinned: !!a.pinned })),
       // Every installed game SwapDeck knows (Steam and added ones), newest played first; the panel scrolls and searches.
       games: lib.filter(g => g.installed && !(s.layout === 'library' && (s.hiddenGames || []).includes(g.id))).sort((a, b) => b.lastPlayed - a.lastPlayed)
-        .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null })),
+        .map(g => ({ id: g.id, name: g.name, cover: g.img || (g.steam ? g.cover : null), acct: g.acct, lastPlayed: g.lastPlayed, upd: (g.steam && upd[g.appid]) || null,
+          scripts: (g.scripts || []).map(sc => ({ id: sc.id, name: sc.name })), lastScript: g.lastScript || null })),
     };
   });
   ipcMain.on('tray:size', (_, h) => { if (trayWin && !trayWin.isDestroyed() && trayWin.isVisible()) placeTrayPanel(Math.round(h)); });
   ipcMain.on('tray:open', () => { hideTrayPanel(); showWin(); });
   ipcMain.on('tray:hide', () => hideTrayPanel());
   ipcMain.on('tray:quit', () => { quitting = true; app.quit(); });
+  ipcMain.handle('lib:pickScript', async () => {
+    const r = await dialog.showOpenDialog(win, { title: 'Choose a script to run before the game', properties: ['openFile'], filters: [{ name: 'Scripts and programs', extensions: ['ps1', 'bat', 'cmd', 'exe'] }] });
+    return r.canceled ? null : r.filePaths[0];
+  });
   ipcMain.handle('lib:pickApp', async () => {
     const r = await dialog.showOpenDialog(win, { title: 'Choose an app to start with the game', properties: ['openFile'], filters: [{ name: 'Programs', extensions: ['exe'] }] });
     return r.canceled ? null : r.filePaths[0];

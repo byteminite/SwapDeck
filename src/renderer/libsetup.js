@@ -1,9 +1,10 @@
 // Library layout: a game's Setup tab. Same settings and values as Classic's game setup (ui.js gameVals),
-// laid out in two columns: left = account, sound, launcher, launch options, CS2 settings; right = display, companion apps.
+// laid out in two columns: left = account, sound, launcher, launch options, CS2 settings; right = scripts, display, companion apps.
 import { html } from './vendor/htm-preact.js';
 import { icon } from './libicons.js';
 import { cs2Card } from './cs2card.js';
 import { notesCard } from './gamepage.js';
+import { scriptsCard } from './libscripts.js';
 
 const box = (label, body, aside) => html`<div class="su-box"><div class="su-l"><span>${label}</span>${aside || null}</div>${body}</div>`;
 const check = html`<span class="su-ck">${icon('check', 14)}</span>`;
@@ -62,6 +63,6 @@ ${b.gNonSteam ? html`<button class="su-btn" onClick=${b.onGEdit}>Edit game</butt
 export function setupTab(b) {
   return html`<div class="su">
 <div class="su-col">${b.gSteam ? account(b) : null}${sound(b)}${launcher(b)}${b.gPack ? null : options(b)}${b.gCs2 ? html`<div class="su-cs2">${cs2Card(b.gCs2)}</div>` : null}${b.gNoteSetup ? notesCard(b.gNoteSetup) : null}</div>
-<div class="su-col">${display(b)}${apps(b)}${extras(b)}</div>
+<div class="su-col">${scriptsCard(b)}${display(b)}${apps(b)}${extras(b)}</div>
 </div>`;
 }

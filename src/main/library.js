@@ -41,7 +41,7 @@ function steamGame(dir, id, appid, name, installed, extra) {
   return {
     id, steam: true, appid, name, installed, folder: extra.folder || null, owners,
     acct: acctAuto ? owners[0] : cfg.acct, acctAuto,
-    opts: cfg.opts || '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, launcher: cfg.launcher || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
+    opts: cfg.opts || '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, scripts: cfg.scripts || [], lastScript: cfg.lastScript || null, launcher: cfg.launcher || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
     // Change artwork: the owner's own cover or banner wins over Steam's; heroPos is the banner's vertical position.
     cover: cfg.artCover ? 'sdimg://cover/' + encodeURIComponent(cfg.artCover) : installed ? art(dir, appid, 'library_600x900.jpg') : CDN + appid + '/library_600x900.jpg',
     hero: cfg.artHero ? 'sdimg://cover/' + encodeURIComponent(cfg.artHero) : installed ? art(dir, appid, 'library_hero.jpg') : CDN + appid + '/library_hero.jpg',
@@ -84,7 +84,7 @@ function build(dir) {
     const cfg = store.gameCfg(c.id);
     out.push({
       id: c.id, steam: false, name: c.name, exe: c.exe, installed: fs.existsSync(c.exe), folder: path.dirname(c.exe),
-      acct: null, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
+      acct: null, opts: cfg.opts, display: cfg.display, audio: cfg.audio, apps: cfg.apps, scripts: cfg.scripts || [], lastScript: cfg.lastScript || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       img: c.img ? `sdimg://cover/${encodeURIComponent(c.img)}` : null, iconMode: c.iconMode || 'gen',
       lastPlayed: cfg.lastPlayed || 0, hours: Math.round((cfg.playMs || 0) / 360000) / 10,
     });
@@ -95,7 +95,7 @@ function build(dir) {
     const cfg = store.gameCfg(p.id);
     out.push({
       id: p.id, steam: false, pack: { launcher: p.launcher, label: p.label }, name: p.name, exe: p.exe, installed: fs.existsSync(p.folder), folder: p.folder,
-      acct: null, opts: '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
+      acct: null, opts: '', display: cfg.display, audio: cfg.audio, apps: cfg.apps, scripts: cfg.scripts || [], lastScript: cfg.lastScript || null, tags: tagsOf(cfg), fav: !!cfg.fav, note: typeof cfg.note === 'string' ? cfg.note : '',
       // Change artwork: your own icon replaces the pack's, your own banner replaces the blurred one.
       img: cfg.artCover ? 'sdimg://cover/' + encodeURIComponent(cfg.artCover) : p.icon ? 'sdimg://pack/' + p.id.split(':')[2] : null, iconMode: 'gen',
       hero: cfg.artHero ? 'sdimg://cover/' + encodeURIComponent(cfg.artHero) : null,

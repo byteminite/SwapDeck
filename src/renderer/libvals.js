@@ -16,6 +16,7 @@ import { libMenuVals, gameMenu } from './libmenu.js';
 import { libArtVals, artOverlay } from './libart.js';
 import { libNotesVals, notesPanel, unreadCount } from './libnotes.js';
 import { stopVals, stopOverlay } from './libstop.js';
+import { chooseVals, chooseOverlay } from './libchoose.js';
 import { libWnVals, wnOverlay } from './libwn.js';
 import { padHints } from './libpad.js';
 const CONTENT = {
@@ -53,7 +54,7 @@ export function libShellVals(app, gv, dw) {
       meOnline: !!(me && me.current),
       onSettings: () => app.openSettings('general'), light: (S.settings.base || 'dark') === 'light', onFlip: e => app.flipBase(e.currentTarget), onMe: () => app.setState(s => ({ lsMenu: !s.lsMenu, lsNotes: false })), menu: S.lsMenu ? acctMenu(acctMenuVals(app)) : null,
       onSearch: () => openSpot(app), onBell: () => app.setState(s => ({ lsNotes: !s.lsNotes, lsMenu: false })), bellN: unreadCount(app), bellOn: !!S.lsNotes,
-      notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, stop: (S.stopAsk || S.stopping) && stopVals(app) ? stopOverlay(stopVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
+      notes: S.lsNotes ? notesPanel(libNotesVals(app)) : null, stop: S.scAsk && chooseVals(app) ? chooseOverlay(chooseVals(app)) : (S.stopAsk || S.stopping) && stopVals(app) ? stopOverlay(stopVals(app)) : null, spot: S.lsSpot ? spotOverlay(libSpotVals(app)) : null, tags: S.tm ? tagsOverlay(libTagsVals(app)) : null,
       gm: S.gm && libMenuVals(app) ? gameMenu(libMenuVals(app)) : null, art: S.art && libArtVals(app) ? artOverlay(libArtVals(app)) : null,
       ...launchVals(app), sw: switchVals(app),
       banner: app.steamState === 'not-found' ? { tone: 'warn', ic: 'search', text: "SwapDeck can't find Steam. Switching and Steam games need it.", act: 'Find Steam', go: () => app.browse() }

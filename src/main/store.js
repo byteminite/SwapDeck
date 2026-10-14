@@ -49,9 +49,10 @@ const DEFAULTS = {
   meta: {},   // sid -> { tags, note, pinned, launch, lastUsed }
   cache: {},  // sid -> { pub, pubAt, stats, statsAt }
 };
-const DEFAULT_GAME = { acct: null, tags: [], fav: false, note: '', opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, lastPlayed: 0, playMs: 0 };
+const DEFAULT_GAME = { acct: null, tags: [], fav: false, note: '', opts: '', display: { mon: null, mode: 'primary', restore: true, res: null }, audio: null, apps: [], launcher: null, scripts: [], lastScript: null, lastPlayed: 0, playMs: 0 };
 // display.res = resolution profile id · audio = playback device id · apps = companion apps [{ path, args, close }]
 // launcher = an .exe to start instead of the Steam game (e.g. Content Manager for Assetto Corsa)
+// scripts = run before the game, waited for [{ id, name, path, args, timeoutS, custom }] · lastScript = id or 'none'
 
 const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
@@ -167,7 +168,7 @@ function addPlay(sid, gid, ms, setup) {
   const e = a[gid] = a[gid] || { ms: 0, n: 0, last: 0 };
   e.ms += Math.max(0, ms || 0); e.n++; e.last = Date.now();
   const entry = { sid, gid, start: Date.now() - Math.max(0, ms || 0), ms: Math.max(0, ms || 0) };
-  if (setup && (setup.disp || setup.res || setup.snd || (setup.apps && setup.apps.length))) entry.setup = setup;
+  if (setup && (setup.disp || setup.res || setup.snd || (setup.apps && setup.apps.length) || setup.script)) entry.setup = setup;
   data.sessions.unshift(entry);
   data.sessions.length = Math.min(data.sessions.length, 300);
   save();
